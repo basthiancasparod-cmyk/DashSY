@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dashboard de Operaciones</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #0D1117;
+            --surface: #161B22;
+            --primary: #58A6FF;
+            --secondary: #1F6FEB;
+            --text-primary: #C9D1D9;
+            --text-secondary: #8B949E;
+            --border: #30363D;
+            --success: #3FB950;
+            --danger: #F85149;
+            --warning: #D29922;
+        }
+        html, body {
+            overscroll-behavior-y: contain;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+        }
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: -webkit-fill-available;
+        }
+        .main-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1.5rem 1rem calc(6rem + env(safe-area-inset-bottom));
+        }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: calc(5rem + env(safe-area-inset-bottom));
+            background-color: rgba(22, 27, 34, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            padding-top: 0.75rem;
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 1000;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-secondary);
+            transition: color 0.2s;
+            padding: 0 0.5rem;
+            border: none;
+            background: none;
+        }
+        .nav-item.active {
+            color: var(--primary);
+        }
+        .nav-item svg {
+            width: 24px;
+            height: 24px;
+        }
+        .nav-item span {
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+        .card {
+            background-color: var(--surface);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 1.25rem;
+        }
+        .card.clickable {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .card.clickable:hover {
+            background-color: #222831;
+        }
+        .btn-fab {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 9999px;
+            border: none;
+            padding: 1rem;
+            box-shadow: 0 10px 20px rgba(88, 166, 255, 0.2), 0 6px 6px rgba(88, 166, 255, 0.23);
+            position: fixed;
+            bottom: calc(6rem + env(safe-area-inset-bottom));
+            right: 1.5rem;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            min-width: 900px; /* Aumentado para la nueva columna */
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 0.75rem 0.5rem;
+            text-align: center;
+            font-size: 0.8rem;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        th {
+            background-color: var(--surface);
+            font-weight: 600;
+            color: var(--text-secondary);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 2000; backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; }
+        .modal.show { display: flex; }
+        .modal-content { background: var(--surface); color: var(--text-primary); border-radius: 24px; border: 1px solid var(--border); width: calc(100% - 2rem); max-width: 500px; max-height: 90vh; display: flex; flex-direction: column; }
+        .modal-header { background: transparent; padding: 1.5rem 1.5rem 1rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .modal-title { color: var(--text-primary); font-size: 1.25rem; }
+        .close-btn { color: var(--text-secondary); background-color: rgba(255, 255, 255, 0.1); border: none; border-radius: 50%; width: 32px; height: 32px; }
+        .modal-body { padding: 1.5rem; overflow-y: auto; flex-grow: 1; }
+        .form-group label { color: var(--text-secondary); }
+        .form-group input, .form-group select { background-color: var(--background); border: 1px solid var(--border); color: var(--text-primary); border-radius: 12px; padding: 0.75rem 1rem; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2); outline: none; }
+        .calc-display { background-color: var(--background); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
+        .calc-row { display: flex; justify-content: space-between; }
+        .calc-row.total { font-weight: bold; border-top: 1px solid var(--border); padding-top: 0.5rem; margin-top: 0.5rem; }
+        .modal-buttons { background-color: transparent; border-top: 1px solid var(--border); padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.5rem; flex-shrink: 0; }
+        .btn { padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 600; border: none; }
+        .btn-primary { background: var(--primary); color: var(--background); }
+        .btn-secondary { background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-green { background: var(--success); color: var(--background); }
+        ::-webkit-scrollbar { width: 4px; height: 4px;}
+        ::-webkit-scrollbar-track { background: var(--surface); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+        #authSection { background-color: var(--background); }
+        .auth-container { background-color: var(--surface); border-radius: 24px; border: 1px solid var(--border); }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #30363D; transition: .4s; border-radius: 24px;}
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;}
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(20px); }
+        #toast-container { position: fixed; top: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; }
+        .toast { background-color: var(--surface); border: 1px solid var(--border); color: var(--text-primary); padding: 0.75rem 1.25rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); display: flex; align-items: center; gap: 0.75rem; opacity: 0; transform: translateX(100%); transition: all 0.3s ease-out; font-weight: 500; }
+        .toast.show { opacity: 1; transform: translateX(0); }
+        .toast.hide { opacity: 0; transform: translateX(100%); }
+        .info-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .info-card { background: var(--background); border-radius: 12px; border: 1px solid var(--border); padding: 1rem; text-align: center; }
+        .info-card-title { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem; }
+        .info-card-value { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .info-card-details { font-size: 0.8rem; color: var(--text-secondary); }
+        .operation-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .operation-list-item { background: var(--background); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem; font-size: 0.8rem; }
+        .op-label { color: var(--text-secondary); }
+
+        /* === INICIO DE ESTILOS PARA LA VISTA MÓVIL DE TARJETAS === */
+        .operations-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem; /* 12px */
+        }
+        .operation-card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem; /* 16px */
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem; /* 12px */
+            border-left-width: 4px;
+        }
+        .operation-card.compra { border-left-color: var(--success); }
+        .operation-card.venta { border-left-color: var(--danger); }
+
+        .card-header, .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-header .user-info { font-weight: 600; }
+        .card-header .user-info .payment-method { font-weight: 400; font-size: 0.8rem; color: var(--text-secondary); }
+        .status-badge { font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 0;
+        }
+        .grid-item { display: flex; flex-direction: column; text-align: center; }
+        .grid-item .label { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem; }
+        .grid-item .value { font-weight: 600; font-size: 0.9rem; }
+        .grid-item .value .commission { font-size: 0.7rem; color: var(--danger); }
+        .value.profit-green { color: var(--success); }
+        .value.profit-red { color: var(--danger); }
+
+        .card-footer .ref-info { font-size: 0.75rem; color: var(--text-secondary); font-family: monospace; }
+        .card-footer .edit-btn { background: none; border: none; color: var(--primary); padding: 0.5rem; }
+        
+        /* Lógica para mostrar/ocultar tabla vs tarjetas */
+        /* Lógica para mostrar/ocultar tabla vs tarjetas EN REPORTES Y WALLY */
+#page-reports .operations-list-container,
+#page-wally .operations-list-container { 
+    display: block; 
+}
+#page-reports .table-container,
+#page-wally .table-container { 
+    display: none; 
+}
+
+@media (min-width: 1024px) {
+    #page-reports .operations-list-container,
+    #page-wally .operations-list-container { 
+        display: none; 
+    }
+    #page-reports .table-container,
+    #page-wally .table-container { 
+        display: block; 
+    }
+}
+        /* === FIN DE ESTILOS PARA LA VISTA MÓVIL === */
+    </style>
+</head>
+<body class="overscroll-none">
+
+    <div id="authSection" class="h-screen w-screen flex items-center justify-center p-4">
+        <div class="auth-container w-full max-w-sm p-8">
+            <div id="loginForm"><h2 class="text-2xl font-bold text-center mb-6">Iniciar Sesión</h2><div class="form-group mb-4 text-left"><label class="text-sm font-medium mb-1 block">Correo Electrónico:</label><input type="email" id="loginEmail" placeholder="tu@correo.com" class="w-full"></div><div class="form-group mb-6 text-left"><label class="text-sm font-medium mb-1 block">Contraseña:</label><input type="password" id="loginPassword" placeholder="••••••••" class="w-full"></div><button class="btn-primary w-full py-3 rounded-xl font-semibold" onclick="loginUser()">Entrar</button><p class="text-center mt-6 text-sm text-blue-400 cursor-pointer" onclick="toggleAuthForms()">¿No tienes cuenta? Regístrate</p></div>
+            <div id="registerForm" style="display: none;"><h2 class="text-2xl font-bold text-center mb-6">Crear Cuenta</h2><div class="form-group mb-4 text-left"><label class="text-sm font-medium mb-1 block">Correo Electrónico:</label><input type="email" id="registerEmail" placeholder="tu@correo.com" class="w-full"></div><div class="form-group mb-6 text-left"><label class="text-sm font-medium mb-1 block">Contraseña:</label><input type="password" id="registerPassword" placeholder="Mínimo 6 caracteres" class="w-full"></div><button class="btn-primary w-full py-3 rounded-xl font-semibold" onclick="registerUser()">Registrarse</button><p class="text-center mt-6 text-sm text-blue-400 cursor-pointer" onclick="toggleAuthForms()">¿Ya tienes cuenta? Inicia Sesión</p></div>
+            <p id="authError" class="text-red-500 mt-4 text-sm"></p>
+        </div>
+    </div>
+
+    <div class="app-container" style="display: none;">
+        <main class="main-content">
+            <div id="page-operate" class="page">
+                <div class="flex justify-between items-center mb-6"><h1 id="userEmail" class="text-2xl font-bold">Cargando...</h1><input type="date" id="selectedDate" class="bg-transparent border-none text-right font-semibold text-blue-400 focus:ring-0 p-0"></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="card text-center">
+                        <p class="text-sm font-medium text-gray-400 mb-2">GANANCIA DEL DÍA</p>
+                        <div id="ganancias" class="text-4xl font-extrabold text-green-400">0.00 <span class="text-2xl font-semibold">VES</span></div>
+                        <div id="ganancias_usdc" class="text-lg font-semibold text-gray-300 mt-1">0.00 <span class="font-medium">USDC</span></div>
+                    </div>
+                    <div class="card text-center flex flex-col justify-center">
+                        <p class="text-sm font-medium text-gray-400 mb-2">GANANCIA WALLY</p>
+                        <div class="flex justify-center items-baseline gap-x-4">
+                            <div id="wallyDashboardGainsUsdc" class="text-3xl font-bold text-orange-400">0.00 <span class="text-xl font-semibold">USDC</span></div>
+                            <div id="wallyDashboardGainsUsd" class="text-3xl font-bold text-purple-400">0.00 <span class="text-xl font-semibold">USD</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card mb-6"><div class="flex justify-between items-center text-sm mb-2"><span class="font-medium text-gray-400">Meta Diaria</span><span id="dailyGoal" class="font-semibold">0 / 0 VES</span></div><div class="w-full bg-gray-700 rounded-full h-2"><div id="dailyProgressBar" class="bg-blue-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div></div></div>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="card text-center"><p class="text-sm font-medium text-gray-400">Prom. Compra</p><p id="promCompra" class="text-xl font-bold mt-1">0.00</p></div>
+                    <div class="card text-center"><p class="text-sm font-medium text-gray-400">Prom. Venta</p><p id="promVenta" class="text-xl font-bold mt-1">0.00</p></div>
+                    <div class="card text-center clickable" onclick="openBankBreachModal()"><p class="text-sm font-medium text-gray-400">Brecha</p><p id="brecha" class="text-xl font-bold mt-1">0%</p></div>
+                    <div class="card text-center"><p class="text-sm font-medium text-gray-400">Operaciones</p><p id="totalOps" class="text-xl font-bold mt-1">0</p></div>
+                    <div class="card text-center clickable" onclick="openLotDetailsModal()"><p class="text-sm font-medium text-gray-400">Lotes Activos</p><p id="activeLotsSummary" class="text-xl font-bold mt-1">0</p></div>
+                    <div class="card text-center clickable" onclick="openPendingDetailsModal()"><p class="text-sm font-medium text-gray-400">Pendientes</p><p id="pendingSummary" class="text-xl font-bold mt-1">0 USDC</p></div>
+                </div>
+            </div>
+            <div id="page-reports" class="page">
+                 <h1 class="text-2xl font-bold mb-4">Reporte de Operaciones</h1>
+                 <div class="filter-controls flex flex-wrap gap-2 mb-4"><input type="text" id="searchOperations" placeholder="Buscar por usuario o referencia..." onkeyup="filterOperations()" class="form-group w-full text-sm rounded-lg"></div>
+                 
+                 <div class="table-container">
+                    <div class="card p-0">
+                        <table>
+                            <thead>
+                                <tr><th>USUARIO/MÉTODO</th><th>REF</th><th>OP</th><th>TASA</th><th>USDC</th><th>BS</th><th>GAN. VES</th><th>GAN. USDC</th><th>LOTE</th><th>ESTATUS</th><th>ACC</th></tr>
+                            </thead>
+                            <tbody id="operationsTable"></tbody>
+                        </table>
+                    </div>
+                 </div>
+
+                 <div class="operations-list-container">
+                    <div id="operationsList" class="operations-list"></div>
+                </div>
+            </div>
+            <div id="page-wally" class="page">
+                <div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold">Wally Tech</h1><input type="date" id="wallySelectedDate" class="bg-transparent border-none text-right font-semibold text-blue-400 focus:ring-0 p-0"></div>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="card text-center"><p class="text-sm text-gray-400">Val. Inicial</p><input type="number" id="wallyValorInicialInput" value="0.00" onchange="saveWallyValorInicial()" class="w-full bg-transparent text-center text-lg font-bold border-0 p-0"></div>
+                    <div class="card text-center"><p class="text-sm text-gray-400">Val. Actual</p><p id="wallyValorActual" class="text-lg font-bold">0.00</p></div>
+                    <div class="col-span-2 card text-center"><p class="text-sm text-gray-400">Ganancias</p><p id="wallyGanancias" class="text-lg font-bold">0 USDC / 0 USD</p></div>
+                </div>
+                <div class="space-y-6">
+                    <div>
+                    <h2 class="text-lg font-semibold mb-2 text-green-400">COMPRAS (Recibo USDC)</h2>
+                    <div class="card p-0">
+                        <div class="table-container">
+                            <table class="w-full min-w-[600px]">
+                                <thead><tr><th>Usuario</th><th>Recibo USDC</th><th>Tasa</th><th>Envío USD</th><th>Gan. USDC</th><th>Acc</th></tr></thead>
+                                <tbody id="wallyCompraTable"></tbody>
+                            </table>
+                        </div>
+                        <div class="operations-list-container p-4">
+                            <div id="wallyCompraList" class="operations-list"></div>
+                        </div>
+                    </div>
+                </div>
+                                    <div>
+                    <h2 class="text-lg font-semibold mb-2 text-red-400">VENTAS (Recibo USD)</h2>
+                    <div class="card p-0">
+                        <div class="table-container">
+                            <table class="w-full min-w-[600px]">
+                                <thead><tr><th>Usuario</th><th>Envío USDC</th><th>Tasa</th><th>Recibo USD</th><th>Gan. USD</th><th>Acc</th></tr></thead>
+                                <tbody id="wallyVentaTable"></tbody>
+                            </table>
+                        </div>
+                        <div class="operations-list-container p-4">
+                            <div id="wallyVentaList" class="operations-list"></div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+                <button class="btn-fab" onclick="openWallyModal()" style="display: none;"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg></button>
+            </div>
+            <div id="page-settings" class="page">
+                <h1 class="text-2xl font-bold mb-6">Ajustes</h1>
+                <div class="space-y-4"><button onclick="openConfigModal()" class="w-full text-left p-4 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors">⚙️ Configuración General</button><button onclick="logoutUser()" class="w-full text-left p-4 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors">🚪 Cerrar Sesión</button></div>
+            </div>
+            <button id="main-fab" class="btn-fab" onclick="openModal()"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg></button>
+        </main>
+        <nav class="bottom-nav">
+            <button id="nav-operate" class="nav-item active" onclick="showPage('operate')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V6.375c0-.621.504-1.125 1.125-1.125h.375m18 0h-4.5m-4.5 0h-4.5m0 0h-4.5m0 0l-1.5 1.5m1.5-1.5l1.5 1.5m0 0l1.5-1.5m1.5 1.5l1.5-1.5m-3-3l1.5-1.5m1.5 1.5l1.5-1.5m-4.5 9l1.5-1.5m-1.5 1.5l1.5 1.5m0 0l-1.5 1.5m1.5-1.5l1.5 1.5M9 12l1.5 1.5m-1.5-1.5L9 12m0 0l-1.5-1.5m1.5 1.5L9 12m-3 3l1.5-1.5m-1.5 1.5L6 15m0 0l-1.5-1.5m1.5 1.5L6 15m6-3l1.5 1.5m-1.5-1.5L15 12m0 0l-1.5-1.5m1.5 1.5L15 12m0 0l-1.5 1.5m-1.5-1.5l-1.5-1.5"/></svg><span>Operar</span></button>
+            <button id="nav-reports" class="nav-item" onclick="showPage('reports')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg><span>Reportes</span></button>
+            <button id="nav-wally" class="nav-item" onclick="showPage('wally')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span>Wally</span></button>
+            <button id="nav-settings" class="nav-item" onclick="showPage('settings')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" /></svg><span>Ajustes</span></button>
+        </nav>
+    </div>
+    
+    <div id="toast-container"></div>
+    
+    <div id="operationModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold" id="modalTitle">Nueva Operación</h2><button class="close-btn" onclick="closeModal()">&times;</button></div><div class="modal-body"><div class="space-y-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Usuario</label><input type="text" id="usuario" placeholder="Nombre del usuario" class="w-full"></div><div class="grid grid-cols-2 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Referencia</label><input type="text" id="referencia" placeholder="Nº de referencia" class="w-full"></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Estatus</label><select id="estatus" class="w-full"><option value="En Curso">En Curso</option><option value="En Disputa">En Disputa</option><option value="Completado">Completado</option></select></div></div><div class="grid grid-cols-2 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Operación</label><select id="operacion" onchange="calculateAll()" class="w-full"><option value="Compra">Compra</option><option value="Venta">Venta</option></select></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Método de Pago</label><select id="metodoPago" onchange="calculateAll()" class="w-full"></select></div></div><hr class="border-gray-700"><div class="grid grid-cols-2 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Tasa de Cambio</label><input type="number" id="tasa" step="0.01" placeholder="0.00" onkeyup="calculateAll()" class="w-full"></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Monto USDC</label><input type="number" id="montoUsdc" step="0.001" placeholder="0.00" onkeyup="calculateAll()" class="w-full"></div></div><div class="flex items-center justify-between"><span id="adCommissionLabel" class="text-sm">Aplicar 0.0% comisión</span><label class="switch"><input type="checkbox" id="applyAdCommissionSwitch" onchange="calculateAll()"><span class="slider"></span></label></div><div class="calc-display space-y-2 text-sm"><div id="displayAdCommissionRow" class="calc-row" style="display: none;"><span id="displayAdCommissionLabel">Comisión Anuncio:</span><span id="displayAdCommission"></span></div><div class="calc-row"><span>Monto BS:</span><span id="displayMontoBs">0.00</span></div><div class="calc-row"><span>Comisión VES:</span><span id="displayComision">0.00</span></div><div class="calc-row total text-base"><span>Total:</span><span id="displayTotal">0.00</span></div></div><input type="hidden" id="montoBs"><input type="hidden" id="comisionVes"><input type="hidden" id="total"><input type="hidden" id="ves"><input type="hidden" id="usdc"><input type="hidden" id="lote"></div></div><div class="modal-buttons"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="saveOperation()">Guardar</button></div></div></div>
+    <div id="configModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold">Configuración</h2><button class="close-btn" onclick="closeConfigModal()">&times;</button></div><div class="modal-body"><div class="form-group"><label class="text-sm font-medium mb-1 block">Comisión por Anuncio (%):</label><input type="number" id="adCommission" step="0.1" placeholder="Ej: 0.2" class="w-full"></div> <div class="form-group mt-4"><label class="text-sm font-medium mb-1 block">Meta de Ganancia Diaria (VES):</label><input type="number" id="dailyProfitGoal" step="0.01" placeholder="Ej: 1000.00" class="w-full"></div><div class="form-group mt-4"><label class="text-sm font-medium mb-1 block">Valor Inicial Wally (USD):</label><input type="number" id="wallyInitialValueConfig" step="0.01" placeholder="0.00" class="w-full"></div></div><div class="modal-buttons"><button class="btn btn-secondary" onclick="closeConfigModal()">Cancelar</button><button class="btn btn-primary" onclick="saveConfig()">Guardar</button></div></div></div>
+    <div id="wallyModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 id="wallyModalTitle" class="modal-title text-xl font-bold">Operación Wally</h2><button class="close-btn" onclick="closeWallyModal()">&times;</button></div><div class="modal-body"><div id="wallyFormContent" class="space-y-4"></div></div><div class="modal-buttons"><button class="btn btn-secondary" onclick="closeWallyModal()">Cancelar</button><button class="btn btn-primary" onclick="saveWallyOperation()">Guardar</button></div></div></div>
+    
+    <div id="bankBreachModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold">Brecha por Banco</h2><button class="close-btn" onclick="closeBankBreachModal()">&times;</button></div><div class="modal-body"><div id="bankBreachCards" class="info-cards-grid"></div></div></div></div>
+    <div id="lotDetailsModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold">Lotes Activos</h2><button class="close-btn" onclick="closeLotDetailsModal()">&times;</button></div><div class="modal-body"><div id="lotDetailsCards" class="info-cards-grid"></div></div></div></div>
+    <div id="pendingDetailsModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold">Detalles de Pendientes</h2><button class="close-btn" onclick="closePendingDetailsModal()">&times;</button></div><div class="modal-body"><div class="grid grid-cols-2 gap-4 mb-4"><div class="card text-center"><p class="text-sm font-medium text-gray-400">Recompra</p><p id="pendingRepurchaseSummary" class="text-lg font-bold mt-1">0 USDC</p></div><div class="card text-center"><p class="text-sm font-medium text-gray-400">Reventa</p><p id="pendingResaleSummary" class="text-lg font-bold mt-1">0 USDC</p></div></div><h3 class="font-semibold mb-2">Operaciones de Recompra</h3><div id="pendingRepurchaseList" class="operation-list mb-4"></div><h3 class="font-semibold mb-2">Operaciones de Reventa</h3><div id="pendingResaleList" class="operation-list"></div></div></div></div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
+    <script type="module">
+        const firebaseConfig = { apiKey: "AIzaSyAovfm0PWP5f6rvSmDva5ZQLOAcOdDNCgk", authDomain: "dashboard-operaciones-a9996.firebaseapp.com", projectId: "dashboard-operaciones-a9996", storageBucket: "dashboard-operaciones-a9996.appspot.com", messagingSenderId: "788099450381", appId: "1:788099450381:web:95cd9fa3e96ec9397a3744" };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let currentUserId = null;
+        let operations = [], wallyOperations = [];
+        let userConfig = {};
+        let editingIndex = -1, editingWallyIndex = -1;
+        let currentDate = new Date().toISOString().split('T')[0];
+        let currentWallyDate = new Date().toISOString().split('T')[0];
+        let currentLotsData = new Map();
+        let currentPendingData = { recompra: 0, reventa: 0, recompraOps: [], reventaOps: [] };
+        let wallyTotalGains = { usdc: 0, usd: 0 }; // <--- AÑADE ESTA LÍNEA
+        const defaultProfitGoals = { daily: 1000.00 };
+
+        const authSection = document.getElementById('authSection');
+        const appContainer = document.querySelector('.app-container');
+        const userEmailEl = document.getElementById('userEmail');
+        const authError = document.getElementById('authError');
+
+        function showPage(pageName) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById(`page-${pageName}`).classList.add('active');
+            document.getElementById(`nav-${pageName}`).classList.add('active');
+            const mainFab = document.getElementById('main-fab');
+            mainFab.style.display = (pageName === 'operate' || pageName === 'reports') ? 'flex' : 'none';
+            const wallyPage = document.getElementById('page-wally');
+            const wallyFab = wallyPage.querySelector('.btn-fab');
+            wallyFab.style.display = pageName === 'wally' ? 'flex' : 'none';
+        }
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUserId = user.uid;
+                authSection.style.display = 'none'; appContainer.style.display = 'flex';
+                userEmailEl.textContent = user.email;
+                loadConfig(); loadOperations(); loadWallyOperations();
+                document.getElementById('selectedDate').value = currentDate;
+                document.getElementById('wallySelectedDate').value = currentWallyDate;
+                showPage('operate');
+            } else {
+                currentUserId = null;
+                authSection.style.display = 'flex'; appContainer.style.display = 'none';
+            }
+        });
+
+        function registerUser() { const e = document.getElementById('registerEmail').value, p = document.getElementById('registerPassword').value; authError.textContent = ''; auth.createUserWithEmailAndPassword(e, p).catch(err => { authError.textContent = 'Error: ' + err.message; }); }
+        function loginUser() { const e = document.getElementById('loginEmail').value, p = document.getElementById('loginPassword').value; authError.textContent = ''; auth.signInWithEmailAndPassword(e, p).catch(err => { authError.textContent = 'Error: ' + err.message; }); }
+        function logoutUser() { auth.signOut(); }
+        function toggleAuthForms() { const l = document.getElementById('loginForm'), r = document.getElementById('registerForm'); authError.textContent = ''; l.style.display = l.style.display === 'none' ? 'block' : 'none'; r.style.display = r.style.display === 'none' ? 'block' : 'none'; }
+
+        function loadOperations() { if (!currentUserId) return; db.collection('users').doc(currentUserId).collection('operations').orderBy('timestamp', 'desc').onSnapshot(s => { operations = s.docs.map(d => ({ id: d.id, ...d.data() })); updateSummary(); }, e => console.error(e)); }
+        function loadWallyOperations() { if (!currentUserId) return; db.collection('users').doc(currentUserId).collection('wallyOperations').orderBy('timestamp', 'desc').onSnapshot(s => { wallyOperations = s.docs.map(d => ({ id: d.id, ...d.data() })); updateWallySummary(); }, e => console.error(e));}
+        
+        function saveOperation() {
+            if (!currentUserId) return;
+            const originalUsdc = parseFloat(document.getElementById('montoUsdc').value) || 0;
+            const operacion = document.getElementById('operacion').value;
+            const applyCommission = document.getElementById('applyAdCommissionSwitch').checked;
+            const commissionRate = userConfig.adCommission || 0;
+            let finalUsdc = originalUsdc, appliedCommission = 0;
+            if (applyCommission && commissionRate > 0 && originalUsdc > 0) {
+                const commissionAmount = originalUsdc * (commissionRate / 100);
+                if (operacion === 'Compra') finalUsdc = originalUsdc - commissionAmount; 
+                else if (operacion === 'Venta') finalUsdc = originalUsdc + commissionAmount;
+                appliedCommission = commissionRate;
+            }
+            const operation = { usuario: document.getElementById('usuario').value, referencia: document.getElementById('referencia').value, operacion, tasa: parseFloat(document.getElementById('tasa').value) || 0, metodoPago: document.getElementById('metodoPago').value, montoUsdc: finalUsdc, montoBs: parseFloat(document.getElementById('montoBs').value) || 0, comisionVes: parseFloat(document.getElementById('comisionVes').value) || 0, total: parseFloat(document.getElementById('total').value) || 0, ves: 0, usdc: 0, lote: '', estatus: document.getElementById('estatus').value, fecha: currentDate, timestamp: Date.now(), adCommissionPercent: appliedCommission };
+            if (!operation.usuario || !operation.tasa || !originalUsdc) { showToast('Por favor, complete todos los campos obligatorios.', 'error'); return; }
+            const opId = editingIndex > -1 ? operations[editingIndex].id : db.collection('users').doc(currentUserId).collection('operations').doc().id;
+            db.collection('users').doc(currentUserId).collection('operations').doc(opId).set(operation, { merge: true }).then(() => { closeModal(); showToast('Operación guardada.', 'success'); }).catch(e => showToast('Error al guardar.', 'error'));
+        }
+        
+        function calculateAll() {
+            const tasa = parseFloat(document.getElementById('tasa').value) || 0, montoUsdcOriginal = parseFloat(document.getElementById('montoUsdc').value) || 0, operacion = document.getElementById('operacion').value, metodoPago = document.getElementById('metodoPago').value, applyCommission = document.getElementById('applyAdCommissionSwitch').checked, commissionRate = userConfig.adCommission || 0;
+            let montoUsdcFinal = montoUsdcOriginal, commissionAmountUsdc = 0;
+            const adCommissionRow = document.getElementById('displayAdCommissionRow');
+            if (applyCommission && commissionRate > 0 && montoUsdcOriginal > 0) {
+                commissionAmountUsdc = montoUsdcOriginal * (commissionRate / 100);
+                if (operacion === 'Compra') { montoUsdcFinal = montoUsdcOriginal - commissionAmountUsdc; document.getElementById('displayAdCommissionLabel').textContent = `Comisión (débito):`; document.getElementById('displayAdCommission').textContent = `-${commissionAmountUsdc.toFixed(3)} (${montoUsdcFinal.toFixed(3)})`; } 
+                else if (operacion === 'Venta') { montoUsdcFinal = montoUsdcOriginal + commissionAmountUsdc; document.getElementById('displayAdCommissionLabel').textContent = `Comisión (costo):`; document.getElementById('displayAdCommission').textContent = `+${commissionAmountUsdc.toFixed(3)} (${montoUsdcFinal.toFixed(3)})`; }
+                adCommissionRow.style.display = 'flex';
+            } else { adCommissionRow.style.display = 'none'; }
+            const montoBs = tasa * montoUsdcOriginal; let comisionVes = 0;
+            if (operacion === 'Compra' && metodoPago === 'Pagomovil') { comisionVes = montoBs * 0.003; }
+            const total = montoBs + comisionVes;
+            ['displayMontoBs', 'montoBs'].forEach(id => document.getElementById(id).textContent = document.getElementById(id).value = montoBs.toFixed(2));
+            ['displayComision', 'comisionVes'].forEach(id => document.getElementById(id).textContent = document.getElementById(id).value = comisionVes.toFixed(2));
+            ['displayTotal', 'total'].forEach(id => document.getElementById(id).textContent = document.getElementById(id).value = total.toFixed(2));
+        }
+        
+       function applyFIFOForDate(fecha) {
+            const opsForDay = operations
+                .filter(op => op.fecha === fecha)
+                .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            opsForDay.forEach(op => { op.ves = 0; op.usdc = 0; op.lote = ''; });
+            const purchaseQueue = opsForDay
+                .filter(op => op.operacion === 'Compra')
+                .map(op => ({ opRef: op, remaining: op.montoUsdc })); 
+            const sales = opsForDay.filter(op => op.operacion === 'Venta');
+            let lotCounter = 1;
+            currentLotsData.clear();
+            sales.forEach(sale => {
+                let remainingToMatch = sale.montoUsdc;
+                const lotId = `L${lotCounter++}`;
+                sale.lote = lotId;
+                const currentLot = { id: lotId, montoTotal: 0, montoConsumido: 0, estado: 'activo' };
+                while (remainingToMatch > 1e-5 && purchaseQueue.length > 0) {
+                    const head = purchaseQueue[0];
+                    const consumeAmount = Math.min(remainingToMatch, head.remaining);
+                    const costVes = consumeAmount * head.opRef.tasa;
+                    const revenueVes = consumeAmount * sale.tasa;
+                    const gainVes = revenueVes - costVes;
+                    const gainUsdc = gainVes / sale.tasa;
+                    head.opRef.ves += gainVes;
+                    head.opRef.usdc += gainUsdc;
+                    if (!head.opRef.lote.includes(lotId)) {
+                        head.opRef.lote += (head.opRef.lote ? `,${lotId}` : lotId);
+                    }
+                    head.remaining -= consumeAmount;
+                    remainingToMatch -= consumeAmount;
+                    currentLot.montoTotal += consumeAmount;
+                    currentLot.montoConsumido += consumeAmount;
+                    if (head.remaining <= 1e-5) {
+                        purchaseQueue.shift();
+                    }
+                }
+                currentLot.estado = Math.abs(currentLot.montoTotal - currentLot.montoConsumido) < 1e-5 ? 'cerrado' : 'activo';
+                if(currentLot.montoTotal > 0) currentLotsData.set(lotId, currentLot);
+            });
+            let totalComprado = opsForDay.filter(o => o.operacion === 'Compra').reduce((sum, op) => sum + op.montoUsdc, 0);
+            let totalVendido = opsForDay.filter(o => o.operacion === 'Venta').reduce((sum, op) => sum + op.montoUsdc, 0);
+            let recompraPendiente = Math.max(0, totalVendido - totalComprado);
+            let reventaPendiente = Math.max(0, totalComprado - totalVendido);
+            let recompraOps = [];
+            if (recompraPendiente > 0) {
+                let tempVendido = totalVendido;
+                opsForDay.filter(o => o.operacion === 'Venta').sort((a,b)=>b.timestamp-a.timestamp).forEach(o => {
+                    if (tempVendido > totalComprado) {
+                        const amount = Math.min(tempVendido - totalComprado, o.montoUsdc);
+                        recompraOps.push({ referencia: o.referencia, montoUsdc: amount });
+                        tempVendido -= amount;
+                    }
+                });
+            }
+            let reventaOps = [];
+            if (reventaPendiente > 0) {
+                let tempComprado = totalComprado;
+                 opsForDay.filter(o => o.operacion === 'Compra').sort((a,b)=>b.timestamp-a.timestamp).forEach(o => {
+                    if (tempComprado > totalVendido) {
+                        const amount = Math.min(tempComprado - totalVendido, o.montoUsdc);
+                        reventaOps.push({ referencia: o.referencia, montoUsdc: amount });
+                        tempComprado -= amount;
+                    }
+                });
+            }
+            currentPendingData = { recompra: recompraPendiente, reventa: reventaPendiente, recompraOps, reventaOps };
+            return opsForDay;
+        }
+        
+        function updateSummary() {
+            if(!operations) return;
+            const updatedOpsForDay = applyFIFOForDate(currentDate);
+            const updatedOpsMap = new Map(updatedOpsForDay.map(op => [op.id, op]));
+            operations.forEach(op => {
+                if (op.fecha === currentDate && updatedOpsMap.has(op.id)) {
+                    const updatedOp = updatedOpsMap.get(op.id);
+                    op.ves = updatedOp.ves; op.usdc = updatedOp.usdc; op.lote = updatedOp.lote;
+                } else if (op.fecha === currentDate) {
+                    op.ves = 0; op.usdc = 0; op.lote = '';
+                }
+            });
+            const currentOps = operations.filter(op => op.fecha === currentDate);
+            const compras = currentOps.filter(op => op.operacion === 'Compra'), ventas = currentOps.filter(op => op.operacion === 'Venta');
+            const promCompra = compras.length ? compras.reduce((s, o) => s + o.tasa, 0) / compras.length : 0;
+            const promVenta = ventas.length ? ventas.reduce((s, o) => s + o.tasa, 0) / ventas.length : 0;
+            const brecha = promCompra > 0 ? ((promVenta - promCompra) / promCompra * 100) : 0;
+            const [gananciasVes, gananciasUsdc] = currentOps.reduce((acc, op) => {
+                if (op.operacion === 'Compra') { acc[0] += op.ves || 0; acc[1] += op.usdc || 0; }
+                return acc;
+            }, [0, 0]);
+            document.getElementById('ganancias').innerHTML = `${gananciasVes.toFixed(2)} <span class="text-2xl font-semibold">VES</span>`;
+            document.getElementById('ganancias_usdc').innerHTML = `${gananciasUsdc.toFixed(4)} <span class="font-medium">USDC</span>`;
+            document.getElementById('promCompra').textContent = promCompra.toFixed(2);
+            document.getElementById('promVenta').textContent = promVenta.toFixed(2);
+            document.getElementById('brecha').textContent = brecha.toFixed(2) + '%';
+            document.getElementById('totalOps').textContent = currentOps.length;
+            const activeLotsCount = Array.from(currentLotsData.values()).filter(lot => lot.estado === 'activo').length;
+            const totalPending = currentPendingData.recompra + currentPendingData.reventa;
+            document.getElementById('activeLotsSummary').textContent = activeLotsCount;
+            document.getElementById('pendingSummary').textContent = `${totalPending.toFixed(2)} USDC`;
+            const dailyGoalValue = userConfig.profitGoals ? userConfig.profitGoals.daily : defaultProfitGoals.daily;
+            document.getElementById('dailyGoal').textContent = `${gananciasVes.toFixed(2)} / ${dailyGoalValue.toFixed(2)} VES`;
+            const progressBar = document.getElementById('dailyProgressBar');
+            let progressPercentage = dailyGoalValue > 0 ? (gananciasVes / dailyGoalValue) * 100 : 0;
+            progressBar.style.width = `${Math.min(progressPercentage, 100)}%`;
+            document.getElementById('wallyDashboardGainsUsdc').innerHTML = `${wallyTotalGains.usdc.toFixed(2)} <span class="text-2xl font-semibold">USDC</span>`;
+            document.getElementById('wallyDashboardGainsUsd').innerHTML = `${wallyTotalGains.usd.toFixed(2)} <span class="font-medium">USD</span>`;
+            renderOperations(); // <--- CAMBIO CLAVE
+        }
+
+        // === INICIO CAMBIO: Nueva función de renderizado que genera AMBAS vistas ===
+        function renderOperations() {
+            const tableBody = document.getElementById('operationsTable');
+            const listContainer = document.getElementById('operationsList');
+            const searchTerm = document.getElementById('searchOperations').value.toLowerCase();
+            const filteredOps = operations.filter(op => op.fecha === currentDate && (op.usuario.toLowerCase().includes(searchTerm) || (op.referencia && op.referencia.toLowerCase().includes(searchTerm)) ));
+            
+            tableBody.innerHTML = '';
+            listContainer.innerHTML = '';
+
+            filteredOps.forEach((op, index) => {
+                const globalIndex = operations.indexOf(op);
+                const commissionIndicator = op.adCommissionPercent > 0 ? `<span class="text-xs ${op.operacion === 'Venta' ? 'text-green-400' : 'text-red-400'}">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
+                const mobileCommissionIndicator = op.adCommissionPercent > 0 ? `<span class="commission">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
+                
+                // HTML para la Fila de la Tabla (Desktop)
+                const tableRowHtml = `
+                    <tr class="hover:bg-[var(--surface)]">
+                        <td class="text-left"><div class="font-semibold">${op.usuario}</div><div class="text-xs text-gray-400">${op.metodoPago}</div></td>
+                        <td>${op.referencia || ''}</td>
+                        <td>${op.operacion.substring(0,1)}</td>
+                        <td>${(op.tasa || 0).toFixed(2)}</td>
+                        <td><div class="flex flex-col items-center">${(op.montoUsdc || 0).toFixed(3)} ${commissionIndicator}</div></td>
+                        <td>${(op.montoBs || 0).toFixed(2)}</td>
+                        <td class="font-semibold ${op.ves >= 0 ? 'text-green-400':'text-red-400'}">${(op.ves || 0).toFixed(2)}</td>
+                        <td class="font-semibold ${op.usdc >= 0 ? 'text-green-400':'text-red-400'}">${(op.usdc || 0).toFixed(4)}</td>
+                        <td>${op.lote || ''}</td>
+                        <td><span class="px-2 py-1 text-xs font-semibold rounded-full ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></td>
+                        <td><button class="text-blue-400 p-1" onclick="editOperation(${globalIndex})">✏️</button></td>
+                    </tr>`;
+                
+                // HTML para la Tarjeta (Móvil)
+                const cardHtml = `
+                    <div class="operation-card ${op.operacion.toLowerCase()}">
+                        <div class="card-header">
+                            <div class="user-info">
+                                ${op.usuario}
+                                <div class="payment-method">${op.metodoPago}</div>
+                            </div>
+                            <span class="status-badge ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">
+                                ${op.estatus}
+                            </span>
+                        </div>
+                        <div class="card-grid">
+                            <div class="grid-item">
+                                <span class="label">Monto USDC</span>
+                                <span class="value">${(op.montoUsdc || 0).toFixed(3)} ${mobileCommissionIndicator}</span>
+                            </div>
+                            <div class="grid-item">
+                                <span class="label">Monto BS</span>
+                                <span class="value">${(op.montoBs || 0).toFixed(2)}</span>
+                            </div>
+                            <div class="grid-item">
+                                <span class="label">Tasa</span>
+                                <span class="value">${(op.tasa || 0).toFixed(2)}</span>
+                            </div>
+                            <div class="grid-item">
+                                <span class="label">Ganancia VES</span>
+                                <span class="value ${(op.ves || 0) >= 0 ? 'profit-green' : 'profit-red'}">${(op.ves || 0).toFixed(2)}</span>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="ref-info">
+                                REF: ${op.referencia || 'N/A'} <br>
+                                LOTE: ${op.lote || 'N/A'}
+                            </div>
+                            <button class="edit-btn" onclick="editOperation(${globalIndex})">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                            </button>
+                        </div>
+                    </div>`;
+
+                tableBody.innerHTML += tableRowHtml;
+                listContainer.innerHTML += cardHtml;
+            });
+        }
+        // === FIN CAMBIO ===
+
+        function editOperation(index) {
+            editingIndex = index; const op = operations[index];
+            document.getElementById('modalTitle').textContent = 'Editar Operación';
+            let originalMontoUsdc = op.montoUsdc;
+            if (op.adCommissionPercent > 0) {
+                if (op.operacion === 'Compra') { originalMontoUsdc = op.montoUsdc / (1 - op.adCommissionPercent / 100); } 
+                else { originalMontoUsdc = op.montoUsdc / (1 + op.adCommissionPercent / 100); }
+                document.getElementById('applyAdCommissionSwitch').checked = true;
+            } else { document.getElementById('applyAdCommissionSwitch').checked = false; }
+            document.getElementById('usuario').value = op.usuario; document.getElementById('referencia').value = op.referencia;
+            document.getElementById('operacion').value = op.operacion; document.getElementById('tasa').value = op.tasa;
+            document.getElementById('metodoPago').value = op.metodoPago; document.getElementById('montoUsdc').value = originalMontoUsdc.toFixed(3);
+            document.getElementById('estatus').value = op.estatus; calculateAll(); openModal();
+        }
+        
+        function openModal() { document.getElementById('operationModal').style.display = 'flex'; if(editingIndex === -1) clearForm();}
+        function closeModal() { document.getElementById('operationModal').style.display = 'none'; editingIndex = -1; }
+        function clearForm() { const form = document.getElementById('operationModal'); form.querySelectorAll('input, select').forEach(i => { if(i.type !== 'checkbox') i.value = ''; else i.checked = false; }); calculateAll(); }
+
+        function loadConfig() { if (!currentUserId) return; db.collection('users').doc(currentUserId).collection('settings').doc('userConfig').get().then(doc => { const defaultConfig = { adCommission: 0.2, profitGoals: defaultProfitGoals, wallyInitialValue: 0 }; userConfig = doc.exists ? { ...defaultConfig, ...doc.data() } : defaultConfig; userConfig.profitGoals = userConfig.profitGoals || defaultConfig.profitGoals; applyConfig(); });}
+        function applyConfig() { document.getElementById('adCommissionLabel').textContent = `Aplicar ${userConfig.adCommission}% comisión`; populatePaymentMethods(); updateSummary(); updateWallySummary();}
+        function openConfigModal() { document.getElementById('configModal').style.display = 'flex'; document.getElementById('adCommission').value = userConfig.adCommission; document.getElementById('dailyProfitGoal').value = userConfig.profitGoals.daily; document.getElementById('wallyInitialValueConfig').value = userConfig.wallyInitialValue || 0; }
+        function closeConfigModal() { document.getElementById('configModal').style.display = 'none'; }
+        function saveConfig() { userConfig.adCommission = parseFloat(document.getElementById('adCommission').value) || 0; userConfig.profitGoals.daily = parseFloat(document.getElementById('dailyProfitGoal').value) || defaultProfitGoals.daily; userConfig.wallyInitialValue = parseFloat(document.getElementById('wallyInitialValueConfig').value) || 0; db.collection('users').doc(currentUserId).collection('settings').doc('userConfig').set(userConfig).then(() => { applyConfig(); closeConfigModal(); showToast('Configuración guardada.', 'success'); });}
+
+        function populatePaymentMethods() { const select = document.getElementById('metodoPago'); select.innerHTML = ["Pagomovil", "Banesco", "Venezuela", "Bancamiga", "BNC"].map(m => `<option value="${m}">${m}</option>`).join(''); }
+
+        document.getElementById('selectedDate').addEventListener('change', function() { currentDate = this.value; updateSummary(); });
+        document.getElementById('wallySelectedDate').addEventListener('change', function() { currentWallyDate = this.value; updateWallySummary(); });
+        
+        function showToast(message, type = 'info') { const c = document.getElementById('toast-container'); const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = message; c.appendChild(t); setTimeout(() => t.classList.add('show'), 10); setTimeout(() => { t.classList.remove('show'); t.addEventListener('transitionend', () => t.remove(), {once: true}); }, 3000); }
+        
+        function openBankBreachModal() { renderBankBreachesCards(); document.getElementById('bankBreachModal').style.display = 'flex'; }
+        function closeBankBreachModal() { document.getElementById('bankBreachModal').style.display = 'none'; }
+        function openLotDetailsModal() { renderLotDetailsCards(); document.getElementById('lotDetailsModal').style.display = 'flex'; }
+        function closeLotDetailsModal() { document.getElementById('lotDetailsModal').style.display = 'none'; }
+        function openPendingDetailsModal() { renderPendingDetails(); document.getElementById('pendingDetailsModal').style.display = 'flex'; }
+        function closePendingDetailsModal() { document.getElementById('pendingDetailsModal').style.display = 'none'; }
+        
+        function calculateBankBreaches() {
+            const currentOps = operations.filter(op => op.fecha === currentDate), bankData = {};
+            currentOps.forEach(op => { if (!bankData[op.metodoPago]) bankData[op.metodoPago] = { compras: [], ventas: [] }; if (op.operacion === 'Compra') bankData[op.metodoPago].compras.push(op.tasa); else if (op.operacion === 'Venta') bankData[op.metodoPago].ventas.push(op.tasa); });
+            const results = [];
+            for (const method in bankData) { const { compras, ventas } = bankData[method]; const promCompra = compras.length > 0 ? compras.reduce((a, b) => a + b, 0) / compras.length : 0; const promVenta = ventas.length > 0 ? ventas.reduce((a, b) => a + b, 0) / ventas.length : 0; const brecha = promVenta > 0 && promCompra > 0 ? ((promVenta - promCompra) / promCompra * 100) : 0; results.push({ metodo: method, promCompra, promVenta, brecha }); }
+            return results;
+        }
+
+        function renderBankBreachesCards() {
+            const container = document.getElementById('bankBreachCards'), bankBreaches = calculateBankBreaches();
+            if (bankBreaches.length === 0) { container.innerHTML = '<p class="text-center text-gray-400">No hay datos.</p>'; return; }
+            container.innerHTML = bankBreaches.map(d => `<div class="info-card"><div class="info-card-title">${d.metodo}</div><div class="info-card-value" style="color: ${d.brecha > 0 ? 'var(--success)' : 'var(--danger)'}">${d.brecha.toFixed(2)}%</div><div class="info-card-details">C:${d.promCompra.toFixed(2)}|V:${d.promVenta.toFixed(2)}</div></div>`).join('');
+        }
+        function renderLotDetailsCards() {
+            const container = document.getElementById('lotDetailsCards'), activeLots = Array.from(currentLotsData.values()).filter(l => l.estado === 'activo');
+            if(activeLots.length === 0) { container.innerHTML = '<p class="text-center text-gray-400">No hay lotes activos.</p>'; return; }
+            container.innerHTML = activeLots.map(l => `<div class="info-card"><div class="info-card-title">Lote ${l.id}</div><div class="info-card-value">${l.montoTotal > 0 ? ((l.montoConsumido/l.montoTotal)*100).toFixed(1) : '0.0'}%</div><div class="info-card-details">${l.montoConsumido.toFixed(2)}/${l.montoTotal.toFixed(2)} USDC</div></div>`).join('');
+        }
+        function renderPendingDetails() {
+            document.getElementById('pendingRepurchaseSummary').textContent = `${currentPendingData.recompra.toFixed(2)} USDC`;
+            document.getElementById('pendingResaleSummary').textContent = `${currentPendingData.reventa.toFixed(2)} USDC`;
+            const repurchaseList = document.getElementById('pendingRepurchaseList');
+            repurchaseList.innerHTML = currentPendingData.recompraOps.length === 0 ? '<p class="text-xs text-gray-400">No hay recompra pendiente.</p>' : currentPendingData.recompraOps.map(op => `<div class="operation-list-item">Ref: <span class="font-semibold">${op.referencia}</span> | Monto: <span class="font-semibold">${op.montoUsdc.toFixed(2)}</span></div>`).join('');
+            const resaleList = document.getElementById('pendingResaleList');
+            resaleList.innerHTML = currentPendingData.reventaOps.length === 0 ? '<p class="text-xs text-gray-400">No hay reventa pendiente.</p>' : currentPendingData.reventaOps.map(op => `<div class="operation-list-item">Ref: <span class="font-semibold">${op.referencia}</span> | Monto: <span class="font-semibold">${op.montoUsdc.toFixed(2)}</span></div>`).join('');
+        }
+        
+        // Wally Functions
+        function openWallyModal(index = -1) { 
+            editingWallyIndex = index; 
+            document.getElementById('wallyModalTitle').textContent = index > -1 ? 'Editar Operación Wally' : 'Agregar Operación Wally'; 
+            renderWallyForm(index > -1 ? wallyOperations.find((op, i) => i === index) : {}); 
+            document.getElementById('wallyModal').style.display = 'flex'; 
+        }
+        function closeWallyModal() { document.getElementById('wallyModal').style.display = 'none'; }
+        // REEMPLAZA LA FUNCIÓN ANTERIOR POR ESTA VERSIÓN CORREGIDA
+function renderWallyForm(op = {}) {
+    document.getElementById('wallyFormContent').innerHTML = `
+        <div class="form-group flex justify-between items-center">
+            <label class="text-sm text-gray-400">Usuario</label>
+            <input type="text" id="wallyUsuario" value="${op.usuario || ''}" class="w-3/5">
+        </div>
+        <div class="form-group flex justify-between items-center">
+            <label class="text-sm text-gray-400">Referencia</label>
+            <input type="text" id="wallyReferencia" value="${op.referencia || ''}" class="w-3/5">
+        </div>
+        <div class="form-group flex justify-between items-center">
+            <label class="text-sm text-gray-400">Operación</label>
+            <select id="wallyOperacion" onchange="updateWallyFormFields()" class="w-3/5">
+                <option value="Compra" ${op.operacion === 'Compra' ? 'selected' : ''}>Compra (Recibo USDC)</option>
+                <option value="Venta" ${op.operacion === 'Venta' ? 'selected' : ''}>Venta (Recibo USD)</option>
+            </select>
+        </div>
+        
+        <hr class="border-gray-700 my-2">
+
+        <div id="wallyCompraFields" class="space-y-4">
+            <div class="form-group flex justify-between items-center">
+                <label class="text-sm text-gray-400">Recibo USDC</label>
+                <input type="number" id="reciboUsdc" value="${op.reciboUsdc || ''}" onkeyup="calculateWallyCompra()" class="w-3/5">
+            </div>
+            <div class="form-group flex justify-between items-center">
+                <label class="text-sm text-gray-400">Tasa Compra</label>
+                <input type="number" id="tasaCompra" value="${op.tasaCompra || ''}" onkeyup="calculateWallyCompra()" class="w-3/5">
+            </div>
+            <div class="form-group flex justify-between items-center">
+                <label class="text-sm text-gray-400">Envío USD (calc)</label>
+                <input type="number" id="envioUsd" value="${op.envioUsd || ''}" readonly class="w-3/5 bg-gray-800 border-gray-600">
+            </div>
+            <div class="form-group flex justify-between items-center">
+                <label class="text-sm text-gray-400">Ganancia USDC (calc)</label>
+                <input type="number" id="gananciaUsdc" value="${op.gananciaUsdc || ''}" readonly class="w-3/5 bg-gray-800 border-gray-600">
+            </div>
+        </div>
+
+        <div id="wallyVentaFields" class="space-y-4">
+            <div class="form-group flex justify-between items-center">
+                <label class="text-sm text-gray-400">Envío USDC</label>
+                <input type="number" id="envioUsdcVenta" value="${op.envioUsdc || ''}" onkeyup="calculateWallyVenta()" class="w-3/5">
+            </div>
+            <div class="form-group flex justify-between items-center">
+                <label class="text-sm text-gray-400">Tasa Venta</label>
+                <input type="number" id="tasaVenta" value="${op.tasaVenta || ''}" onkeyup="calculateWallyVenta()" class="w-3/5">
+            </div>
+            <div class="form-group flex justify-between items-center">
+                <label class="text-sm text-gray-400">Recibo USD (calc)</label>
+                <input type="number" id="reciboUsdCalculado" value="${op.reciboUsd || ''}" readonly class="w-3/5 bg-gray-800 border-gray-600">
+            </div>
+            <div class="form-group flex justify-between items-center">
+                <label class="text-sm text-gray-400">Ganancia USD (calc)</label>
+                <input type="number" id="gananciaUsd" value="${op.gananciaUsd || ''}" readonly class="w-3/5 bg-gray-800 border-gray-600">
+            </div>
+        </div>
+    `;
+    updateWallyFormFields();
+}
+        function updateWallyFormFields() {
+            const operacion = document.getElementById('wallyOperacion').value;
+            document.getElementById('wallyCompraFields').style.display = operacion === 'Compra' ? 'block' : 'none';
+            document.getElementById('wallyVentaFields').style.display = operacion === 'Venta' ? 'block' : 'none';
+        }
+        function calculateWallyCompra() { const r = parseFloat(document.getElementById('reciboUsdc').value) || 0, t = parseFloat(document.getElementById('tasaCompra').value) || 0; document.getElementById('envioUsd').value = (r*t).toFixed(2); document.getElementById('gananciaUsdc').value = (r - (r*t)).toFixed(4); }
+        function calculateWallyVenta() { const e = parseFloat(document.getElementById('envioUsdcVenta').value) || 0, t = parseFloat(document.getElementById('tasaVenta').value) || 0; document.getElementById('reciboUsdCalculado').value = (e*t).toFixed(2); document.getElementById('gananciaUsd').value = ((e*t) - e).toFixed(4); }
+        function saveWallyOperation() {
+            if (!currentUserId) return;
+            const operacion = document.getElementById('wallyOperacion').value;
+            let opData = { usuario: document.getElementById('wallyUsuario').value, referencia: document.getElementById('wallyReferencia').value, operacion, fecha: currentWallyDate, timestamp: Date.now() };
+            if (operacion === 'Compra') { Object.assign(opData, { reciboUsdc: parseFloat(document.getElementById('reciboUsdc').value), tasaCompra: parseFloat(document.getElementById('tasaCompra').value), envioUsd: parseFloat(document.getElementById('envioUsd').value), gananciaUsdc: parseFloat(document.getElementById('gananciaUsdc').value) }); }
+            else { Object.assign(opData, { envioUsdc: parseFloat(document.getElementById('envioUsdcVenta').value), tasaVenta: parseFloat(document.getElementById('tasaVenta').value), reciboUsd: parseFloat(document.getElementById('reciboUsdCalculado').value), gananciaUsd: parseFloat(document.getElementById('gananciaUsd').value) }); }
+            if (!opData.usuario) { showToast('Usuario es requerido.', 'error'); return; }
+            const opId = editingWallyIndex > -1 ? wallyOperations[editingWallyIndex].id : db.collection('users').doc(currentUserId).collection('wallyOperations').doc().id;
+            db.collection('users').doc(currentUserId).collection('wallyOperations').doc(opId).set(opData, { merge: true }).then(() => { closeWallyModal(); showToast('Op. Wally guardada.', 'success'); }).catch(e=>showToast('Error.', 'error'));
+        }
+        function updateWallySummary() {
+            if(!wallyOperations) return;
+            const currentOps = wallyOperations.filter(op => op.fecha === currentWallyDate);
+            const compras = currentOps.filter(op => op.operacion === 'Compra'), ventas = currentOps.filter(op => op.operacion === 'Venta');
+            const totalGananciaUsdc = compras.reduce((s, op) => s + (Number(op.gananciaUsdc) || 0), 0);
+            const totalGananciaUsd = ventas.reduce((s, op) => s + (Number(op.gananciaUsd) || 0), 0);
+
+                    // --- INICIO DEL CAMBIO ---
+            // Almacena las ganancias en la variable global
+            wallyTotalGains = { usdc: totalGananciaUsdc, usd: totalGananciaUsd };
+            // Llama a la actualización del dashboard principal para reflejar el cambio
+            if (document.getElementById('page-operate').classList.contains('active')) {
+                updateSummary();
+            }
+
+            const valorInicial = parseFloat(userConfig.wallyInitialValue) || 0;
+            const valorActual = valorInicial + compras.reduce((s,o)=>s+o.reciboUsdc,0) - compras.reduce((s,o)=>s+o.envioUsd,0) + ventas.reduce((s,o)=>s+o.reciboUsd,0) - ventas.reduce((s,o)=>s+o.envioUsdc,0);
+            document.getElementById("wallyValorInicialInput").value = valorInicial.toFixed(2);
+            document.getElementById("wallyValorActual").textContent = valorActual.toFixed(2);
+            document.getElementById("wallyGanancias").textContent = `${totalGananciaUsdc.toFixed(2)} USDC / ${totalGananciaUsd.toFixed(2)} USD`;
+            renderWallyTables();
+        }
+        // REEMPLAZA LA FUNCIÓN ANTERIOR POR ESTA VERSIÓN COMPLETA
+function renderWallyTables() {
+    const currentOps = wallyOperations.filter(op => op.fecha === currentWallyDate);
+    
+    // Contenedores para Compras
+    const compraTableBody = document.getElementById('wallyCompraTable');
+    const compraListContainer = document.getElementById('wallyCompraList');
+    
+    // Contenedores para Ventas
+    const ventaTableBody = document.getElementById('wallyVentaTable');
+    const ventaListContainer = document.getElementById('wallyVentaList');
+
+    // Limpiar contenido previo
+    compraTableBody.innerHTML = '';
+    compraListContainer.innerHTML = '';
+    ventaTableBody.innerHTML = '';
+    ventaListContainer.innerHTML = '';
+
+    // Renderizar Compras
+    currentOps.filter(op => op.operacion === 'Compra').forEach(op => {
+        const globalIndex = wallyOperations.indexOf(op);
+        
+        // Fila para la tabla de Compras (Desktop)
+        const tableRowHtml = `
+            <tr>
+                <td>${op.usuario}</td>
+                <td>${op.reciboUsdc.toFixed(2)}</td>
+                <td>${op.tasaCompra.toFixed(3)}</td>
+                <td>${op.envioUsd.toFixed(2)}</td>
+                <td class="font-semibold text-green-400">${op.gananciaUsdc.toFixed(4)}</td>
+                <td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button></td>
+            </tr>`;
+        
+        // Tarjeta para la lista de Compras (Móvil)
+        const cardHtml = `
+            <div class="operation-card compra">
+                <div class="card-header">
+                    <div class="user-info">${op.usuario}</div>
+                    <button class="edit-btn" onclick="openWallyModal(${globalIndex})">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                    </button>
+                </div>
+                <div class="card-grid">
+                    <div class="grid-item"><span class="label">Recibo USDC</span><span class="value">${op.reciboUsdc.toFixed(2)}</span></div>
+                    <div class="grid-item"><span class="label">Tasa</span><span class="value">${op.tasaCompra.toFixed(3)}</span></div>
+                    <div class="grid-item"><span class="label">Envío USD</span><span class="value">${op.envioUsd.toFixed(2)}</span></div>
+                    <div class="grid-item"><span class="label">Gan. USDC</span><span class="value profit-green">${op.gananciaUsdc.toFixed(4)}</span></div>
+                </div>
+            </div>`;
+
+        compraTableBody.innerHTML += tableRowHtml;
+        compraListContainer.innerHTML += cardHtml;
+    });
+
+    // Renderizar Ventas
+    currentOps.filter(op => op.operacion === 'Venta').forEach(op => {
+        const globalIndex = wallyOperations.indexOf(op);
+
+        // Fila para la tabla de Ventas (Desktop)
+        const tableRowHtml = `
+            <tr>
+                <td>${op.usuario}</td>
+                <td>${op.envioUsdc.toFixed(2)}</td>
+                <td>${op.tasaVenta.toFixed(3)}</td>
+                <td>${op.reciboUsd.toFixed(2)}</td>
+                <td class="font-semibold text-green-400">${op.gananciaUsd.toFixed(4)}</td>
+                <td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button></td>
+            </tr>`;
+
+        // Tarjeta para la lista de Ventas (Móvil)
+        const cardHtml = `
+            <div class="operation-card venta">
+                 <div class="card-header">
+                    <div class="user-info">${op.usuario}</div>
+                    <button class="edit-btn" onclick="openWallyModal(${globalIndex})">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                    </button>
+                </div>
+                <div class="card-grid">
+                    <div class="grid-item"><span class="label">Envío USDC</span><span class="value">${op.envioUsdc.toFixed(2)}</span></div>
+                    <div class="grid-item"><span class="label">Tasa</span><span class="value">${op.tasaVenta.toFixed(3)}</span></div>
+                    <div class="grid-item"><span class="label">Recibo USD</span><span class="value">${op.reciboUsd.toFixed(2)}</span></div>
+                    <div class="grid-item"><span class="label">Gan. USD</span><span class="value profit-green">${op.gananciaUsd.toFixed(4)}</span></div>
+                </div>
+            </div>`;
+
+        ventaTableBody.innerHTML += tableRowHtml;
+        ventaListContainer.innerHTML += cardHtml;
+    });
+}
+        function saveWallyValorInicial() { userConfig.wallyInitialValue = parseFloat(document.getElementById('wallyInitialValueConfig').value) || 0; saveConfig(); }
+
+        window.showPage = showPage; window.loginUser = loginUser; window.registerUser = registerUser;
+        window.toggleAuthForms = toggleAuthForms; window.logoutUser = logoutUser; window.openModal = openModal;
+        window.closeModal = closeModal; window.saveOperation = saveOperation; window.editOperation = editOperation;
+        window.calculateAll = calculateAll; window.openConfigModal = openConfigModal; window.closeConfigModal = closeConfigModal;
+        window.saveConfig = saveConfig; window.filterOperations = renderOperations; // <--- CAMBIO CLAVE
+        window.openBankBreachModal = openBankBreachModal; window.closeBankBreachModal = closeBankBreachModal;
+        window.openLotDetailsModal = openLotDetailsModal; window.closeLotDetailsModal = closeLotDetailsModal;
+        window.openPendingDetailsModal = openPendingDetailsModal; window.closePendingDetailsModal = closePendingDetailsModal;
+        window.openWallyModal = openWallyModal; window.closeWallyModal = closeWallyModal;
+        window.updateWallyFormFields = updateWallyFormFields; window.calculateWallyCompra = calculateWallyCompra;
+        window.calculateWallyVenta = calculateWallyVenta; window.saveWallyOperation = saveWallyOperation;
+    </script>
+</body>
+</html>
