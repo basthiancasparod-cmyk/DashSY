@@ -20,6 +20,7 @@
             --success: #3FB950;
             --danger: #F85149;
             --warning: #D29922;
+            --info: #4299e1;
         }
         html, body {
             overscroll-behavior-y: contain;
@@ -123,7 +124,7 @@
         }
         table {
             width: 100%;
-            min-width: 900px; /* Aumentado para la nueva columna */
+            min-width: 900px;
             border-collapse: collapse;
         }
         th, td {
@@ -184,74 +185,190 @@
         .operation-list-item { background: var(--background); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem; font-size: 0.8rem; }
         .op-label { color: var(--text-secondary); }
 
-        /* === INICIO DE ESTILOS PARA LA VISTA MÓVIL DE TARJETAS === */
-        .operations-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem; /* 12px */
-        }
-        .operation-card {
-            background-color: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1rem; /* 16px */
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem; /* 12px */
-            border-left-width: 4px;
-        }
+        .operations-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .operation-card { background-color: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; border-left-width: 4px; }
         .operation-card.compra { border-left-color: var(--success); }
         .operation-card.venta { border-left-color: var(--danger); }
-
-        .card-header, .card-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        .card-header, .card-footer { display: flex; justify-content: space-between; align-items: center; }
         .card-header .user-info { font-weight: 600; }
         .card-header .user-info .payment-method { font-weight: 400; font-size: 0.8rem; color: var(--text-secondary); }
         .status-badge { font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; }
-
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            padding: 0.75rem 0;
-        }
+        .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 0.75rem 0; }
         .grid-item { display: flex; flex-direction: column; text-align: center; }
         .grid-item .label { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem; }
         .grid-item .value { font-weight: 600; font-size: 0.9rem; }
         .grid-item .value .commission { font-size: 0.7rem; color: var(--danger); }
         .value.profit-green { color: var(--success); }
         .value.profit-red { color: var(--danger); }
-
         .card-footer .ref-info { font-size: 0.75rem; color: var(--text-secondary); font-family: monospace; }
-        .card-footer .edit-btn { background: none; border: none; color: var(--primary); padding: 0.5rem; }
+        .card-footer .actions { display: flex; gap: 0.5rem; }
+        .card-footer .action-btn { background: none; border: none; padding: 0.5rem; }
+        .card-footer .action-btn.edit { color: var(--primary); }
+        .card-footer .action-btn.delete { color: var(--danger); }
         
-        /* Lógica para mostrar/ocultar tabla vs tarjetas */
-        /* Lógica para mostrar/ocultar tabla vs tarjetas EN REPORTES Y WALLY */
-#page-reports .operations-list-container,
-#page-wally .operations-list-container { 
-    display: block; 
-}
-#page-reports .table-container,
-#page-wally .table-container { 
-    display: none; 
+        #page-reports .operations-list-container,
+        #page-wally .operations-list-container { display: block; }
+        #page-reports .table-container,
+        #page-wally .table-container { display: none; }
+
+        @media (min-width: 1024px) {
+            #page-reports .operations-list-container,
+            #page-wally .operations-list-container { display: none; }
+            #page-reports .table-container,
+            #page-wally .table-container { display: block; }
+        }
+
+        #aiOperationsCenter { position: fixed; bottom: calc(10.5rem + env(safe-area-inset-bottom)); right: 1.5rem; z-index: 1002; }
+        #aiToggleBtn {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px; /* Un poco más pequeño que el FAB principal */
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, #6b45d3, #7857f0); /* Un tono morado */
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        #aiToggleBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(120, 87, 240, 0.4);
+        }
+        #aiToggleBtn svg {
+            width: 24px;
+            height: 24px;
+        }
+        #aiToggleBtn:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3); }
+        #aiToggleBtn.has-alerts { animation: pulse-alert 2s infinite; }
+        #aiToggleBtn.critical { background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%); animation: pulse-critical 1s infinite; }
+        #aiNotificationBadge { position: absolute; top: -5px; right: -5px; background: #f56565; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; font-weight: bold; display: none; align-items: center; justify-content: center; border: 2px solid white; }
+        @keyframes pulse-alert { 0% { box-shadow: 0 0 0 0 rgba(237, 137, 54, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(237, 137, 54, 0); } 100% { box-shadow: 0 0 0 0 rgba(237, 137, 54, 0); } }
+        @keyframes pulse-critical { 0% { box-shadow: 0 0 0 0 rgba(245, 101, 101, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(245, 101, 101, 0); } 100% { box-shadow: 0 0 0 0 rgba(245, 101, 101, 0); } }
+        #aiPanel {
+            position: absolute;
+            bottom: calc(100% + 12px);
+            right: 0;
+            width: 450px;
+            max-height: 600px;
+            background: var(--surface);
+            border-radius: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(15px) scale(0.98);
+            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+        }
+        #aiPanel.show { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+        #aiHeader { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; display: flex; align-items: center; gap: 12px; }
+        #aiHeader h3 { margin: 0; font-size: 16px; font-weight: 600; }
+        #aiStatus { display: flex; align-items: center; gap: 8px; padding: 15px 20px; background: var(--surface); border-bottom: 1px solid var(--border); }
+        .status-indicator { width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: blink 2s infinite; }
+        .status-indicator.warning { background: var(--warning); }
+        .status-indicator.critical { background: var(--danger); }
+        @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0.3; } }
+        #aiNotifications { flex: 1; overflow-y: auto; max-height: 350px; padding: 10px; }
+        .notification-section { margin-bottom: 15px; }
+        .notification-section h4 { font-size: 1rem; color: var(--text-secondary); margin-bottom: 10px; padding: 5px 10px; background: var(--background); border-radius: 8px; display: flex; align-items: center; gap: 8px; }
+        .notification { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 10px; position: relative; animation: slideIn 0.2s ease-out; transition: all 0.2s ease; }
+        .notification.info { border-left: 4px solid var(--info); }
+        .notification.success { border-left: 4px solid var(--success); }
+        .notification.warning { border-left: 4px solid var(--warning); }
+        .notification.danger { border-left: 4px solid var(--danger); }
+        .notification-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .notification-title { font-weight: 600; font-size: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+        .notification-time { font-size: 11px; color: var(--text-secondary); }
+        .notification-content { font-size: 13px; color: var(--text-primary); line-height: 1.4; }
+        .notification-metrics { margin-top: 10px; padding: 10px; background: var(--background); border-radius: 8px; font-family: 'Courier New', monospace; font-size: 12px; white-space: pre-wrap; word-break: break-word; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        #aiControls { padding: 15px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+        .ai-control-btn { flex: 1; padding: 8px 12px; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+        .ai-control-btn.clear { background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); }
+        .ai-control-btn.clear:hover { background: var(--background); }
+        #aiMetrics { padding: 15px 20px; background: var(--background); border-bottom: 1px solid var(--border); }
+        .metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .metric-item { text-align: center; padding: 10px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border); }
+        .metric-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .metric-value { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+        .metric-value.positive { color: var(--success); }
+        .metric-value.negative { color: var(--danger); }
+        .metric-value.warning { color: var(--warning); }
+        @media (max-width: 768px) { #aiPanel { width: calc(100vw - 2rem); right: -1rem; bottom: 80px; } }
+    /* === INICIO DE ESTILOS PARA FILTROS DE REPORTE === */
+.filter-controls {
+    display: flex;
+    flex-wrap: wrap; /* Permite que los elementos pasen a la siguiente línea en pantallas pequeñas */
+    gap: 1rem; /* Espacio entre los filtros */
+    padding: 1rem;
+    background-color: var(--surface);
+    border-radius: 16px;
+    margin-bottom: 1.5rem; /* Sustituye el mb-4 de Tailwind */
+    border: 1px solid var(--border);
 }
 
-@media (min-width: 1024px) {
-    #page-reports .operations-list-container,
-    #page-wally .operations-list-container { 
-        display: none; 
-    }
-    #page-reports .table-container,
-    #page-wally .table-container { 
-        display: block; 
+.filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem; /* Espacio entre la etiqueta y el input */
+    flex-grow: 1; /* Permite que los filtros crezcan y ocupen el espacio */
+    min-width: 180px; /* Ancho mínimo para cada filtro */
+}
+
+.filter-item label {
+    font-size: 0.75rem; /* 12px */
+    font-weight: 500;
+    color: var(--text-secondary);
+    padding-left: 0.25rem;
+}
+
+.filter-item input,
+.filter-item select {
+    background-color: var(--background);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    border-radius: 12px;
+    padding: 0.6rem 1rem;
+    font-size: 0.875rem; /* 14px */
+    width: 100%;
+    transition: all 0.2s ease-in-out;
+}
+
+.filter-item input:focus,
+.filter-item select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+    outline: none;
+}
+
+/* Estilo personalizado para la flecha del select */
+.filter-item select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%238B949E'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9' /%3E%3C/svg%3E%0A");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1em;
+    padding-right: 2.5rem; /* Espacio para la flecha */
+}
+
+/* Hacer la barra de búsqueda más ancha en pantallas grandes */
+@media (min-width: 768px) {
+    .filter-item.search-bar {
+        flex-grow: 2; /* Le da el doble de prioridad para crecer */
+        min-width: 300px;
     }
 }
-        /* === FIN DE ESTILOS PARA LA VISTA MÓVIL === */
+/* === FIN DE ESTILOS PARA FILTROS DE REPORTE === */
+    
     </style>
 </head>
 <body class="overscroll-none">
@@ -294,7 +411,25 @@
             </div>
             <div id="page-reports" class="page">
                  <h1 class="text-2xl font-bold mb-4">Reporte de Operaciones</h1>
-                 <div class="filter-controls flex flex-wrap gap-2 mb-4"><input type="text" id="searchOperations" placeholder="Buscar por usuario o referencia..." onkeyup="filterOperations()" class="form-group w-full text-sm rounded-lg"></div>
+                 <div class="filter-controls">
+                    <div class="filter-item search-bar">
+                        <label for="searchOperations">Buscar</label>
+                        <input type="text" id="searchOperations" placeholder="Por usuario o referencia..." onkeyup="filterOperations()">
+                    </div>
+                    <div class="filter-item">
+                        <label for="filterOperacion">Operación</label>
+                        <select id="filterOperacion" onchange="filterOperations()">
+                            <option value="">Todas</option>
+                            <option value="Compra">Compra</option>
+                            <option value="Venta">Venta</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="filterMetodoPago">Método</label>
+                        <select id="filterMetodoPago" onchange="filterOperations()">
+                            </select>
+                    </div>
+                </div>
                  
                  <div class="table-container">
                     <div class="card p-0">
@@ -333,7 +468,7 @@
                         </div>
                     </div>
                 </div>
-                                    <div>
+                <div>
                     <h2 class="text-lg font-semibold mb-2 text-red-400">VENTAS (Recibo USD)</h2>
                     <div class="card p-0">
                         <div class="table-container">
@@ -374,6 +509,41 @@
     <div id="lotDetailsModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold">Lotes Activos</h2><button class="close-btn" onclick="closeLotDetailsModal()">&times;</button></div><div class="modal-body"><div id="lotDetailsCards" class="info-cards-grid"></div></div></div></div>
     <div id="pendingDetailsModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold">Detalles de Pendientes</h2><button class="close-btn" onclick="closePendingDetailsModal()">&times;</button></div><div class="modal-body"><div class="grid grid-cols-2 gap-4 mb-4"><div class="card text-center"><p class="text-sm font-medium text-gray-400">Recompra</p><p id="pendingRepurchaseSummary" class="text-lg font-bold mt-1">0 USDC</p></div><div class="card text-center"><p class="text-sm font-medium text-gray-400">Reventa</p><p id="pendingResaleSummary" class="text-lg font-bold mt-1">0 USDC</p></div></div><h3 class="font-semibold mb-2">Operaciones de Recompra</h3><div id="pendingRepurchaseList" class="operation-list mb-4"></div><h3 class="font-semibold mb-2">Operaciones de Reventa</h3><div id="pendingResaleList" class="operation-list"></div></div></div></div>
 
+    <div id="aiOperationsCenter">
+        <button id="aiToggleBtn" onclick="window.aiCenter.toggle()">
+            🤖
+            <div id="aiNotificationBadge">0</div>
+        </button>
+        <div id="aiPanel">
+            <div id="aiHeader">
+                <span>🧠</span>
+                <h3>Centro de Operaciones IA</h3>
+            </div>
+            <div id="aiStatus">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">Sistema Activo - Monitoreando</span>
+            </div>
+            <div id="aiMetrics">
+                <div class="metrics-grid">
+                    <div class="metric-item">
+                        <div class="metric-label">Brecha Actual</div>
+                        <div class="metric-value" id="currentGap">0%</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Ganancia Hoy</div>
+                        <div class="metric-value positive" id="dailyProfitAI">0 VES / 0 USDC</div>
+                    </div>
+                </div>
+            </div>
+            <div id="aiNotifications"></div>
+            <div id="aiControls">
+                <button class="ai-control-btn clear" onclick="window.aiCenter.clearNotifications()">
+                    🗑️ Limpiar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -392,8 +562,9 @@
         let currentWallyDate = new Date().toISOString().split('T')[0];
         let currentLotsData = new Map();
         let currentPendingData = { recompra: 0, reventa: 0, recompraOps: [], reventaOps: [] };
-        let wallyTotalGains = { usdc: 0, usd: 0 }; // <--- AÑADE ESTA LÍNEA
+        let wallyTotalGains = { usdc: 0, usd: 0 };
         const defaultProfitGoals = { daily: 1000.00 };
+        const defaultAIThresholds = { brechaMin: 2.0, brechaMax: 4.0, muchoLotes: 3, recompraCritica: 100.00, reventaCritica: 100.00 };
 
         const authSection = document.getElementById('authSection');
         const appContainer = document.querySelector('.app-container');
@@ -450,8 +621,25 @@
             }
             const operation = { usuario: document.getElementById('usuario').value, referencia: document.getElementById('referencia').value, operacion, tasa: parseFloat(document.getElementById('tasa').value) || 0, metodoPago: document.getElementById('metodoPago').value, montoUsdc: finalUsdc, montoBs: parseFloat(document.getElementById('montoBs').value) || 0, comisionVes: parseFloat(document.getElementById('comisionVes').value) || 0, total: parseFloat(document.getElementById('total').value) || 0, ves: 0, usdc: 0, lote: '', estatus: document.getElementById('estatus').value, fecha: currentDate, timestamp: Date.now(), adCommissionPercent: appliedCommission };
             if (!operation.usuario || !operation.tasa || !originalUsdc) { showToast('Por favor, complete todos los campos obligatorios.', 'error'); return; }
-            const opId = editingIndex > -1 ? operations[editingIndex].id : db.collection('users').doc(currentUserId).collection('operations').doc().id;
-            db.collection('users').doc(currentUserId).collection('operations').doc(opId).set(operation, { merge: true }).then(() => { closeModal(); showToast('Operación guardada.', 'success'); }).catch(e => showToast('Error al guardar.', 'error'));
+            const isEditing = editingIndex > -1;
+            const opId = isEditing ? operations[editingIndex].id : db.collection('users').doc(currentUserId).collection('operations').doc().id;
+            operation.id = opId;
+            db.collection('users').doc(currentUserId).collection('operations').doc(opId).set(operation, { merge: true }).then(() => { 
+                closeModal(); 
+                showToast('Operación guardada.', 'success'); 
+                if (window.aiCenter) {
+                    if (isEditing) window.aiCenter.onOperationEdited(operation);
+                    else window.aiCenter.onOperationAdded(operation);
+                }
+            }).catch(e => showToast('Error al guardar.', 'error'));
+        }
+
+        function deleteOperation(index) {
+            if (!currentUserId || !confirm('¿Está seguro de que desea eliminar esta operación?')) return;
+            const operationId = operations[index].id;
+            db.collection('users').doc(currentUserId).collection('operations').doc(operationId).delete()
+                .then(() => showToast('Operación eliminada.', 'info'))
+                .catch(error => showToast('Error al eliminar la operación.', 'error'));
         }
         
         function calculateAll() {
@@ -473,86 +661,46 @@
         }
         
        function applyFIFOForDate(fecha) {
-            const opsForDay = operations
-                .filter(op => op.fecha === fecha)
-                .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-            opsForDay.forEach(op => { op.ves = 0; op.usdc = 0; op.lote = ''; });
-            const purchaseQueue = opsForDay
-                .filter(op => op.operacion === 'Compra')
-                .map(op => ({ opRef: op, remaining: op.montoUsdc })); 
-            const sales = opsForDay.filter(op => op.operacion === 'Venta');
+            const ops = operations.filter(x => x.fecha === fecha).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            ops.forEach(o => { o._gainVes = 0; o._gainUsdc = 0; o._assignedLots = []; });
+            let purchaseQueue = ops.filter(o => o.operacion === 'Compra' && (Number(o.montoUsdc) || 0) > 0).map(o => ({ op: o, remaining: Number(o.montoUsdc) || 0, tasa: Number(o.tasa) || 0 }));
+            const sales = ops.filter(o => o.operacion === 'Venta' && (Number(o.montoUsdc) || 0) > 0).map(o => ({ op: o, montoUsdc: Number(o.montoUsdc) || 0, tasa: Number(o.tasa) || 0, comisionVes: Number(o.comisionVes) || 0 })).sort((a,b) => (a.op.timestamp || 0) - (b.op.timestamp || 0));
             let lotCounter = 1;
             currentLotsData.clear();
             sales.forEach(sale => {
                 let remainingToMatch = sale.montoUsdc;
                 const lotId = `L${lotCounter++}`;
-                sale.lote = lotId;
+                sale.op.lote = lotId;
                 const currentLot = { id: lotId, montoTotal: 0, montoConsumido: 0, estado: 'activo' };
-                while (remainingToMatch > 1e-5 && purchaseQueue.length > 0) {
+                while (remainingToMatch > 0 && purchaseQueue.length > 0) {
                     const head = purchaseQueue[0];
-                    const consumeAmount = Math.min(remainingToMatch, head.remaining);
-                    const costVes = consumeAmount * head.opRef.tasa;
-                    const revenueVes = consumeAmount * sale.tasa;
+                    const consume = Math.min(remainingToMatch, head.remaining);
+                    const costVes = consume * head.tasa;
+                    const revenueVes = consume * sale.tasa;
                     const gainVes = revenueVes - costVes;
-                    const gainUsdc = gainVes / sale.tasa;
-                    head.opRef.ves += gainVes;
-                    head.opRef.usdc += gainUsdc;
-                    if (!head.opRef.lote.includes(lotId)) {
-                        head.opRef.lote += (head.opRef.lote ? `,${lotId}` : lotId);
-                    }
-                    head.remaining -= consumeAmount;
-                    remainingToMatch -= consumeAmount;
-                    currentLot.montoTotal += consumeAmount;
-                    currentLot.montoConsumido += consumeAmount;
-                    if (head.remaining <= 1e-5) {
-                        purchaseQueue.shift();
-                    }
+                    const gainUsdc = gainVes / (sale.tasa || 1);
+                    head.op._gainVes += gainVes;
+                    head.op._gainUsdc += gainUsdc;
+                    head.op._assignedLots.push(`${lotId}$${consume.toFixed(2)}`);
+                    head.remaining -= consume;
+                    remainingToMatch -= consume;
+                    currentLot.montoTotal += consume;
+                    currentLot.montoConsumido += consume;
+                    if (head.remaining <= 1e-5) purchaseQueue.shift();
                 }
                 currentLot.estado = Math.abs(currentLot.montoTotal - currentLot.montoConsumido) < 1e-5 ? 'cerrado' : 'activo';
                 if(currentLot.montoTotal > 0) currentLotsData.set(lotId, currentLot);
             });
-            let totalComprado = opsForDay.filter(o => o.operacion === 'Compra').reduce((sum, op) => sum + op.montoUsdc, 0);
-            let totalVendido = opsForDay.filter(o => o.operacion === 'Venta').reduce((sum, op) => sum + op.montoUsdc, 0);
-            let recompraPendiente = Math.max(0, totalVendido - totalComprado);
-            let reventaPendiente = Math.max(0, totalComprado - totalVendido);
-            let recompraOps = [];
-            if (recompraPendiente > 0) {
-                let tempVendido = totalVendido;
-                opsForDay.filter(o => o.operacion === 'Venta').sort((a,b)=>b.timestamp-a.timestamp).forEach(o => {
-                    if (tempVendido > totalComprado) {
-                        const amount = Math.min(tempVendido - totalComprado, o.montoUsdc);
-                        recompraOps.push({ referencia: o.referencia, montoUsdc: amount });
-                        tempVendido -= amount;
-                    }
-                });
-            }
-            let reventaOps = [];
-            if (reventaPendiente > 0) {
-                let tempComprado = totalComprado;
-                 opsForDay.filter(o => o.operacion === 'Compra').sort((a,b)=>b.timestamp-a.timestamp).forEach(o => {
-                    if (tempComprado > totalVendido) {
-                        const amount = Math.min(tempComprado - totalVendido, o.montoUsdc);
-                        reventaOps.push({ referencia: o.referencia, montoUsdc: amount });
-                        tempComprado -= amount;
-                    }
-                });
-            }
-            currentPendingData = { recompra: recompraPendiente, reventa: reventaPendiente, recompraOps, reventaOps };
-            return opsForDay;
+            ops.forEach(o => { o.ves = o._gainVes || 0; o.usdc = o._gainUsdc || 0; if (o.operacion === 'Compra' && o._assignedLots.length > 0) o.lote = [...new Set(o._assignedLots.map(l => l.split('$')[0]))].join(','); delete o._gainVes; delete o._gainUsdc; delete o._assignedLots; });
+            let totalComprado = ops.filter(o => o.operacion === 'Compra').reduce((sum, op) => sum + op.montoUsdc, 0);
+            let totalVendido = ops.filter(o => o.operacion === 'Venta').reduce((sum, op) => sum + op.montoUsdc, 0);
+            currentPendingData = { recompra: Math.max(0, totalVendido - totalComprado), reventa: Math.max(0, totalComprado - totalVendido), recompraOps: [], reventaOps: [] };
+            if (window.aiCenter) window.aiCenter.onOperationsRecalculated();
         }
         
         function updateSummary() {
             if(!operations) return;
-            const updatedOpsForDay = applyFIFOForDate(currentDate);
-            const updatedOpsMap = new Map(updatedOpsForDay.map(op => [op.id, op]));
-            operations.forEach(op => {
-                if (op.fecha === currentDate && updatedOpsMap.has(op.id)) {
-                    const updatedOp = updatedOpsMap.get(op.id);
-                    op.ves = updatedOp.ves; op.usdc = updatedOp.usdc; op.lote = updatedOp.lote;
-                } else if (op.fecha === currentDate) {
-                    op.ves = 0; op.usdc = 0; op.lote = '';
-                }
-            });
+            applyFIFOForDate(currentDate);
             const currentOps = operations.filter(op => op.fecha === currentDate);
             const compras = currentOps.filter(op => op.operacion === 'Compra'), ventas = currentOps.filter(op => op.operacion === 'Venta');
             const promCompra = compras.length ? compras.reduce((s, o) => s + o.tasa, 0) / compras.length : 0;
@@ -579,15 +727,23 @@
             progressBar.style.width = `${Math.min(progressPercentage, 100)}%`;
             document.getElementById('wallyDashboardGainsUsdc').innerHTML = `${wallyTotalGains.usdc.toFixed(2)} <span class="text-2xl font-semibold">USDC</span>`;
             document.getElementById('wallyDashboardGainsUsd').innerHTML = `${wallyTotalGains.usd.toFixed(2)} <span class="font-medium">USD</span>`;
-            renderOperations(); // <--- CAMBIO CLAVE
+            renderOperations();
         }
 
-        // === INICIO CAMBIO: Nueva función de renderizado que genera AMBAS vistas ===
         function renderOperations() {
             const tableBody = document.getElementById('operationsTable');
             const listContainer = document.getElementById('operationsList');
             const searchTerm = document.getElementById('searchOperations').value.toLowerCase();
-            const filteredOps = operations.filter(op => op.fecha === currentDate && (op.usuario.toLowerCase().includes(searchTerm) || (op.referencia && op.referencia.toLowerCase().includes(searchTerm)) ));
+            const filterOperacion = document.getElementById('filterOperacion').value;
+            const filterMetodo = document.getElementById('filterMetodoPago').value;
+
+            const filteredOps = operations.filter(op => {
+                const matchesDate = op.fecha === currentDate;
+                const matchesSearch = op.usuario.toLowerCase().includes(searchTerm) || (op.referencia && op.referencia.toLowerCase().includes(searchTerm));
+                const matchesOperacion = filterOperacion === '' || op.operacion === filterOperacion;
+                const matchesMetodo = filterMetodo === '' || op.metodoPago === filterMetodo;
+                return matchesDate && matchesSearch && matchesOperacion && matchesMetodo;
+            });
             
             tableBody.innerHTML = '';
             listContainer.innerHTML = '';
@@ -597,7 +753,6 @@
                 const commissionIndicator = op.adCommissionPercent > 0 ? `<span class="text-xs ${op.operacion === 'Venta' ? 'text-green-400' : 'text-red-400'}">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
                 const mobileCommissionIndicator = op.adCommissionPercent > 0 ? `<span class="commission">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
                 
-                // HTML para la Fila de la Tabla (Desktop)
                 const tableRowHtml = `
                     <tr class="hover:bg-[var(--surface)]">
                         <td class="text-left"><div class="font-semibold">${op.usuario}</div><div class="text-xs text-gray-400">${op.metodoPago}</div></td>
@@ -610,47 +765,30 @@
                         <td class="font-semibold ${op.usdc >= 0 ? 'text-green-400':'text-red-400'}">${(op.usdc || 0).toFixed(4)}</td>
                         <td>${op.lote || ''}</td>
                         <td><span class="px-2 py-1 text-xs font-semibold rounded-full ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></td>
-                        <td><button class="text-blue-400 p-1" onclick="editOperation(${globalIndex})">✏️</button></td>
+                        <td>
+                            <button class="text-blue-400 p-1" onclick="editOperation(${globalIndex})">✏️</button>
+                            <button class="text-red-400 p-1" onclick="deleteOperation(${globalIndex})">🗑️</button>
+                        </td>
                     </tr>`;
                 
-                // HTML para la Tarjeta (Móvil)
                 const cardHtml = `
                     <div class="operation-card ${op.operacion.toLowerCase()}">
                         <div class="card-header">
-                            <div class="user-info">
-                                ${op.usuario}
-                                <div class="payment-method">${op.metodoPago}</div>
-                            </div>
-                            <span class="status-badge ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">
-                                ${op.estatus}
-                            </span>
+                            <div class="user-info">${op.usuario}<div class="payment-method">${op.metodoPago}</div></div>
+                            <span class="status-badge ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span>
                         </div>
                         <div class="card-grid">
-                            <div class="grid-item">
-                                <span class="label">Monto USDC</span>
-                                <span class="value">${(op.montoUsdc || 0).toFixed(3)} ${mobileCommissionIndicator}</span>
-                            </div>
-                            <div class="grid-item">
-                                <span class="label">Monto BS</span>
-                                <span class="value">${(op.montoBs || 0).toFixed(2)}</span>
-                            </div>
-                            <div class="grid-item">
-                                <span class="label">Tasa</span>
-                                <span class="value">${(op.tasa || 0).toFixed(2)}</span>
-                            </div>
-                            <div class="grid-item">
-                                <span class="label">Ganancia VES</span>
-                                <span class="value ${(op.ves || 0) >= 0 ? 'profit-green' : 'profit-red'}">${(op.ves || 0).toFixed(2)}</span>
-                            </div>
+                            <div class="grid-item"><span class="label">Monto USDC</span><span class="value">${(op.montoUsdc || 0).toFixed(3)} ${mobileCommissionIndicator}</span></div>
+                            <div class="grid-item"><span class="label">Monto BS</span><span class="value">${(op.montoBs || 0).toFixed(2)}</span></div>
+                            <div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasa || 0).toFixed(2)}</span></div>
+                            <div class="grid-item"><span class="label">Ganancia VES</span><span class="value ${(op.ves || 0) >= 0 ? 'profit-green' : 'profit-red'}">${(op.ves || 0).toFixed(2)}</span></div>
                         </div>
                         <div class="card-footer">
-                            <div class="ref-info">
-                                REF: ${op.referencia || 'N/A'} <br>
-                                LOTE: ${op.lote || 'N/A'}
+                            <div class="ref-info">REF: ${op.referencia || 'N/A'}<br>LOTE: ${op.lote || 'N/A'}</div>
+                            <div class="actions">
+                                <button class="action-btn edit" onclick="editOperation(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button>
+                                <button class="action-btn delete" onclick="deleteOperation(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.033-2.134H8.033c-1.12 0-2.033.954-2.033 2.134v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button>
                             </div>
-                            <button class="edit-btn" onclick="editOperation(${globalIndex})">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
-                            </button>
                         </div>
                     </div>`;
 
@@ -658,7 +796,6 @@
                 listContainer.innerHTML += cardHtml;
             });
         }
-        // === FIN CAMBIO ===
 
         function editOperation(index) {
             editingIndex = index; const op = operations[index];
@@ -675,29 +812,29 @@
             document.getElementById('estatus').value = op.estatus; calculateAll(); openModal();
         }
         
-        function openModal() { document.getElementById('operationModal').style.display = 'flex'; if(editingIndex === -1) clearForm();}
-        function closeModal() { document.getElementById('operationModal').style.display = 'none'; editingIndex = -1; }
+        function openModal() { document.getElementById('operationModal').classList.add('show'); if(editingIndex === -1) clearForm();}
+        function closeModal() { document.getElementById('operationModal').classList.remove('show'); editingIndex = -1; }
         function clearForm() { const form = document.getElementById('operationModal'); form.querySelectorAll('input, select').forEach(i => { if(i.type !== 'checkbox') i.value = ''; else i.checked = false; }); calculateAll(); }
 
-        function loadConfig() { if (!currentUserId) return; db.collection('users').doc(currentUserId).collection('settings').doc('userConfig').get().then(doc => { const defaultConfig = { adCommission: 0.2, profitGoals: defaultProfitGoals, wallyInitialValue: 0 }; userConfig = doc.exists ? { ...defaultConfig, ...doc.data() } : defaultConfig; userConfig.profitGoals = userConfig.profitGoals || defaultConfig.profitGoals; applyConfig(); });}
-        function applyConfig() { document.getElementById('adCommissionLabel').textContent = `Aplicar ${userConfig.adCommission}% comisión`; populatePaymentMethods(); updateSummary(); updateWallySummary();}
-        function openConfigModal() { document.getElementById('configModal').style.display = 'flex'; document.getElementById('adCommission').value = userConfig.adCommission; document.getElementById('dailyProfitGoal').value = userConfig.profitGoals.daily; document.getElementById('wallyInitialValueConfig').value = userConfig.wallyInitialValue || 0; }
-        function closeConfigModal() { document.getElementById('configModal').style.display = 'none'; }
+        function loadConfig() { if (!currentUserId) return; db.collection('users').doc(currentUserId).collection('settings').doc('userConfig').get().then(doc => { const defaultConfig = { adCommission: 0.2, profitGoals: defaultProfitGoals, wallyInitialValue: 0, aiThresholds: defaultAIThresholds }; userConfig = doc.exists ? { ...defaultConfig, ...doc.data() } : defaultConfig; userConfig.profitGoals = userConfig.profitGoals || defaultConfig.profitGoals; userConfig.aiThresholds = userConfig.aiThresholds || defaultConfig.aiThresholds; applyConfig(); });}
+        function applyConfig() { document.getElementById('adCommissionLabel').textContent = `Aplicar ${userConfig.adCommission}% comisión`; populatePaymentMethods(); updateSummary(); updateWallySummary(); if(window.aiCenter) window.aiCenter.alertThresholds = userConfig.aiThresholds; }
+        function openConfigModal() { document.getElementById('configModal').classList.add('show'); document.getElementById('adCommission').value = userConfig.adCommission; document.getElementById('dailyProfitGoal').value = userConfig.profitGoals.daily; document.getElementById('wallyInitialValueConfig').value = userConfig.wallyInitialValue || 0; }
+        function closeConfigModal() { document.getElementById('configModal').classList.remove('show'); }
         function saveConfig() { userConfig.adCommission = parseFloat(document.getElementById('adCommission').value) || 0; userConfig.profitGoals.daily = parseFloat(document.getElementById('dailyProfitGoal').value) || defaultProfitGoals.daily; userConfig.wallyInitialValue = parseFloat(document.getElementById('wallyInitialValueConfig').value) || 0; db.collection('users').doc(currentUserId).collection('settings').doc('userConfig').set(userConfig).then(() => { applyConfig(); closeConfigModal(); showToast('Configuración guardada.', 'success'); });}
 
-        function populatePaymentMethods() { const select = document.getElementById('metodoPago'); select.innerHTML = ["Pagomovil", "Banesco", "Venezuela", "Bancamiga", "BNC"].map(m => `<option value="${m}">${m}</option>`).join(''); }
+        function populatePaymentMethods() { const methods = ["Pagomovil", "Banesco", "Venezuela", "Bancamiga", "BNC"]; const mainSelect = document.getElementById('metodoPago'); const filterSelect = document.getElementById('filterMetodoPago'); mainSelect.innerHTML = methods.map(m => `<option value="${m}">${m}</option>`).join(''); filterSelect.innerHTML = '<option value="">Todos los Métodos</option>' + methods.map(m => `<option value="${m}">${m}</option>`).join(''); }
 
         document.getElementById('selectedDate').addEventListener('change', function() { currentDate = this.value; updateSummary(); });
         document.getElementById('wallySelectedDate').addEventListener('change', function() { currentWallyDate = this.value; updateWallySummary(); });
         
         function showToast(message, type = 'info') { const c = document.getElementById('toast-container'); const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = message; c.appendChild(t); setTimeout(() => t.classList.add('show'), 10); setTimeout(() => { t.classList.remove('show'); t.addEventListener('transitionend', () => t.remove(), {once: true}); }, 3000); }
         
-        function openBankBreachModal() { renderBankBreachesCards(); document.getElementById('bankBreachModal').style.display = 'flex'; }
-        function closeBankBreachModal() { document.getElementById('bankBreachModal').style.display = 'none'; }
-        function openLotDetailsModal() { renderLotDetailsCards(); document.getElementById('lotDetailsModal').style.display = 'flex'; }
-        function closeLotDetailsModal() { document.getElementById('lotDetailsModal').style.display = 'none'; }
-        function openPendingDetailsModal() { renderPendingDetails(); document.getElementById('pendingDetailsModal').style.display = 'flex'; }
-        function closePendingDetailsModal() { document.getElementById('pendingDetailsModal').style.display = 'none'; }
+        function openBankBreachModal() { renderBankBreachesCards(); document.getElementById('bankBreachModal').classList.add('show'); }
+        function closeBankBreachModal() { document.getElementById('bankBreachModal').classList.remove('show'); }
+        function openLotDetailsModal() { renderLotDetailsCards(); document.getElementById('lotDetailsModal').classList.add('show'); }
+        function closeLotDetailsModal() { document.getElementById('lotDetailsModal').classList.remove('show'); }
+        function openPendingDetailsModal() { renderPendingDetails(); document.getElementById('pendingDetailsModal').classList.add('show'); }
+        function closePendingDetailsModal() { document.getElementById('pendingDetailsModal').classList.remove('show'); }
         
         function calculateBankBreaches() {
             const currentOps = operations.filter(op => op.fecha === currentDate), bankData = {};
@@ -721,85 +858,19 @@
             document.getElementById('pendingRepurchaseSummary').textContent = `${currentPendingData.recompra.toFixed(2)} USDC`;
             document.getElementById('pendingResaleSummary').textContent = `${currentPendingData.reventa.toFixed(2)} USDC`;
             const repurchaseList = document.getElementById('pendingRepurchaseList');
-            repurchaseList.innerHTML = currentPendingData.recompraOps.length === 0 ? '<p class="text-xs text-gray-400">No hay recompra pendiente.</p>' : currentPendingData.recompraOps.map(op => `<div class="operation-list-item">Ref: <span class="font-semibold">${op.referencia}</span> | Monto: <span class="font-semibold">${op.montoUsdc.toFixed(2)}</span></div>`).join('');
+            repurchaseList.innerHTML = currentPendingData.recompra === 0 ? '<p class="text-xs text-gray-400">No hay recompra pendiente.</p>' : `<div class="operation-list-item">Monto Total: <span class="font-semibold">${currentPendingData.recompra.toFixed(2)} USDC</span></div>`;
             const resaleList = document.getElementById('pendingResaleList');
-            resaleList.innerHTML = currentPendingData.reventaOps.length === 0 ? '<p class="text-xs text-gray-400">No hay reventa pendiente.</p>' : currentPendingData.reventaOps.map(op => `<div class="operation-list-item">Ref: <span class="font-semibold">${op.referencia}</span> | Monto: <span class="font-semibold">${op.montoUsdc.toFixed(2)}</span></div>`).join('');
+            resaleList.innerHTML = currentPendingData.reventa === 0 ? '<p class="text-xs text-gray-400">No hay reventa pendiente.</p>' : `<div class="operation-list-item">Monto Total: <span class="font-semibold">${currentPendingData.reventa.toFixed(2)} USDC</span></div>`;
         }
         
         // Wally Functions
-        function openWallyModal(index = -1) { 
-            editingWallyIndex = index; 
-            document.getElementById('wallyModalTitle').textContent = index > -1 ? 'Editar Operación Wally' : 'Agregar Operación Wally'; 
-            renderWallyForm(index > -1 ? wallyOperations.find((op, i) => i === index) : {}); 
-            document.getElementById('wallyModal').style.display = 'flex'; 
+        function openWallyModal(index = -1) { editingWallyIndex = index; document.getElementById('wallyModalTitle').textContent = index > -1 ? 'Editar Operación Wally' : 'Agregar Operación Wally'; renderWallyForm(index > -1 ? wallyOperations.find((op, i) => i === index) : {}); document.getElementById('wallyModal').classList.add('show'); }
+        function closeWallyModal() { document.getElementById('wallyModal').classList.remove('show'); }
+        function renderWallyForm(op = {}) {
+            document.getElementById('wallyFormContent').innerHTML = `<div class="form-group flex justify-between items-center"><label class="text-sm text-gray-400">Usuario</label><input type="text" id="wallyUsuario" value="${op.usuario || ''}" class="w-3/5"></div><div class="form-group flex justify-between items-center"><label class="text-sm text-gray-400">Referencia</label><input type="text" id="wallyReferencia" value="${op.referencia || ''}" class="w-3/5"></div><div class="form-group flex justify-between items-center"><label class="text-sm text-gray-400">Operación</label><select id="wallyOperacion" onchange="updateWallyFormFields()" class="w-3/5"><option value="Compra" ${op.operacion === 'Compra' ? 'selected' : ''}>Compra (Recibo USDC)</option><option value="Venta" ${op.operacion === 'Venta' ? 'selected' : ''}>Venta (Recibo USD)</option></select></div><hr class="border-gray-700 my-2"><div id="wallyCompraFields" class="space-y-4"><div class="form-group flex justify-between items-center"><label class="text-sm text-gray-400">Recibo USDC</label><input type="number" id="reciboUsdc" value="${op.reciboUsdc || ''}" onkeyup="calculateWallyCompra()" class="w-3/5"></div><div class="form-group flex justify-between items-center"><label class="text-sm text-gray-400">Tasa Compra</label><input type="number" id="tasaCompra" value="${op.tasaCompra || ''}" onkeyup="calculateWallyCompra()" class="w-3/5"></div><div class="form-group flex justify-between items-center"><label class="text-sm text-gray-400">Envío USD (calc)</label><input type="number" id="envioUsd" value="${op.envioUsd || ''}" readonly class="w-3/5 bg-gray-800 border-gray-600"></div><div class="form-group flex justify-between items-center"><label class="text-sm text-gray-400">Ganancia USDC (calc)</label><input type="number" id="gananciaUsdc" value="${op.gananciaUsdc || ''}" readonly class="w-3/5 bg-gray-800 border-gray-600"></div></div><div id="wallyVentaFields" class="space-y-4"><div class="form-group flex justify-between items-center"><label class="text-sm text-gray-400">Envío USDC</label><input type="number" id="envioUsdcVenta" value="${op.envioUsdc || ''}" onkeyup="calculateWallyVenta()" class="w-3/5"></div><div class="form-group flex justify-between items-center"><label class="text-sm text-gray-400">Tasa Venta</label><input type="number" id="tasaVenta" value="${op.tasaVenta || ''}" onkeyup="calculateWallyVenta()" class="w-3/5"></div><div class="form-group flex justify-between items-center"><label class="text-sm text-gray-400">Recibo USD (calc)</label><input type="number" id="reciboUsdCalculado" value="${op.reciboUsd || ''}" readonly class="w-3/5 bg-gray-800 border-gray-600"></div><div class="form-group flex justify-between items-center"><label class="text-sm text-gray-400">Ganancia USD (calc)</label><input type="number" id="gananciaUsd" value="${op.gananciaUsd || ''}" readonly class="w-3/5 bg-gray-800 border-gray-600"></div></div>`;
+            updateWallyFormFields();
         }
-        function closeWallyModal() { document.getElementById('wallyModal').style.display = 'none'; }
-        // REEMPLAZA LA FUNCIÓN ANTERIOR POR ESTA VERSIÓN CORREGIDA
-function renderWallyForm(op = {}) {
-    document.getElementById('wallyFormContent').innerHTML = `
-        <div class="form-group flex justify-between items-center">
-            <label class="text-sm text-gray-400">Usuario</label>
-            <input type="text" id="wallyUsuario" value="${op.usuario || ''}" class="w-3/5">
-        </div>
-        <div class="form-group flex justify-between items-center">
-            <label class="text-sm text-gray-400">Referencia</label>
-            <input type="text" id="wallyReferencia" value="${op.referencia || ''}" class="w-3/5">
-        </div>
-        <div class="form-group flex justify-between items-center">
-            <label class="text-sm text-gray-400">Operación</label>
-            <select id="wallyOperacion" onchange="updateWallyFormFields()" class="w-3/5">
-                <option value="Compra" ${op.operacion === 'Compra' ? 'selected' : ''}>Compra (Recibo USDC)</option>
-                <option value="Venta" ${op.operacion === 'Venta' ? 'selected' : ''}>Venta (Recibo USD)</option>
-            </select>
-        </div>
-        
-        <hr class="border-gray-700 my-2">
-
-        <div id="wallyCompraFields" class="space-y-4">
-            <div class="form-group flex justify-between items-center">
-                <label class="text-sm text-gray-400">Recibo USDC</label>
-                <input type="number" id="reciboUsdc" value="${op.reciboUsdc || ''}" onkeyup="calculateWallyCompra()" class="w-3/5">
-            </div>
-            <div class="form-group flex justify-between items-center">
-                <label class="text-sm text-gray-400">Tasa Compra</label>
-                <input type="number" id="tasaCompra" value="${op.tasaCompra || ''}" onkeyup="calculateWallyCompra()" class="w-3/5">
-            </div>
-            <div class="form-group flex justify-between items-center">
-                <label class="text-sm text-gray-400">Envío USD (calc)</label>
-                <input type="number" id="envioUsd" value="${op.envioUsd || ''}" readonly class="w-3/5 bg-gray-800 border-gray-600">
-            </div>
-            <div class="form-group flex justify-between items-center">
-                <label class="text-sm text-gray-400">Ganancia USDC (calc)</label>
-                <input type="number" id="gananciaUsdc" value="${op.gananciaUsdc || ''}" readonly class="w-3/5 bg-gray-800 border-gray-600">
-            </div>
-        </div>
-
-        <div id="wallyVentaFields" class="space-y-4">
-            <div class="form-group flex justify-between items-center">
-                <label class="text-sm text-gray-400">Envío USDC</label>
-                <input type="number" id="envioUsdcVenta" value="${op.envioUsdc || ''}" onkeyup="calculateWallyVenta()" class="w-3/5">
-            </div>
-            <div class="form-group flex justify-between items-center">
-                <label class="text-sm text-gray-400">Tasa Venta</label>
-                <input type="number" id="tasaVenta" value="${op.tasaVenta || ''}" onkeyup="calculateWallyVenta()" class="w-3/5">
-            </div>
-            <div class="form-group flex justify-between items-center">
-                <label class="text-sm text-gray-400">Recibo USD (calc)</label>
-                <input type="number" id="reciboUsdCalculado" value="${op.reciboUsd || ''}" readonly class="w-3/5 bg-gray-800 border-gray-600">
-            </div>
-            <div class="form-group flex justify-between items-center">
-                <label class="text-sm text-gray-400">Ganancia USD (calc)</label>
-                <input type="number" id="gananciaUsd" value="${op.gananciaUsd || ''}" readonly class="w-3/5 bg-gray-800 border-gray-600">
-            </div>
-        </div>
-    `;
-    updateWallyFormFields();
-}
-        function updateWallyFormFields() {
-            const operacion = document.getElementById('wallyOperacion').value;
-            document.getElementById('wallyCompraFields').style.display = operacion === 'Compra' ? 'block' : 'none';
-            document.getElementById('wallyVentaFields').style.display = operacion === 'Venta' ? 'block' : 'none';
-        }
+        function updateWallyFormFields() { const operacion = document.getElementById('wallyOperacion').value; document.getElementById('wallyCompraFields').style.display = operacion === 'Compra' ? 'block' : 'none'; document.getElementById('wallyVentaFields').style.display = operacion === 'Venta' ? 'block' : 'none'; }
         function calculateWallyCompra() { const r = parseFloat(document.getElementById('reciboUsdc').value) || 0, t = parseFloat(document.getElementById('tasaCompra').value) || 0; document.getElementById('envioUsd').value = (r*t).toFixed(2); document.getElementById('gananciaUsdc').value = (r - (r*t)).toFixed(4); }
         function calculateWallyVenta() { const e = parseFloat(document.getElementById('envioUsdcVenta').value) || 0, t = parseFloat(document.getElementById('tasaVenta').value) || 0; document.getElementById('reciboUsdCalculado').value = (e*t).toFixed(2); document.getElementById('gananciaUsd').value = ((e*t) - e).toFixed(4); }
         function saveWallyOperation() {
@@ -818,15 +889,8 @@ function renderWallyForm(op = {}) {
             const compras = currentOps.filter(op => op.operacion === 'Compra'), ventas = currentOps.filter(op => op.operacion === 'Venta');
             const totalGananciaUsdc = compras.reduce((s, op) => s + (Number(op.gananciaUsdc) || 0), 0);
             const totalGananciaUsd = ventas.reduce((s, op) => s + (Number(op.gananciaUsd) || 0), 0);
-
-                    // --- INICIO DEL CAMBIO ---
-            // Almacena las ganancias en la variable global
             wallyTotalGains = { usdc: totalGananciaUsdc, usd: totalGananciaUsd };
-            // Llama a la actualización del dashboard principal para reflejar el cambio
-            if (document.getElementById('page-operate').classList.contains('active')) {
-                updateSummary();
-            }
-
+            if (document.getElementById('page-operate').classList.contains('active')) { updateSummary(); }
             const valorInicial = parseFloat(userConfig.wallyInitialValue) || 0;
             const valorActual = valorInicial + compras.reduce((s,o)=>s+o.reciboUsdc,0) - compras.reduce((s,o)=>s+o.envioUsd,0) + ventas.reduce((s,o)=>s+o.reciboUsd,0) - ventas.reduce((s,o)=>s+o.envioUsdc,0);
             document.getElementById("wallyValorInicialInput").value = valorInicial.toFixed(2);
@@ -834,103 +898,56 @@ function renderWallyForm(op = {}) {
             document.getElementById("wallyGanancias").textContent = `${totalGananciaUsdc.toFixed(2)} USDC / ${totalGananciaUsd.toFixed(2)} USD`;
             renderWallyTables();
         }
-        // REEMPLAZA LA FUNCIÓN ANTERIOR POR ESTA VERSIÓN COMPLETA
-function renderWallyTables() {
-    const currentOps = wallyOperations.filter(op => op.fecha === currentWallyDate);
-    
-    // Contenedores para Compras
-    const compraTableBody = document.getElementById('wallyCompraTable');
-    const compraListContainer = document.getElementById('wallyCompraList');
-    
-    // Contenedores para Ventas
-    const ventaTableBody = document.getElementById('wallyVentaTable');
-    const ventaListContainer = document.getElementById('wallyVentaList');
-
-    // Limpiar contenido previo
-    compraTableBody.innerHTML = '';
-    compraListContainer.innerHTML = '';
-    ventaTableBody.innerHTML = '';
-    ventaListContainer.innerHTML = '';
-
-    // Renderizar Compras
-    currentOps.filter(op => op.operacion === 'Compra').forEach(op => {
-        const globalIndex = wallyOperations.indexOf(op);
-        
-        // Fila para la tabla de Compras (Desktop)
-        const tableRowHtml = `
-            <tr>
-                <td>${op.usuario}</td>
-                <td>${op.reciboUsdc.toFixed(2)}</td>
-                <td>${op.tasaCompra.toFixed(3)}</td>
-                <td>${op.envioUsd.toFixed(2)}</td>
-                <td class="font-semibold text-green-400">${op.gananciaUsdc.toFixed(4)}</td>
-                <td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button></td>
-            </tr>`;
-        
-        // Tarjeta para la lista de Compras (Móvil)
-        const cardHtml = `
-            <div class="operation-card compra">
-                <div class="card-header">
-                    <div class="user-info">${op.usuario}</div>
-                    <button class="edit-btn" onclick="openWallyModal(${globalIndex})">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
-                    </button>
-                </div>
-                <div class="card-grid">
-                    <div class="grid-item"><span class="label">Recibo USDC</span><span class="value">${op.reciboUsdc.toFixed(2)}</span></div>
-                    <div class="grid-item"><span class="label">Tasa</span><span class="value">${op.tasaCompra.toFixed(3)}</span></div>
-                    <div class="grid-item"><span class="label">Envío USD</span><span class="value">${op.envioUsd.toFixed(2)}</span></div>
-                    <div class="grid-item"><span class="label">Gan. USDC</span><span class="value profit-green">${op.gananciaUsdc.toFixed(4)}</span></div>
-                </div>
-            </div>`;
-
-        compraTableBody.innerHTML += tableRowHtml;
-        compraListContainer.innerHTML += cardHtml;
-    });
-
-    // Renderizar Ventas
-    currentOps.filter(op => op.operacion === 'Venta').forEach(op => {
-        const globalIndex = wallyOperations.indexOf(op);
-
-        // Fila para la tabla de Ventas (Desktop)
-        const tableRowHtml = `
-            <tr>
-                <td>${op.usuario}</td>
-                <td>${op.envioUsdc.toFixed(2)}</td>
-                <td>${op.tasaVenta.toFixed(3)}</td>
-                <td>${op.reciboUsd.toFixed(2)}</td>
-                <td class="font-semibold text-green-400">${op.gananciaUsd.toFixed(4)}</td>
-                <td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button></td>
-            </tr>`;
-
-        // Tarjeta para la lista de Ventas (Móvil)
-        const cardHtml = `
-            <div class="operation-card venta">
-                 <div class="card-header">
-                    <div class="user-info">${op.usuario}</div>
-                    <button class="edit-btn" onclick="openWallyModal(${globalIndex})">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
-                    </button>
-                </div>
-                <div class="card-grid">
-                    <div class="grid-item"><span class="label">Envío USDC</span><span class="value">${op.envioUsdc.toFixed(2)}</span></div>
-                    <div class="grid-item"><span class="label">Tasa</span><span class="value">${op.tasaVenta.toFixed(3)}</span></div>
-                    <div class="grid-item"><span class="label">Recibo USD</span><span class="value">${op.reciboUsd.toFixed(2)}</span></div>
-                    <div class="grid-item"><span class="label">Gan. USD</span><span class="value profit-green">${op.gananciaUsd.toFixed(4)}</span></div>
-                </div>
-            </div>`;
-
-        ventaTableBody.innerHTML += tableRowHtml;
-        ventaListContainer.innerHTML += cardHtml;
-    });
-}
+        function renderWallyTables() {
+            const currentOps = wallyOperations.filter(op => op.fecha === currentWallyDate);
+            const compraTableBody = document.getElementById('wallyCompraTable'), compraListContainer = document.getElementById('wallyCompraList');
+            const ventaTableBody = document.getElementById('wallyVentaTable'), ventaListContainer = document.getElementById('wallyVentaList');
+            compraTableBody.innerHTML = ''; compraListContainer.innerHTML = ''; ventaTableBody.innerHTML = ''; ventaListContainer.innerHTML = '';
+            currentOps.filter(op => op.operacion === 'Compra').forEach(op => {
+                const globalIndex = wallyOperations.indexOf(op);
+                const tableRowHtml = `<tr><td>${op.usuario}</td><td>${op.reciboUsdc.toFixed(2)}</td><td>${op.tasaCompra.toFixed(3)}</td><td>${op.envioUsd.toFixed(2)}</td><td class="font-semibold text-green-400">${op.gananciaUsdc.toFixed(4)}</td><td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button></td></tr>`;
+                const cardHtml = `<div class="operation-card compra"><div class="card-header"><div class="user-info">${op.usuario}</div><button class="action-btn edit" onclick="openWallyModal(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button></div><div class="card-grid"><div class="grid-item"><span class="label">Recibo USDC</span><span class="value">${op.reciboUsdc.toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${op.tasaCompra.toFixed(3)}</span></div><div class="grid-item"><span class="label">Envío USD</span><span class="value">${op.envioUsd.toFixed(2)}</span></div><div class="grid-item"><span class="label">Gan. USDC</span><span class="value profit-green">${op.gananciaUsdc.toFixed(4)}</span></div></div></div>`;
+                compraTableBody.innerHTML += tableRowHtml; compraListContainer.innerHTML += cardHtml;
+            });
+            currentOps.filter(op => op.operacion === 'Venta').forEach(op => {
+                const globalIndex = wallyOperations.indexOf(op);
+                const tableRowHtml = `<tr><td>${op.usuario}</td><td>${op.envioUsdc.toFixed(2)}</td><td>${op.tasaVenta.toFixed(3)}</td><td>${op.reciboUsd.toFixed(2)}</td><td class="font-semibold text-green-400">${op.gananciaUsd.toFixed(4)}</td><td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button></td></tr>`;
+                const cardHtml = `<div class="operation-card venta"><div class="card-header"><div class="user-info">${op.usuario}</div><button class="action-btn edit" onclick="openWallyModal(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button></div><div class="card-grid"><div class="grid-item"><span class="label">Envío USDC</span><span class="value">${op.envioUsdc.toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${op.tasaVenta.toFixed(3)}</span></div><div class="grid-item"><span class="label">Recibo USD</span><span class="value">${op.reciboUsd.toFixed(2)}</span></div><div class="grid-item"><span class="label">Gan. USD</span><span class="value profit-green">${op.gananciaUsd.toFixed(4)}</span></div></div></div>`;
+                ventaTableBody.innerHTML += tableRowHtml; ventaListContainer.innerHTML += cardHtml;
+            });
+        }
         function saveWallyValorInicial() { userConfig.wallyInitialValue = parseFloat(document.getElementById('wallyInitialValueConfig').value) || 0; saveConfig(); }
+        
+        class AIOperationsCenter {
+            constructor(){ this.notifications=[]; this.alerts=[]; this.isOpen=false; this.processedOperations=new Set(); this.lastOperationCount=0; this.lastLotStates=new Map(); this.lastMetrics={brecha:0,ganancias:{ves:0,usdc:0},operationsCount:0}; this.alertThresholds=defaultAIThresholds; }
+            toggle(){ this.isOpen?this.close():this.open(); }
+            open(){ document.getElementById('aiPanel').classList.add('show'); this.isOpen=true; this.updateMetrics(); this.renderNotifications(); }
+            close(){ document.getElementById('aiPanel').classList.remove('show'); this.isOpen=false; }
+            analyzeCurrentState(){ const todayOps=operations.filter(op=>op.fecha===currentDate); if(todayOps.length > this.lastOperationCount){ const newOps=todayOps.slice(this.lastOperationCount); newOps.forEach(op=>this.processNewOperation(op)); } this.analyzeLotChanges(currentLotsData); this.analyzeBreach(todayOps); this.analyzePendingBalances(currentPendingData); this.lastOperationCount=todayOps.length; this.updateMetrics(); }
+            processNewOperation(op){ const opKey=`${op.id}`; if(this.processedOperations.has(opKey))return; this.processedOperations.add(opKey); this.addNotification('success',`${op.operacion} Registrada`,`${op.usuario}: ${op.montoUsdc} USDC a ${op.tasa}`); }
+            analyzeLotChanges(currentLots){ const prevLots=this.lastLotStates; prevLots.forEach((prev,id)=>{ const curr=currentLots.get(id); if(prev.estado==='activo' && (!curr||curr.estado==='cerrado')){ this.addNotification('success','Lote Completado',`Lote ${id} cerrado.`); } }); currentLots.forEach((curr,id)=>{ if(!prevLots.has(id)){ this.addNotification('info','Nuevo Lote Creado',`Lote ${id} iniciado.`); } }); const activeCount=Array.from(currentLots.values()).filter(l=>l.estado==='activo').length; if(activeCount >= this.alertThresholds.muchoLotes && Array.from(prevLots.values()).filter(l=>l.estado==='activo').length < this.alertThresholds.muchoLotes){ this.addNotification('warning','Muchos Lotes Activos',`Tienes ${activeCount} lotes abiertos.`); } this.lastLotStates=new Map(currentLots); }
+            analyzeBreach(ops){ const compras=ops.filter(o=>o.operacion==='Compra'); const ventas=ops.filter(o=>o.operacion==='Venta'); if(compras.length===0||ventas.length===0)return; const pCompra=compras.reduce((s,o)=>s+o.tasa,0)/compras.length; const pVenta=ventas.reduce((s,o)=>s+o.tasa,0)/ventas.length; const brecha=((pVenta-pCompra)/pCompra*100); if(Math.abs(brecha-this.lastMetrics.brecha)>0.5){ if(brecha<this.alertThresholds.brechaMin)this.addAlert('warning','Brecha Baja Detectada',`La brecha bajó a ${brecha.toFixed(2)}%.`); else if(brecha>this.alertThresholds.brechaMax)this.addAlert('success','Oportunidad: Brecha Alta',`Excelente brecha de ${brecha.toFixed(2)}%.`); } this.lastMetrics.brecha=brecha; }
+            analyzePendingBalances(pending){ if(pending.recompra>this.alertThresholds.recompraCritica)this.addAlert('danger','Recompra Crítica',`Necesitas recomprar ${pending.recompra.toFixed(2)} USDC.`); if(pending.reventa>this.alertThresholds.reventaCritica)this.addAlert('warning','Reventa Pendiente',`Tienes ${pending.reventa.toFixed(2)} USDC sin vender.`); }
+            addNotification(type,title,content){ this.notifications.unshift({id:Date.now(),type,title,content,time:new Date()}); if(this.notifications.length>20)this.notifications.pop(); this.renderNotifications(); this.updateBadge(); }
+            addAlert(type,title,content){ this.alerts.unshift({id:Date.now(),type,title,content,time:new Date()}); if(this.alerts.length>10)this.alerts.pop(); this.renderNotifications(); this.updateBadge(); }
+            renderNotifications(){ const container=document.getElementById('aiNotifications'); const iconMap={info:'💡',success:'✅',warning:'⚠️',danger:'🚨'}; let html=''; if(this.alerts.length>0){ html+=`<div class="notification-section"><h4>${iconMap['danger']} Alertas Críticas</h4>${this.alerts.map(a=>`<div class="notification ${a.type}"><div class="notification-header"><div class="notification-title"><span>${iconMap[a.type]}</span> ${a.title}</div><div class="notification-time">${a.time.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div></div><div class="notification-content">${a.content}</div></div>`).join('')}</div>`; } if(this.notifications.length>0){ html+=`<div class="notification-section"><h4>${iconMap['info']} Notificaciones</h4>${this.notifications.map(n=>`<div class="notification ${n.type}"><div class="notification-header"><div class="notification-title"><span>${iconMap[n.type]}</span> ${n.title}</div><div class="notification-time">${n.time.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div></div><div class="notification-content">${n.content}</div></div>`).join('')}</div>`; } if(html==='')html='<div class="p-4 text-center text-sm text-gray-400">Sin notificaciones nuevas.</div>'; container.innerHTML=html; }
+            updateBadge(){ const badge=document.getElementById('aiNotificationBadge'); const count=this.alerts.length+this.notifications.length; if(count>0&&!this.isOpen){ badge.style.display='flex'; badge.textContent=Math.min(count,99); }else{ badge.style.display='none'; } }
+            updateMetrics(){ const todayOps=operations.filter(op=>op.fecha===currentDate); const compras=todayOps.filter(o=>o.operacion==='Compra'); const ventas=todayOps.filter(o=>o.operacion==='Venta'); let brecha=0; if(compras.length>0&&ventas.length>0){ const pCompra=compras.reduce((s,o)=>s+o.tasa,0)/compras.length; const pVenta=ventas.reduce((s,o)=>s+o.tasa,0)/ventas.length; brecha=((pVenta-pCompra)/pCompra*100); } document.getElementById('currentGap').textContent=`${brecha.toFixed(2)}%`; const[gVes,gUsdc]=todayOps.reduce((acc,op)=>{if(op.operacion==='Compra'){acc[0]+=op.ves||0;acc[1]+=op.usdc||0;}return acc;},[0,0]); document.getElementById('dailyProfitAI').innerHTML=`<div>${gVes.toFixed(2)} VES</div><div>${gUsdc.toFixed(2)} USDC</div>`; const gapEl=document.getElementById('currentGap'); gapEl.className='metric-value'; if(brecha<this.alertThresholds.brechaMin)gapEl.classList.add('negative'); else if(brecha>this.alertThresholds.brechaMax)gapEl.classList.add('positive'); else gapEl.classList.add('warning'); }
+            onOperationAdded(op){ this.lastOperationCount=operations.length-2; this.analyzeCurrentState(); }
+            onOperationEdited(op){ this.addNotification('info','Operación Modificada',`Se editó la operación de ${op.usuario}.`); this.analyzeCurrentState(); }
+            onOperationsRecalculated(){ this.analyzeCurrentState(); }
+            clearNotifications() { this.notifications = []; this.alerts = []; this.renderNotifications(); this.updateBadge(); }
+        }
+
+        window.aiCenter = new AIOperationsCenter();
+        setInterval(() => { if (currentUserId && window.aiCenter) window.aiCenter.analyzeCurrentState(); }, 15000);
+
 
         window.showPage = showPage; window.loginUser = loginUser; window.registerUser = registerUser;
         window.toggleAuthForms = toggleAuthForms; window.logoutUser = logoutUser; window.openModal = openModal;
         window.closeModal = closeModal; window.saveOperation = saveOperation; window.editOperation = editOperation;
-        window.calculateAll = calculateAll; window.openConfigModal = openConfigModal; window.closeConfigModal = closeConfigModal;
-        window.saveConfig = saveConfig; window.filterOperations = renderOperations; // <--- CAMBIO CLAVE
+        window.deleteOperation = deleteOperation; window.calculateAll = calculateAll; window.openConfigModal = openConfigModal;
+        window.closeConfigModal = closeConfigModal; window.saveConfig = saveConfig; window.filterOperations = renderOperations;
         window.openBankBreachModal = openBankBreachModal; window.closeBankBreachModal = closeBankBreachModal;
         window.openLotDetailsModal = openLotDetailsModal; window.closeLotDetailsModal = closeLotDetailsModal;
         window.openPendingDetailsModal = openPendingDetailsModal; window.closePendingDetailsModal = closePendingDetailsModal;
