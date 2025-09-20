@@ -832,8 +832,17 @@
             document.getElementById('dailyGoal').textContent = `${gananciasVes.toFixed(2)} / ${dailyGoalValue.toFixed(2)} VES`;
             const progressBar = document.getElementById('dailyProgressBar');
             progressBar.style.width = `${Math.min(dailyGoalValue > 0 ? (gananciasVes / dailyGoalValue) * 100 : 0, 100)}%`;
-            document.getElementById('wallyDashboardGainsUsdc').innerHTML = `${wallyTotalGains.usdc.toFixed(2)} <span class="text-2xl font-semibold">USDC</span>`;
-            document.getElementById('wallyDashboardGainsUsd').innerHTML = `${wallyTotalGains.usd.toFixed(2)} <span class="font-medium">USD</span>`;
+            // ===== INICIO DE LA CORRECCIÓN WALLY =====
+            // Filtra las operaciones de Wally que corresponden a la fecha principal seleccionada.
+            const wallyOpsForSelectedDate = wallyOperations.filter(op => op.fecha === currentDate);
+
+            // Calcula las ganancias de Wally específicamente para esa fecha.
+            const [wallyGainsUsdcForDate, wallyGainsUsdForDate] = calculateWallyGainsForPeriod(wallyOpsForSelectedDate);
+
+            // Actualiza la tarjeta del dashboard con las ganancias correctas para la fecha seleccionada.
+            document.getElementById('wallyDashboardGainsUsdc').innerHTML = `${wallyGainsUsdcForDate.toFixed(2)} <span class="text-xl font-semibold">USDC</span>`;
+            document.getElementById('wallyDashboardGainsUsd').innerHTML = `${wallyGainsUsdForDate.toFixed(2)} <span class="text-xl font-semibold">USD</span>`;
+            // ===== FIN DE LA CORRECCIÓN WALLY =====
             renderOperations();
         }
 
