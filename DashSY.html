@@ -176,7 +176,7 @@
         .toast { background-color: var(--surface); border: 1px solid var(--border); color: var(--text-primary); padding: 0.75rem 1.25rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); display: flex; align-items: center; gap: 0.75rem; opacity: 0; transform: translateX(100%); transition: all 0.3s ease-out; font-weight: 500; }
         .toast.show { opacity: 1; transform: translateX(0); }
         .toast.hide { opacity: 0; transform: translateX(100%); }
-        .info-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .info-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
         .info-card { background: var(--background); border-radius: 12px; border: 1px solid var(--border); padding: 1rem; text-align: center; }
         .info-card-title { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem; }
         .info-card-value { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
@@ -224,11 +224,11 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 56px; /* Un poco más pequeño que el FAB principal */
+            width: 56px;
             height: 56px;
             border-radius: 50%;
             border: none;
-            background: linear-gradient(135deg, #6b45d3, #7857f0); /* Un tono morado */
+            background: linear-gradient(135deg, #6b45d3, #7857f0);
             color: white;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -302,73 +302,62 @@
         .metric-value.negative { color: var(--danger); }
         .metric-value.warning { color: var(--warning); }
         @media (max-width: 768px) { #aiPanel { width: calc(100vw - 2rem); right: -1rem; bottom: 80px; } }
-    /* === INICIO DE ESTILOS PARA FILTROS DE REPORTE === */
-.filter-controls {
-    display: flex;
-    flex-wrap: wrap; /* Permite que los elementos pasen a la siguiente línea en pantallas pequeñas */
-    gap: 1rem; /* Espacio entre los filtros */
-    padding: 1rem;
-    background-color: var(--surface);
-    border-radius: 16px;
-    margin-bottom: 1.5rem; /* Sustituye el mb-4 de Tailwind */
-    border: 1px solid var(--border);
-}
-
-.filter-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem; /* Espacio entre la etiqueta y el input */
-    flex-grow: 1; /* Permite que los filtros crezcan y ocupen el espacio */
-    min-width: 180px; /* Ancho mínimo para cada filtro */
-}
-
-.filter-item label {
-    font-size: 0.75rem; /* 12px */
-    font-weight: 500;
-    color: var(--text-secondary);
-    padding-left: 0.25rem;
-}
-
-.filter-item input,
-.filter-item select {
-    background-color: var(--background);
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-    border-radius: 12px;
-    padding: 0.6rem 1rem;
-    font-size: 0.875rem; /* 14px */
-    width: 100%;
-    transition: all 0.2s ease-in-out;
-}
-
-.filter-item input:focus,
-.filter-item select:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
-    outline: none;
-}
-
-/* Estilo personalizado para la flecha del select */
-.filter-item select {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%238B949E'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9' /%3E%3C/svg%3E%0A");
-    background-repeat: no-repeat;
-    background-position: right 0.75rem center;
-    background-size: 1em;
-    padding-right: 2.5rem; /* Espacio para la flecha */
-}
-
-/* Hacer la barra de búsqueda más ancha en pantallas grandes */
-@media (min-width: 768px) {
-    .filter-item.search-bar {
-        flex-grow: 2; /* Le da el doble de prioridad para crecer */
-        min-width: 300px;
-    }
-}
-/* === FIN DE ESTILOS PARA FILTROS DE REPORTE === */
-    
+        .filter-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding: 1rem;
+            background-color: var(--surface);
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+        }
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            flex-grow: 1;
+            min-width: 180px;
+        }
+        .filter-item label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            padding-left: 0.25rem;
+        }
+        .filter-item input,
+        .filter-item select {
+            background-color: var(--background);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 12px;
+            padding: 0.6rem 1rem;
+            font-size: 0.875rem;
+            width: 100%;
+            transition: all 0.2s ease-in-out;
+        }
+        .filter-item input:focus,
+        .filter-item select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+            outline: none;
+        }
+        .filter-item select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%238B949E'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9' /%3E%3C/svg%3E%0A");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1em;
+            padding-right: 2.5rem;
+        }
+        @media (min-width: 768px) {
+            .filter-item.search-bar {
+                flex-grow: 2;
+                min-width: 300px;
+            }
+        }
     </style>
 </head>
 <body class="overscroll-none">
@@ -386,12 +375,12 @@
             <div id="page-operate" class="page">
                 <div class="flex justify-between items-center mb-6"><h1 id="userEmail" class="text-2xl font-bold">Cargando...</h1><input type="date" id="selectedDate" class="bg-transparent border-none text-right font-semibold text-blue-400 focus:ring-0 p-0"></div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div class="card text-center">
+                    <div class="card text-center clickable" onclick="openGainsSummaryModal()">
                         <p class="text-sm font-medium text-gray-400 mb-2">GANANCIA DEL DÍA</p>
                         <div id="ganancias" class="text-4xl font-extrabold text-green-400">0.00 <span class="text-2xl font-semibold">VES</span></div>
                         <div id="ganancias_usdc" class="text-lg font-semibold text-gray-300 mt-1">0.00 <span class="font-medium">USDC</span></div>
                     </div>
-                    <div class="card text-center flex flex-col justify-center">
+                    <div class="card text-center flex flex-col justify-center clickable" onclick="openWallyGainsSummaryModal()">
                         <p class="text-sm font-medium text-gray-400 mb-2">GANANCIA WALLY</p>
                         <div class="flex justify-center items-baseline gap-x-4">
                             <div id="wallyDashboardGainsUsdc" class="text-3xl font-bold text-orange-400">0.00 <span class="text-xl font-semibold">USDC</span></div>
@@ -414,11 +403,11 @@
                  <div class="filter-controls">
                     <div class="filter-item search-bar">
                         <label for="searchOperations">Buscar</label>
-                        <input type="text" id="searchOperations" placeholder="Por usuario o referencia..." onkeyup="filterOperations()">
+                        <input type="text" id="searchOperations" placeholder="Por usuario o referencia..." onkeyup="renderOperations()">
                     </div>
                     <div class="filter-item">
                         <label for="filterOperacion">Operación</label>
-                        <select id="filterOperacion" onchange="filterOperations()">
+                        <select id="filterOperacion" onchange="renderOperations()">
                             <option value="">Todas</option>
                             <option value="Compra">Compra</option>
                             <option value="Venta">Venta</option>
@@ -426,8 +415,7 @@
                     </div>
                     <div class="filter-item">
                         <label for="filterMetodoPago">Método</label>
-                        <select id="filterMetodoPago" onchange="filterOperations()">
-                            </select>
+                        <select id="filterMetodoPago" onchange="renderOperations()"></select>
                     </div>
                 </div>
                  
@@ -501,13 +489,77 @@
     
     <div id="toast-container"></div>
     
-    <div id="operationModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold" id="modalTitle">Nueva Operación</h2><button class="close-btn" onclick="closeModal()">&times;</button></div><div class="modal-body"><div class="space-y-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Usuario</label><input type="text" id="usuario" placeholder="Nombre del usuario" class="w-full"></div><div class="grid grid-cols-2 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Referencia</label><input type="text" id="referencia" placeholder="Nº de referencia" class="w-full"></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Estatus</label><select id="estatus" class="w-full"><option value="En Curso">En Curso</option><option value="En Disputa">En Disputa</option><option value="Completado">Completado</option></select></div></div><div class="grid grid-cols-2 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Operación</label><select id="operacion" onchange="calculateAll()" class="w-full"><option value="Compra">Compra</option><option value="Venta">Venta</option></select></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Método de Pago</label><select id="metodoPago" onchange="calculateAll()" class="w-full"></select></div></div><hr class="border-gray-700"><div class="grid grid-cols-2 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Tasa de Cambio</label><input type="number" id="tasa" step="0.01" placeholder="0.00" onkeyup="calculateAll()" class="w-full"></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Monto USDC</label><input type="number" id="montoUsdc" step="0.001" placeholder="0.00" onkeyup="calculateAll()" class="w-full"></div></div><div class="flex items-center justify-between"><span id="adCommissionLabel" class="text-sm">Aplicar 0.0% comisión</span><label class="switch"><input type="checkbox" id="applyAdCommissionSwitch" onchange="calculateAll()"><span class="slider"></span></label></div><div class="calc-display space-y-2 text-sm"><div id="displayAdCommissionRow" class="calc-row" style="display: none;"><span id="displayAdCommissionLabel">Comisión Anuncio:</span><span id="displayAdCommission"></span></div><div class="calc-row"><span>Monto BS:</span><span id="displayMontoBs">0.00</span></div><div class="calc-row"><span>Comisión VES:</span><span id="displayComision">0.00</span></div><div class="calc-row total text-base"><span>Total:</span><span id="displayTotal">0.00</span></div></div><input type="hidden" id="montoBs"><input type="hidden" id="comisionVes"><input type="hidden" id="total"><input type="hidden" id="ves"><input type="hidden" id="usdc"><input type="hidden" id="lote"></div></div><div class="modal-buttons"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="saveOperation()">Guardar</button></div></div></div>
+    <div id="operationModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold" id="modalTitle">Nueva Operación</h2><button class="close-btn" onclick="closeModal()">&times;</button></div><div class="modal-body"><div class="space-y-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Usuario</label><input type="text" id="usuario" placeholder="Nombre del usuario" class="w-full"></div><div class="grid grid-cols-2 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Referencia</label><input type="text" id="referencia" placeholder="Nº de referencia" class="w-full"></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Estatus</label><select id="estatus" class="w-full"><option value="En Curso">En Curso</option><option value="En Disputa">En Disputa</option><option value="Completado">Completado</option></select></div></div><div class="grid grid-cols-2 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Operación</label><select id="operacion" onchange="calculateAll()" class="w-full"><option value="Compra">Compra</option><option value="Venta">Venta</option></select></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Método de Pago</label><select id="metodoPago" onchange="calculateAll()" class="w-full"></select></div></div><hr class="border-gray-700"><div class="grid grid-cols-2 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Tasa de Cambio</label><input type="number" id="tasa" step="0.01" placeholder="0.00" onkeyup="calculateAll()" class="w-full"></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Monto USDC</label><input type="number" id="montoUsdc" step="0.001" placeholder="0.00" onkeyup="calculateAll()" class="w-full"></div></div><div class="flex items-center justify-between"><span id="adCommissionLabel" class="text-sm">Aplicar 0.0% comisión</span><label class="switch"><input type="checkbox" id="applyAdCommissionSwitch" onchange="calculateAll()"><span class="slider"></span></label></div><div class="calc-display space-y-2 text-sm"><div id="displayAdCommissionRow" class="calc-row" style="display: none;"><span id="displayAdCommissionLabel">Comisión Anuncio:</span><span id="displayAdCommission"></span></div><div class="calc-row"><span>Monto BS:</span><span id="displayMontoBs">0.00</span></div><div class="calc-row"><span>Comisión VES:</span><span id="displayComision">0.00</span></div><div class="calc-row total text-base"><span>Total:</span><span id="displayTotal">0.00</span></div></div><input type="hidden" id="montoBs"><input type="hidden" id="comisionVes"><input type="hidden" id="total"><input type="hidden" id="ves"><input type="hidden" id="usdc"><input type="hidden" id="lote"></div></div><div class="modal-buttons"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="pasteSpecial()">📋 Pegado Especial</button><button class="btn btn-primary" onclick="saveOperation()">Guardar</button></div></div></div>
     <div id="configModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold">Configuración</h2><button class="close-btn" onclick="closeConfigModal()">&times;</button></div><div class="modal-body"><div class="form-group"><label class="text-sm font-medium mb-1 block">Comisión por Anuncio (%):</label><input type="number" id="adCommission" step="0.1" placeholder="Ej: 0.2" class="w-full"></div> <div class="form-group mt-4"><label class="text-sm font-medium mb-1 block">Meta de Ganancia Diaria (VES):</label><input type="number" id="dailyProfitGoal" step="0.01" placeholder="Ej: 1000.00" class="w-full"></div><div class="form-group mt-4"><label class="text-sm font-medium mb-1 block">Valor Inicial Wally (USD):</label><input type="number" id="wallyInitialValueConfig" step="0.01" placeholder="0.00" class="w-full"></div></div><div class="modal-buttons"><button class="btn btn-secondary" onclick="closeConfigModal()">Cancelar</button><button class="btn btn-primary" onclick="saveConfig()">Guardar</button></div></div></div>
-    <div id="wallyModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 id="wallyModalTitle" class="modal-title text-xl font-bold">Operación Wally</h2><button class="close-btn" onclick="closeWallyModal()">&times;</button></div><div class="modal-body"><div id="wallyFormContent" class="space-y-4"></div></div><div class="modal-buttons"><button class="btn btn-secondary" onclick="closeWallyModal()">Cancelar</button><button class="btn btn-primary" onclick="saveWallyOperation()">Guardar</button></div></div></div>
+    <div id="wallyModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 id="wallyModalTitle" class="modal-title text-xl font-bold">Operación Wally</h2><button class="close-btn" onclick="closeWallyModal()">&times;</button></div><div class="modal-body"><div id="wallyFormContent" class="space-y-4"></div></div><div class="modal-buttons"><button class="btn btn-secondary" onclick="closeWallyModal()">Cancelar</button><button class="btn btn-green" onclick="pasteSpecialWally()">📋 Pegado Especial</button><button class="btn btn-primary" onclick="saveWallyOperation()">Guardar</button></div></div></div>
     
     <div id="bankBreachModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold">Brecha por Banco</h2><button class="close-btn" onclick="closeBankBreachModal()">&times;</button></div><div class="modal-body"><div id="bankBreachCards" class="info-cards-grid"></div></div></div></div>
     <div id="lotDetailsModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold">Lotes Activos</h2><button class="close-btn" onclick="closeLotDetailsModal()">&times;</button></div><div class="modal-body"><div id="lotDetailsCards" class="info-cards-grid"></div></div></div></div>
     <div id="pendingDetailsModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold">Detalles de Pendientes</h2><button class="close-btn" onclick="closePendingDetailsModal()">&times;</button></div><div class="modal-body"><div class="grid grid-cols-2 gap-4 mb-4"><div class="card text-center"><p class="text-sm font-medium text-gray-400">Recompra</p><p id="pendingRepurchaseSummary" class="text-lg font-bold mt-1">0 USDC</p></div><div class="card text-center"><p class="text-sm font-medium text-gray-400">Reventa</p><p id="pendingResaleSummary" class="text-lg font-bold mt-1">0 USDC</p></div></div><h3 class="font-semibold mb-2">Operaciones de Recompra</h3><div id="pendingRepurchaseList" class="operation-list mb-4"></div><h3 class="font-semibold mb-2">Operaciones de Reventa</h3><div id="pendingResaleList" class="operation-list"></div></div></div></div>
+
+    <div id="gainsSummaryModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header flex justify-between items-center">
+            <h2 class="modal-title text-xl font-bold">Resumen de Ganancias</h2>
+            <button class="close-btn" onclick="closeGainsSummaryModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                <div class="card text-center p-4">
+                    <p class="text-sm font-medium text-gray-400 mb-2">HOY</p>
+                    <div id="summaryGananciasHoyVes" class="text-2xl font-bold text-green-400">0.00 VES</div>
+                    <div id="summaryGananciasHoyUsdc" class="text-base font-semibold text-gray-300 mt-1">0.00 USDC</div>
+                </div>
+
+                <div class="card text-center p-4">
+                    <p class="text-sm font-medium text-gray-400 mb-2">ESTA SEMANA</p>
+                    <div id="summaryGananciasSemanaVes" class="text-2xl font-bold text-green-400">0.00 VES</div>
+                    <div id="summaryGananciasSemanaUsdc" class="text-base font-semibold text-gray-300 mt-1">0.00 USDC</div>
+                </div>
+
+                <div class="col-span-1 sm:col-span-2 card text-center p-4">
+                    <p class="text-sm font-medium text-gray-400 mb-2">ESTE MES</p>
+                    <div id="summaryGananciasMesVes" class="text-3xl font-bold text-green-400">0.00 VES</div>
+                    <div id="summaryGananciasMesUsdc" class="text-lg font-semibold text-gray-300 mt-1">0.00 USDC</div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="wallyGainsSummaryModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header flex justify-between items-center">
+            <h2 class="modal-title text-xl font-bold">Resumen de Ganancias Wally</h2>
+            <button class="close-btn" onclick="closeWallyGainsSummaryModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                <div class="card text-center p-4">
+                    <p class="text-sm font-medium text-gray-400 mb-2">HOY</p>
+                    <div id="summaryWallyGananciasHoyUsdc" class="text-2xl font-bold text-orange-400">0.00 USDC</div>
+                    <div id="summaryWallyGananciasHoyUsd" class="text-base font-semibold text-purple-400 mt-1">0.00 USD</div>
+                </div>
+
+                <div class="card text-center p-4">
+                    <p class="text-sm font-medium text-gray-400 mb-2">ESTA SEMANA</p>
+                    <div id="summaryWallyGananciasSemanaUsdc" class="text-2xl font-bold text-orange-400">0.00 USDC</div>
+                    <div id="summaryWallyGananciasSemanaUsd" class="text-base font-semibold text-purple-400 mt-1">0.00 USD</div>
+                </div>
+
+                <div class="col-span-1 sm:col-span-2 card text-center p-4">
+                    <p class="text-sm font-medium text-gray-400 mb-2">ESTE MES</p>
+                    <div id="summaryWallyGananciasMesUsdc" class="text-3xl font-bold text-orange-400">0.00 USDC</div>
+                    <div id="summaryWallyGananciasMesUsd" class="text-lg font-semibold text-purple-400 mt-1">0.00 USD</div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
 
     <div id="aiOperationsCenter">
         <button id="aiToggleBtn" onclick="window.aiCenter.toggle()">
@@ -558,8 +610,17 @@
         let operations = [], wallyOperations = [];
         let userConfig = {};
         let editingIndex = -1, editingWallyIndex = -1;
-        let currentDate = new Date().toISOString().split('T')[0];
-        let currentWallyDate = new Date().toISOString().split('T')[0];
+        // Función para obtener la fecha actual en formato YYYY-MM-DD para la zona horaria local
+        const getLocalDate = () => {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0'); // Los meses son base 0
+            const day = String(today.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        let currentDate = getLocalDate();
+        let currentWallyDate = getLocalDate();
         let currentLotsData = new Map();
         let currentPendingData = { recompra: 0, reventa: 0, recompraOps: [], reventaOps: [] };
         let wallyTotalGains = { usdc: 0, usd: 0 };
@@ -634,6 +695,44 @@
             }).catch(e => showToast('Error al guardar.', 'error'));
         }
 
+        // ===== INICIO: NUEVAS FUNCIONES DE CÁLCULO GLOBALES =====
+        function calculateTotalGainsForPeriod(periodOps) {
+            const opsCopy = JSON.parse(JSON.stringify(periodOps));
+            const uniqueDates = [...new Set(opsCopy.map(op => op.fecha))];
+            let totalGainVes = 0, totalGainUsdc = 0;
+            for (const fecha of uniqueDates) {
+                const dailyOps = opsCopy.filter(op => op.fecha === fecha).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                dailyOps.forEach(op => { if (op.operacion === 'Compra') op._unmatchedAmount = op.montoUsdc; });
+                const purchases = dailyOps.filter(op => op.operacion === 'Compra');
+                const sales = dailyOps.filter(op => op.operacion === 'Venta');
+                sales.forEach(sale => {
+                    let remainingSaleAmount = sale.montoUsdc;
+                    for (const purchase of purchases) {
+                        if (purchase._unmatchedAmount > 1e-5 && remainingSaleAmount > 1e-5) {
+                            const amountToMatch = Math.min(remainingSaleAmount, purchase._unmatchedAmount);
+                            const cost = amountToMatch * purchase.tasa;
+                            const revenue = amountToMatch * sale.tasa;
+                            totalGainVes += (revenue - cost);
+                            totalGainUsdc += (revenue - cost) / (sale.tasa || 1);
+                            remainingSaleAmount -= amountToMatch;
+                            purchase._unmatchedAmount -= amountToMatch;
+                        }
+                        if (remainingSaleAmount < 1e-5) break;
+                    }
+                });
+            }
+            return [totalGainVes, totalGainUsdc];
+        }
+
+        function calculateWallyGainsForPeriod(periodOps) {
+            const compras = periodOps.filter(op => op.operacion === 'Compra');
+            const ventas = periodOps.filter(op => op.operacion === 'Venta');
+            const totalGananciaUsdc = compras.reduce((s, op) => s + (op.gananciaUsdc || 0), 0);
+            const totalGananciaUsd = ventas.reduce((s, op) => s + (op.gananciaUsd || 0), 0);
+            return [totalGananciaUsdc, totalGananciaUsd];
+        };
+        // ===== FIN: NUEVAS FUNCIONES DE CÁLCULO GLOBALES =====
+
         function deleteOperation(index) {
             if (!currentUserId || !confirm('¿Está seguro de que desea eliminar esta operación?')) return;
             const operationId = operations[index].id;
@@ -661,55 +760,65 @@
         }
         
        function applyFIFOForDate(fecha) {
-            const ops = operations.filter(x => x.fecha === fecha).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-            ops.forEach(o => { o._gainVes = 0; o._gainUsdc = 0; o._assignedLots = []; });
-            let purchaseQueue = ops.filter(o => o.operacion === 'Compra' && (Number(o.montoUsdc) || 0) > 0).map(o => ({ op: o, remaining: Number(o.montoUsdc) || 0, tasa: Number(o.tasa) || 0 }));
-            const sales = ops.filter(o => o.operacion === 'Venta' && (Number(o.montoUsdc) || 0) > 0).map(o => ({ op: o, montoUsdc: Number(o.montoUsdc) || 0, tasa: Number(o.tasa) || 0, comisionVes: Number(o.comisionVes) || 0 })).sort((a,b) => (a.op.timestamp || 0) - (b.op.timestamp || 0));
-            let lotCounter = 1;
-            currentLotsData.clear();
-            sales.forEach(sale => {
-                let remainingToMatch = sale.montoUsdc;
-                const lotId = `L${lotCounter++}`;
-                sale.op.lote = lotId;
-                const currentLot = { id: lotId, montoTotal: 0, montoConsumido: 0, estado: 'activo' };
-                while (remainingToMatch > 0 && purchaseQueue.length > 0) {
-                    const head = purchaseQueue[0];
-                    const consume = Math.min(remainingToMatch, head.remaining);
-                    const costVes = consume * head.tasa;
-                    const revenueVes = consume * sale.tasa;
-                    const gainVes = revenueVes - costVes;
-                    const gainUsdc = gainVes / (sale.tasa || 1);
-                    head.op._gainVes += gainVes;
-                    head.op._gainUsdc += gainUsdc;
-                    head.op._assignedLots.push(`${lotId}$${consume.toFixed(2)}`);
-                    head.remaining -= consume;
-                    remainingToMatch -= consume;
-                    currentLot.montoTotal += consume;
-                    currentLot.montoConsumido += consume;
-                    if (head.remaining <= 1e-5) purchaseQueue.shift();
+            const dailyOps = operations.filter(op => op.fecha === fecha).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            dailyOps.forEach(op => {
+                op.ves = 0;
+                op.usdc = 0;
+                op.lote = '';
+                if (op.operacion === 'Compra') {
+                    op._unmatchedAmount = op.montoUsdc;
                 }
-                currentLot.estado = Math.abs(currentLot.montoTotal - currentLot.montoConsumido) < 1e-5 ? 'cerrado' : 'activo';
-                if(currentLot.montoTotal > 0) currentLotsData.set(lotId, currentLot);
             });
-            ops.forEach(o => { o.ves = o._gainVes || 0; o.usdc = o._gainUsdc || 0; if (o.operacion === 'Compra' && o._assignedLots.length > 0) o.lote = [...new Set(o._assignedLots.map(l => l.split('$')[0]))].join(','); delete o._gainVes; delete o._gainUsdc; delete o._assignedLots; });
-            let totalComprado = ops.filter(o => o.operacion === 'Compra').reduce((sum, op) => sum + op.montoUsdc, 0);
-            let totalVendido = ops.filter(o => o.operacion === 'Venta').reduce((sum, op) => sum + op.montoUsdc, 0);
+            const purchases = dailyOps.filter(op => op.operacion === 'Compra');
+            const sales = dailyOps.filter(op => op.operacion === 'Venta');
+            currentLotsData.clear();
+            let lotCounter = 1;
+            sales.forEach(sale => {
+                const lotId = `L${lotCounter++}`;
+                let remainingSaleAmount = sale.montoUsdc;
+                sale.lote = lotId;
+                const lot = { id: lotId, ventaOp: sale, montoTotal: sale.montoUsdc, montoConsumido: 0, comprasAsociadas: [], estado: 'activo' };
+                for (const purchase of purchases) {
+                    if (purchase._unmatchedAmount > 1e-5 && remainingSaleAmount > 1e-5) {
+                        const amountToMatch = Math.min(remainingSaleAmount, purchase._unmatchedAmount);
+                        const cost = amountToMatch * purchase.tasa;
+                        const revenue = amountToMatch * sale.tasa;
+                        const gainVes = revenue - cost;
+                        const gainUsdc = gainVes / (sale.tasa || 1);
+                        purchase.ves += gainVes;
+                        purchase.usdc += gainUsdc;
+                        const existingLote = purchase.lote ? purchase.lote + ', ' : '';
+                        purchase.lote = `${existingLote}${lotId}(${amountToMatch.toFixed(2)})`;
+                        remainingSaleAmount -= amountToMatch;
+                        purchase._unmatchedAmount -= amountToMatch;
+                        lot.montoConsumido += amountToMatch;
+                        lot.comprasAsociadas.push({ op: purchase, monto: amountToMatch });
+                    }
+                    if (remainingSaleAmount < 1e-5) { break; }
+                }
+                if (lot.montoConsumido >= lot.montoTotal - 1e-5) {
+                    lot.estado = 'cerrado';
+                }
+                currentLotsData.set(lotId, lot);
+            });
+            dailyOps.forEach(op => {
+                delete op._unmatchedAmount;
+            });
+            let totalComprado = purchases.reduce((sum, op) => sum + op.montoUsdc, 0);
+            let totalVendido = sales.reduce((sum, op) => sum + op.montoUsdc, 0);
             currentPendingData = { recompra: Math.max(0, totalVendido - totalComprado), reventa: Math.max(0, totalComprado - totalVendido), recompraOps: [], reventaOps: [] };
             if (window.aiCenter) window.aiCenter.onOperationsRecalculated();
         }
         
         function updateSummary() {
-            if(!operations) return;
-            applyFIFOForDate(currentDate);
+            if (!operations) return;
+            applyFIFOForDate(currentDate); 
             const currentOps = operations.filter(op => op.fecha === currentDate);
             const compras = currentOps.filter(op => op.operacion === 'Compra'), ventas = currentOps.filter(op => op.operacion === 'Venta');
             const promCompra = compras.length ? compras.reduce((s, o) => s + o.tasa, 0) / compras.length : 0;
             const promVenta = ventas.length ? ventas.reduce((s, o) => s + o.tasa, 0) / ventas.length : 0;
             const brecha = promCompra > 0 ? ((promVenta - promCompra) / promCompra * 100) : 0;
-            const [gananciasVes, gananciasUsdc] = currentOps.reduce((acc, op) => {
-                if (op.operacion === 'Compra') { acc[0] += op.ves || 0; acc[1] += op.usdc || 0; }
-                return acc;
-            }, [0, 0]);
+            const [gananciasVes, gananciasUsdc] = calculateTotalGainsForPeriod(currentOps);
             document.getElementById('ganancias').innerHTML = `${gananciasVes.toFixed(2)} <span class="text-2xl font-semibold">VES</span>`;
             document.getElementById('ganancias_usdc').innerHTML = `${gananciasUsdc.toFixed(4)} <span class="font-medium">USDC</span>`;
             document.getElementById('promCompra').textContent = promCompra.toFixed(2);
@@ -717,14 +826,12 @@
             document.getElementById('brecha').textContent = brecha.toFixed(2) + '%';
             document.getElementById('totalOps').textContent = currentOps.length;
             const activeLotsCount = Array.from(currentLotsData.values()).filter(lot => lot.estado === 'activo').length;
-            const totalPending = currentPendingData.recompra + currentPendingData.reventa;
             document.getElementById('activeLotsSummary').textContent = activeLotsCount;
-            document.getElementById('pendingSummary').textContent = `${totalPending.toFixed(2)} USDC`;
+            document.getElementById('pendingSummary').textContent = `${(currentPendingData.recompra + currentPendingData.reventa).toFixed(2)} USDC`;
             const dailyGoalValue = userConfig.profitGoals ? userConfig.profitGoals.daily : defaultProfitGoals.daily;
             document.getElementById('dailyGoal').textContent = `${gananciasVes.toFixed(2)} / ${dailyGoalValue.toFixed(2)} VES`;
             const progressBar = document.getElementById('dailyProgressBar');
-            let progressPercentage = dailyGoalValue > 0 ? (gananciasVes / dailyGoalValue) * 100 : 0;
-            progressBar.style.width = `${Math.min(progressPercentage, 100)}%`;
+            progressBar.style.width = `${Math.min(dailyGoalValue > 0 ? (gananciasVes / dailyGoalValue) * 100 : 0, 100)}%`;
             document.getElementById('wallyDashboardGainsUsdc').innerHTML = `${wallyTotalGains.usdc.toFixed(2)} <span class="text-2xl font-semibold">USDC</span>`;
             document.getElementById('wallyDashboardGainsUsd').innerHTML = `${wallyTotalGains.usd.toFixed(2)} <span class="font-medium">USD</span>`;
             renderOperations();
@@ -736,62 +843,15 @@
             const searchTerm = document.getElementById('searchOperations').value.toLowerCase();
             const filterOperacion = document.getElementById('filterOperacion').value;
             const filterMetodo = document.getElementById('filterMetodoPago').value;
-
-            const filteredOps = operations.filter(op => {
-                const matchesDate = op.fecha === currentDate;
-                const matchesSearch = op.usuario.toLowerCase().includes(searchTerm) || (op.referencia && op.referencia.toLowerCase().includes(searchTerm));
-                const matchesOperacion = filterOperacion === '' || op.operacion === filterOperacion;
-                const matchesMetodo = filterMetodo === '' || op.metodoPago === filterMetodo;
-                return matchesDate && matchesSearch && matchesOperacion && matchesMetodo;
-            });
-            
+            const filteredOps = operations.filter(op => (op.fecha === currentDate) && (op.usuario.toLowerCase().includes(searchTerm) || (op.referencia && op.referencia.toLowerCase().includes(searchTerm))) && (filterOperacion === '' || op.operacion === filterOperacion) && (filterMetodo === '' || op.metodoPago === filterMetodo));
             tableBody.innerHTML = '';
             listContainer.innerHTML = '';
-
             filteredOps.forEach((op, index) => {
                 const globalIndex = operations.indexOf(op);
                 const commissionIndicator = op.adCommissionPercent > 0 ? `<span class="text-xs ${op.operacion === 'Venta' ? 'text-green-400' : 'text-red-400'}">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
                 const mobileCommissionIndicator = op.adCommissionPercent > 0 ? `<span class="commission">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
-                
-                const tableRowHtml = `
-                    <tr class="hover:bg-[var(--surface)]">
-                        <td class="text-left"><div class="font-semibold">${op.usuario}</div><div class="text-xs text-gray-400">${op.metodoPago}</div></td>
-                        <td>${op.referencia || ''}</td>
-                        <td>${op.operacion.substring(0,1)}</td>
-                        <td>${(op.tasa || 0).toFixed(2)}</td>
-                        <td><div class="flex flex-col items-center">${(op.montoUsdc || 0).toFixed(3)} ${commissionIndicator}</div></td>
-                        <td>${(op.montoBs || 0).toFixed(2)}</td>
-                        <td class="font-semibold ${op.ves >= 0 ? 'text-green-400':'text-red-400'}">${(op.ves || 0).toFixed(2)}</td>
-                        <td class="font-semibold ${op.usdc >= 0 ? 'text-green-400':'text-red-400'}">${(op.usdc || 0).toFixed(4)}</td>
-                        <td>${op.lote || ''}</td>
-                        <td><span class="px-2 py-1 text-xs font-semibold rounded-full ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></td>
-                        <td>
-                            <button class="text-blue-400 p-1" onclick="editOperation(${globalIndex})">✏️</button>
-                            <button class="text-red-400 p-1" onclick="deleteOperation(${globalIndex})">🗑️</button>
-                        </td>
-                    </tr>`;
-                
-                const cardHtml = `
-                    <div class="operation-card ${op.operacion.toLowerCase()}">
-                        <div class="card-header">
-                            <div class="user-info">${op.usuario}<div class="payment-method">${op.metodoPago}</div></div>
-                            <span class="status-badge ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span>
-                        </div>
-                        <div class="card-grid">
-                            <div class="grid-item"><span class="label">Monto USDC</span><span class="value">${(op.montoUsdc || 0).toFixed(3)} ${mobileCommissionIndicator}</span></div>
-                            <div class="grid-item"><span class="label">Monto BS</span><span class="value">${(op.montoBs || 0).toFixed(2)}</span></div>
-                            <div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasa || 0).toFixed(2)}</span></div>
-                            <div class="grid-item"><span class="label">Ganancia VES</span><span class="value ${(op.ves || 0) >= 0 ? 'profit-green' : 'profit-red'}">${(op.ves || 0).toFixed(2)}</span></div>
-                        </div>
-                        <div class="card-footer">
-                            <div class="ref-info">REF: ${op.referencia || 'N/A'}<br>LOTE: ${op.lote || 'N/A'}</div>
-                            <div class="actions">
-                                <button class="action-btn edit" onclick="editOperation(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button>
-                                <button class="action-btn delete" onclick="deleteOperation(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.033-2.134H8.033c-1.12 0-2.033.954-2.033 2.134v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button>
-                            </div>
-                        </div>
-                    </div>`;
-
+                const tableRowHtml = `<tr class="hover:bg-[var(--surface)]"><td class="text-left"><div class="font-semibold">${op.usuario}</div><div class="text-xs text-gray-400">${op.metodoPago}</div></td><td>${op.referencia || ''}</td><td>${op.operacion.substring(0,1)}</td><td>${(op.tasa || 0).toFixed(2)}</td><td><div class="flex flex-col items-center">${(op.montoUsdc || 0).toFixed(3)} ${commissionIndicator}</div></td><td>${(op.montoBs || 0).toFixed(2)}</td><td class="font-semibold ${op.ves >= 0 ? 'text-green-400':'text-red-400'}">${(op.ves || 0).toFixed(2)}</td><td class="font-semibold ${op.usdc >= 0 ? 'text-green-400':'text-red-400'}">${(op.usdc || 0).toFixed(4)}</td><td>${op.lote || ''}</td><td><span class="px-2 py-1 text-xs font-semibold rounded-full ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></td><td><button class="text-blue-400 p-1" onclick="editOperation(${globalIndex})">✏️</button><button class="text-red-400 p-1" onclick="deleteOperation(${globalIndex})">🗑️</button></td></tr>`;
+                const cardHtml = `<div class="operation-card ${op.operacion.toLowerCase()}"><div class="card-header"><div class="user-info">${op.usuario}<div class="payment-method">${op.metodoPago}</div></div><span class="status-badge ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></div><div class="card-grid"><div class="grid-item"><span class="label">Monto USDC</span><span class="value">${(op.montoUsdc || 0).toFixed(3)} ${mobileCommissionIndicator}</span></div><div class="grid-item"><span class="label">Monto BS</span><span class="value">${(op.montoBs || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasa || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Ganancia VES</span><span class="value ${(op.ves || 0) >= 0 ? 'profit-green' : 'profit-red'}">${(op.ves || 0).toFixed(2)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}<br>LOTE: ${op.lote || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="editOperation(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button><button class="action-btn delete" onclick="deleteOperation(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.033-2.134H8.033c-1.12 0-2.033.954-2.033 2.134v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button></div></div></div>`;
                 tableBody.innerHTML += tableRowHtml;
                 listContainer.innerHTML += cardHtml;
             });
@@ -814,7 +874,16 @@
         
         function openModal() { document.getElementById('operationModal').classList.add('show'); if(editingIndex === -1) clearForm();}
         function closeModal() { document.getElementById('operationModal').classList.remove('show'); editingIndex = -1; }
-        function clearForm() { const form = document.getElementById('operationModal'); form.querySelectorAll('input, select').forEach(i => { if(i.type !== 'checkbox') i.value = ''; else i.checked = false; }); calculateAll(); }
+        function clearForm() { 
+            const form = document.getElementById('operationModal'); 
+            form.querySelectorAll('input, select').forEach(i => { 
+                if(i.type !== 'checkbox') i.value = ''; 
+                else i.checked = false; 
+            }); 
+            document.getElementById('operacion').value = "Compra"; 
+            document.getElementById('estatus').value = "En Curso";
+            calculateAll(); 
+        }
 
         function loadConfig() { if (!currentUserId) return; db.collection('users').doc(currentUserId).collection('settings').doc('userConfig').get().then(doc => { const defaultConfig = { adCommission: 0.2, profitGoals: defaultProfitGoals, wallyInitialValue: 0, aiThresholds: defaultAIThresholds }; userConfig = doc.exists ? { ...defaultConfig, ...doc.data() } : defaultConfig; userConfig.profitGoals = userConfig.profitGoals || defaultConfig.profitGoals; userConfig.aiThresholds = userConfig.aiThresholds || defaultConfig.aiThresholds; applyConfig(); });}
         function applyConfig() { document.getElementById('adCommissionLabel').textContent = `Aplicar ${userConfig.adCommission}% comisión`; populatePaymentMethods(); updateSummary(); updateWallySummary(); if(window.aiCenter) window.aiCenter.alertThresholds = userConfig.aiThresholds; }
@@ -836,6 +905,68 @@
         function openPendingDetailsModal() { renderPendingDetails(); document.getElementById('pendingDetailsModal').classList.add('show'); }
         function closePendingDetailsModal() { document.getElementById('pendingDetailsModal').classList.remove('show'); }
         
+        function openGainsSummaryModal() {
+            const formatDate = (dateObj) => {
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+            const today = new Date();
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const todayStr = formatDate(today), startOfWeekStr = formatDate(startOfWeek), startOfMonthStr = formatDate(startOfMonth);
+            
+            const dailyOps = operations.filter(op => op.fecha === todayStr);
+            const weeklyOps = operations.filter(op => op.fecha >= startOfWeekStr && op.fecha <= todayStr);
+            const monthlyOps = operations.filter(op => op.fecha >= startOfMonthStr && op.fecha <= todayStr);
+            
+            const [dailyGainsVes, dailyGainsUsdc] = calculateTotalGainsForPeriod(dailyOps);
+            const [weeklyGainsVes, weeklyGainsUsdc] = calculateTotalGainsForPeriod(weeklyOps);
+            const [monthlyGainsVes, monthlyGainsUsdc] = calculateTotalGainsForPeriod(monthlyOps);
+            
+            document.getElementById('summaryGananciasHoyVes').textContent = `${dailyGainsVes.toFixed(2)} VES`;
+            document.getElementById('summaryGananciasHoyUsdc').textContent = `${dailyGainsUsdc.toFixed(4)} USDC`;
+            document.getElementById('summaryGananciasSemanaVes').textContent = `${weeklyGainsVes.toFixed(2)} VES`;
+            document.getElementById('summaryGananciasSemanaUsdc').textContent = `${weeklyGainsUsdc.toFixed(4)} USDC`;
+            document.getElementById('summaryGananciasMesVes').textContent = `${monthlyGainsVes.toFixed(2)} VES`;
+            document.getElementById('summaryGananciasMesUsdc').textContent = `${monthlyGainsUsdc.toFixed(4)} USDC`;
+            document.getElementById('gainsSummaryModal').classList.add('show');
+        }
+        function closeGainsSummaryModal() { document.getElementById('gainsSummaryModal').classList.remove('show'); }
+
+        function openWallyGainsSummaryModal() {
+            const formatDate = (dateObj) => {
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+            const today = new Date();
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const todayStr = formatDate(today), startOfWeekStr = formatDate(startOfWeek), startOfMonthStr = formatDate(startOfMonth);
+
+            const dailyOps = wallyOperations.filter(op => op.fecha === todayStr);
+            const weeklyOps = wallyOperations.filter(op => op.fecha >= startOfWeekStr && op.fecha <= todayStr);
+            const monthlyOps = wallyOperations.filter(op => op.fecha >= startOfMonthStr && op.fecha <= todayStr);
+
+            const [dailyGainsUsdc, dailyGainsUsd] = calculateWallyGainsForPeriod(dailyOps);
+            const [weeklyGainsUsdc, weeklyGainsUsd] = calculateWallyGainsForPeriod(weeklyOps);
+            const [monthlyGainsUsdc, monthlyGainsUsd] = calculateWallyGainsForPeriod(monthlyOps);
+
+            document.getElementById('summaryWallyGananciasHoyUsdc').textContent = `${dailyGainsUsdc.toFixed(2)} USDC`;
+            document.getElementById('summaryWallyGananciasHoyUsd').textContent = `${dailyGainsUsd.toFixed(2)} USD`;
+            document.getElementById('summaryWallyGananciasSemanaUsdc').textContent = `${weeklyGainsUsdc.toFixed(2)} USDC`;
+            document.getElementById('summaryWallyGananciasSemanaUsd').textContent = `${weeklyGainsUsd.toFixed(2)} USD`;
+            document.getElementById('summaryWallyGananciasMesUsdc').textContent = `${monthlyGainsUsdc.toFixed(2)} USDC`;
+            document.getElementById('summaryWallyGananciasMesUsd').textContent = `${monthlyGainsUsd.toFixed(2)} USD`;
+            document.getElementById('wallyGainsSummaryModal').classList.add('show');
+        }
+        function closeWallyGainsSummaryModal() { document.getElementById('wallyGainsSummaryModal').classList.remove('show'); }
+
         function calculateBankBreaches() {
             const currentOps = operations.filter(op => op.fecha === currentDate), bankData = {};
             currentOps.forEach(op => { if (!bankData[op.metodoPago]) bankData[op.metodoPago] = { compras: [], ventas: [] }; if (op.operacion === 'Compra') bankData[op.metodoPago].compras.push(op.tasa); else if (op.operacion === 'Venta') bankData[op.metodoPago].ventas.push(op.tasa); });
@@ -850,9 +981,10 @@
             container.innerHTML = bankBreaches.map(d => `<div class="info-card"><div class="info-card-title">${d.metodo}</div><div class="info-card-value" style="color: ${d.brecha > 0 ? 'var(--success)' : 'var(--danger)'}">${d.brecha.toFixed(2)}%</div><div class="info-card-details">C:${d.promCompra.toFixed(2)}|V:${d.promVenta.toFixed(2)}</div></div>`).join('');
         }
         function renderLotDetailsCards() {
-            const container = document.getElementById('lotDetailsCards'), activeLots = Array.from(currentLotsData.values()).filter(l => l.estado === 'activo');
+            const container = document.getElementById('lotDetailsCards');
+            const activeLots = Array.from(currentLotsData.values()).filter(l => l.estado === 'activo');
             if(activeLots.length === 0) { container.innerHTML = '<p class="text-center text-gray-400">No hay lotes activos.</p>'; return; }
-            container.innerHTML = activeLots.map(l => `<div class="info-card"><div class="info-card-title">Lote ${l.id}</div><div class="info-card-value">${l.montoTotal > 0 ? ((l.montoConsumido/l.montoTotal)*100).toFixed(1) : '0.0'}%</div><div class="info-card-details">${l.montoConsumido.toFixed(2)}/${l.montoTotal.toFixed(2)} USDC</div></div>`).join('');
+            container.innerHTML = activeLots.map(lot => { const percentConsumed = lot.montoTotal > 0 ? (lot.montoConsumido / lot.montoTotal) * 100 : 0; const restante = lot.montoTotal - lot.montoConsumido; return `<div class="info-card p-4 flex flex-col justify-between"><div><div class="info-card-title text-base">Lote ${lot.id}</div><div class="info-card-value text-2xl" style="color: var(--primary); margin-bottom: 0.75rem;">${percentConsumed.toFixed(1)}% <span class="text-lg font-normal">Consumido</span></div><div class="info-card-details space-y-1 text-left"><div class="flex justify-between"><span>Total:</span> <strong class="font-mono">${lot.montoTotal.toFixed(2)} USDC</strong></div><div class="flex justify-between"><span>Consumido:</span> <strong class="font-mono text-green-400">${lot.montoConsumido.toFixed(2)} USDC</strong></div><div class="flex justify-between"><span>Restante:</span> <strong class="font-mono text-yellow-400">${restante.toFixed(2)} USDC</strong></div></div></div><div class="w-full bg-gray-700 rounded-full h-2.5 mt-4"><div class="bg-blue-500 h-2.5 rounded-full" style="width: ${percentConsumed}%"></div></div></div>`; }).join('');
         }
         function renderPendingDetails() {
             document.getElementById('pendingRepurchaseSummary').textContent = `${currentPendingData.recompra.toFixed(2)} USDC`;
@@ -863,7 +995,6 @@
             resaleList.innerHTML = currentPendingData.reventa === 0 ? '<p class="text-xs text-gray-400">No hay reventa pendiente.</p>' : `<div class="operation-list-item">Monto Total: <span class="font-semibold">${currentPendingData.reventa.toFixed(2)} USDC</span></div>`;
         }
         
-        // Wally Functions
         function openWallyModal(index = -1) { editingWallyIndex = index; document.getElementById('wallyModalTitle').textContent = index > -1 ? 'Editar Operación Wally' : 'Agregar Operación Wally'; renderWallyForm(index > -1 ? wallyOperations.find((op, i) => i === index) : {}); document.getElementById('wallyModal').classList.add('show'); }
         function closeWallyModal() { document.getElementById('wallyModal').classList.remove('show'); }
         function renderWallyForm(op = {}) {
@@ -886,12 +1017,13 @@
         function updateWallySummary() {
             if(!wallyOperations) return;
             const currentOps = wallyOperations.filter(op => op.fecha === currentWallyDate);
-            const compras = currentOps.filter(op => op.operacion === 'Compra'), ventas = currentOps.filter(op => op.operacion === 'Venta');
-            const totalGananciaUsdc = compras.reduce((s, op) => s + (Number(op.gananciaUsdc) || 0), 0);
-            const totalGananciaUsd = ventas.reduce((s, op) => s + (Number(op.gananciaUsd) || 0), 0);
+            const [totalGananciaUsdc, totalGananciaUsd] = calculateWallyGainsForPeriod(currentOps);
             wallyTotalGains = { usdc: totalGananciaUsdc, usd: totalGananciaUsd };
-            if (document.getElementById('page-operate').classList.contains('active')) { updateSummary(); }
+            if (document.getElementById('page-operate').classList.contains('active')) { 
+                updateSummary(); 
+            }
             const valorInicial = parseFloat(userConfig.wallyInitialValue) || 0;
+            const compras = currentOps.filter(op => op.operacion === 'Compra'), ventas = currentOps.filter(op => op.operacion === 'Venta');
             const valorActual = valorInicial + compras.reduce((s,o)=>s+o.reciboUsdc,0) - compras.reduce((s,o)=>s+o.envioUsd,0) + ventas.reduce((s,o)=>s+o.reciboUsd,0) - ventas.reduce((s,o)=>s+o.envioUsdc,0);
             document.getElementById("wallyValorInicialInput").value = valorInicial.toFixed(2);
             document.getElementById("wallyValorActual").textContent = valorActual.toFixed(2);
@@ -905,18 +1037,79 @@
             compraTableBody.innerHTML = ''; compraListContainer.innerHTML = ''; ventaTableBody.innerHTML = ''; ventaListContainer.innerHTML = '';
             currentOps.filter(op => op.operacion === 'Compra').forEach(op => {
                 const globalIndex = wallyOperations.indexOf(op);
-                const tableRowHtml = `<tr><td>${op.usuario}</td><td>${op.reciboUsdc.toFixed(2)}</td><td>${op.tasaCompra.toFixed(3)}</td><td>${op.envioUsd.toFixed(2)}</td><td class="font-semibold text-green-400">${op.gananciaUsdc.toFixed(4)}</td><td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button></td></tr>`;
-                const cardHtml = `<div class="operation-card compra"><div class="card-header"><div class="user-info">${op.usuario}</div><button class="action-btn edit" onclick="openWallyModal(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button></div><div class="card-grid"><div class="grid-item"><span class="label">Recibo USDC</span><span class="value">${op.reciboUsdc.toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${op.tasaCompra.toFixed(3)}</span></div><div class="grid-item"><span class="label">Envío USD</span><span class="value">${op.envioUsd.toFixed(2)}</span></div><div class="grid-item"><span class="label">Gan. USDC</span><span class="value profit-green">${op.gananciaUsdc.toFixed(4)}</span></div></div></div>`;
+                const tableRowHtml = `<tr><td>${op.usuario}</td><td>${(op.reciboUsdc || 0).toFixed(2)}</td><td>${(op.tasaCompra || 0).toFixed(3)}</td><td>${(op.envioUsd || 0).toFixed(2)}</td><td class="font-semibold text-green-400">${(op.gananciaUsdc || 0).toFixed(4)}</td><td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button></td></tr>`;
+                const cardHtml = `<div class="operation-card compra"><div class="card-header"><div class="user-info">${op.usuario}</div><button class="action-btn edit" onclick="openWallyModal(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button></div><div class="card-grid"><div class="grid-item"><span class="label">Recibo USDC</span><span class="value">${(op.reciboUsdc || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasaCompra || 0).toFixed(3)}</span></div><div class="grid-item"><span class="label">Envío USD</span><span class="value">${(op.envioUsd || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Gan. USDC</span><span class="value profit-green">${(op.gananciaUsdc || 0).toFixed(4)}</span></div></div></div>`;
                 compraTableBody.innerHTML += tableRowHtml; compraListContainer.innerHTML += cardHtml;
             });
             currentOps.filter(op => op.operacion === 'Venta').forEach(op => {
                 const globalIndex = wallyOperations.indexOf(op);
-                const tableRowHtml = `<tr><td>${op.usuario}</td><td>${op.envioUsdc.toFixed(2)}</td><td>${op.tasaVenta.toFixed(3)}</td><td>${op.reciboUsd.toFixed(2)}</td><td class="font-semibold text-green-400">${op.gananciaUsd.toFixed(4)}</td><td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button></td></tr>`;
-                const cardHtml = `<div class="operation-card venta"><div class="card-header"><div class="user-info">${op.usuario}</div><button class="action-btn edit" onclick="openWallyModal(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button></div><div class="card-grid"><div class="grid-item"><span class="label">Envío USDC</span><span class="value">${op.envioUsdc.toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${op.tasaVenta.toFixed(3)}</span></div><div class="grid-item"><span class="label">Recibo USD</span><span class="value">${op.reciboUsd.toFixed(2)}</span></div><div class="grid-item"><span class="label">Gan. USD</span><span class="value profit-green">${op.gananciaUsd.toFixed(4)}</span></div></div></div>`;
+                const tableRowHtml = `<tr><td>${op.usuario}</td><td>${(op.envioUsdc || 0).toFixed(2)}</td><td>${(op.tasaVenta || 0).toFixed(3)}</td><td>${(op.reciboUsd || 0).toFixed(2)}</td><td class="font-semibold text-green-400">${(op.gananciaUsd || 0).toFixed(4)}</td><td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button></td></tr>`;
+                const cardHtml = `<div class="operation-card venta"><div class="card-header"><div class="user-info">${op.usuario}</div><button class="action-btn edit" onclick="openWallyModal(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button></div><div class="card-grid"><div class="grid-item"><span class="label">Envío USDC</span><span class="value">${(op.envioUsdc || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasaVenta || 0).toFixed(3)}</span></div><div class="grid-item"><span class="label">Recibo USD</span><span class="value">${(op.reciboUsd || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Gan. USD</span><span class="value profit-green">${(op.gananciaUsd || 0).toFixed(4)}</span></div></div></div>`;
                 ventaTableBody.innerHTML += tableRowHtml; ventaListContainer.innerHTML += cardHtml;
             });
         }
         function saveWallyValorInicial() { userConfig.wallyInitialValue = parseFloat(document.getElementById('wallyInitialValueConfig').value) || 0; saveConfig(); }
+        
+        async function pasteSpecial() {
+            try {
+                const text = await navigator.clipboard.readText();
+                const refMatch = text.match(/-\s*([a-z0-9]{8})/i);
+                const usuarioMatch = text.match(/Contraparte:\s*([A-Z0-9\.]+)/i);
+                const tasaMatch = text.match(/Precio:\s*([\d\.]+)/i);
+                const estatusMatch = text.match(/Transacción\s+completada/i);
+                const montoRecibidoUsdcMatch = text.match(/Monto recibido:\s*([\d\.,]+)\s*USDC/i);
+                const montoEnviadoUsdcMatch = text.match(/Monto enviado:\s*([\d\.,]+)\s*USDC/i);
+                if (usuarioMatch) document.getElementById("usuario").value = usuarioMatch[1];
+                if (refMatch) document.getElementById("referencia").value = refMatch[1];
+                if (tasaMatch) document.getElementById("tasa").value = tasaMatch[1].replace(',', '.');
+                if (montoRecibidoUsdcMatch) {
+                    document.getElementById("operacion").value = "Compra";
+                    document.getElementById("montoUsdc").value = montoRecibidoUsdcMatch[1].replace(',', '.');
+                } else if (montoEnviadoUsdcMatch) {
+                    document.getElementById("operacion").value = "Venta";
+                    document.getElementById("montoUsdc").value = montoEnviadoUsdcMatch[1].replace(',', '.');
+                } else { showToast("No se pudo determinar el tipo de operación (Compra/Venta) o el monto USDC.", "warning"); return; }
+                if (estatusMatch) document.getElementById("estatus").value = "Completado";
+                calculateAll();
+                showToast("Pegado especial exitoso.", "success");
+            } catch (err) { showToast("No se pudo leer el portapapeles o el formato es incorrecto.", "error"); console.error(err); }
+        }
+
+        async function pasteSpecialWally() {
+            try {
+                const text = await navigator.clipboard.readText();
+                const refMatch = text.match(/-\s*([a-z0-9]{8})/i);
+                const usuarioMatch = text.match(/Contraparte:\s*([A-Z0-9\.]+)/i);
+                const montoEnviadoUsdMatch = text.match(/Monto enviado:\s*([\d\.]+)\s*USD/i);
+                const montoRecibidoUsdcMatch = text.match(/Monto recibido:\s*([\d\.]+)\s*USDC/i);
+                const montoEnviadoUsdcMatch = text.match(/Monto enviado:\s*([\d\.]+)\s*USDC/i);
+                const montoRecibidoUsdMatch = text.match(/Monto recibido:\s*([\d\.]+)\s*USD/i);
+                const tasaMatch = text.match(/Precio:\s*([\d\.]+)/i);
+                if (usuarioMatch) document.getElementById("wallyUsuario").value = usuarioMatch[1];
+                if (refMatch) document.getElementById("wallyReferencia").value = refMatch[1];
+                let tasaValue = tasaMatch ? tasaMatch[1] : '';
+                if (montoEnviadoUsdMatch && montoRecibidoUsdcMatch) { 
+                    document.getElementById("wallyOperacion").value = "Compra";
+                    updateWallyFormFields();
+                    document.getElementById("reciboUsdc").value = montoRecibidoUsdcMatch[1];
+                    document.getElementById("tasaCompra").value = tasaValue;
+                    calculateWallyCompra();
+                    showToast("Pegado especial exitoso (Wally Compra).", "success");
+                } else if (montoEnviadoUsdcMatch && montoRecibidoUsdMatch) {
+                    document.getElementById("wallyOperacion").value = "Venta";
+                    updateWallyFormFields();
+                    document.getElementById("envioUsdcVenta").value = montoEnviadoUsdcMatch[1];
+                    document.getElementById("tasaVenta").value = tasaValue;
+                    calculateWallyVenta();
+                    showToast("Pegado especial exitoso (Wally Venta).", "success");
+                } else {
+                    showToast("Formato no reconocido para Wally.", "warning");
+                }
+            } catch (err) {
+                showToast("No se pudo leer el portapapeles.", "error");
+                console.error(err);
+            }
+        }
         
         class AIOperationsCenter {
             constructor(){ this.notifications=[]; this.alerts=[]; this.isOpen=false; this.processedOperations=new Set(); this.lastOperationCount=0; this.lastLotStates=new Map(); this.lastMetrics={brecha:0,ganancias:{ves:0,usdc:0},operationsCount:0}; this.alertThresholds=defaultAIThresholds; }
@@ -942,18 +1135,24 @@
         window.aiCenter = new AIOperationsCenter();
         setInterval(() => { if (currentUserId && window.aiCenter) window.aiCenter.analyzeCurrentState(); }, 15000);
 
-
         window.showPage = showPage; window.loginUser = loginUser; window.registerUser = registerUser;
         window.toggleAuthForms = toggleAuthForms; window.logoutUser = logoutUser; window.openModal = openModal;
         window.closeModal = closeModal; window.saveOperation = saveOperation; window.editOperation = editOperation;
         window.deleteOperation = deleteOperation; window.calculateAll = calculateAll; window.openConfigModal = openConfigModal;
-        window.closeConfigModal = closeConfigModal; window.saveConfig = saveConfig; window.filterOperations = renderOperations;
+        window.closeConfigModal = closeConfigModal; window.saveConfig = saveConfig; 
+        window.filterOperations = renderOperations;
         window.openBankBreachModal = openBankBreachModal; window.closeBankBreachModal = closeBankBreachModal;
         window.openLotDetailsModal = openLotDetailsModal; window.closeLotDetailsModal = closeLotDetailsModal;
         window.openPendingDetailsModal = openPendingDetailsModal; window.closePendingDetailsModal = closePendingDetailsModal;
         window.openWallyModal = openWallyModal; window.closeWallyModal = closeWallyModal;
         window.updateWallyFormFields = updateWallyFormFields; window.calculateWallyCompra = calculateWallyCompra;
         window.calculateWallyVenta = calculateWallyVenta; window.saveWallyOperation = saveWallyOperation;
+        window.pasteSpecial = pasteSpecial; window.pasteSpecialWally = pasteSpecialWally;
+        window.openGainsSummaryModal = openGainsSummaryModal;
+        window.closeGainsSummaryModal = closeGainsSummaryModal;
+        window.openWallyGainsSummaryModal = openWallyGainsSummaryModal;
+        window.closeWallyGainsSummaryModal = closeWallyGainsSummaryModal;
+        window.saveWallyValorInicial = saveWallyValorInicial;
     </script>
 </body>
 </html>
