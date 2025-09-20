@@ -713,7 +713,7 @@
                             const cost = amountToMatch * purchase.tasa;
                             const revenue = amountToMatch * sale.tasa;
                             totalGainVes += (revenue - cost);
-                            totalGainUsdc += (revenue - cost) / (sale.tasa || 1);
+                            totalGainUsdc += (revenue - cost) / (purchase.tasa || 1);
                             remainingSaleAmount -= amountToMatch;
                             purchase._unmatchedAmount -= amountToMatch;
                         }
