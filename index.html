@@ -998,27 +998,39 @@
         if (fab) { // Verificación para evitar errores si el elemento no existe
             fab.addEventListener('click', () => chatWindow.classList.toggle('open'));
 
-            const sendMessage = async () => {
-                const userMessage = input.value.trim();
-                if (userMessage === '') return;
-                appendMessage(userMessage, 'user');
-                input.value = '';
-                const thinkingMessage = appendMessage('...', 'assistant');
+        const sendMessage = async () => {
+            const userMessage = input.value.trim();
+            if (userMessage === '') return;
 
-                try {
-                    const response = await fetch('/api/askAI', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ message: userMessage }),
-                    });
-                    if (!response.ok) throw new Error('Network response was not ok.');
-                    const data = await response.json();
-                    thinkingMessage.textContent = data.reply;
-                } catch (error) {
-                    console.error("Error calling AI:", error);
-                    thinkingMessage.textContent = "Lo siento, tuve un problema para conectarme.";
+            appendMessage(userMessage, 'user');
+            input.value = '';
+
+            const thinkingMessage = appendMessage('...', 'assistant');
+
+            // ¡NUEVO! Recolectamos las métricas antes de enviar.
+            const currentMetrics = getDashboardMetrics();
+
+            try {
+                const response = await fetch('/api/askAI', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    // ¡NUEVO! Enviamos el mensaje Y las métricas.
+                    body: JSON.stringify({ message: userMessage, metrics: currentMetrics }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('La respuesta de la red no fue exitosa.');
                 }
-            };
+
+                const data = await response.json();
+                thinkingMessage.textContent = data.reply;
+
+            } catch (error) {
+                console.error("Error al llamar a la IA:", error);
+                thinkingMessage.textContent = "Lo siento, tuve un problema para conectarme. Inténtalo de nuevo.";
+            }
+        };
+
 
             const appendMessage = (text, type) => {
                 const messageDiv = document.createElement('div');
@@ -1967,6 +1979,18 @@
             db.collection('users').doc(currentUserId).collection('userProfiles').doc(currentProfileUserName).set({ notes: notes }, { merge: true })
                 .then(() => showToast('Notas guardadas.', 'success'))
                 .catch(() => showToast('Error al guardar notas.', 'error'));
+        }
+
+        function getDashboardMetrics() {
+            const cleanValue = (text) => text.split(' ')[0].replace('%', '');
+            return {
+                gananciaVes: cleanValue(document.getElementById('ganancias').textContent),
+                gananciaUsdc: cleanValue(document.getElementById('ganancias_usdc').textContent),
+                totalOps: cleanValue(document.getElementById('totalOps').textContent),
+                promCompra: cleanValue(document.getElementById('promCompra').textContent),
+                promVenta: cleanValue(document.getElementById('promVenta').textContent),
+                brecha: cleanValue(document.getElementById('brecha').textContent),
+            };
         }
 
         window.showPage = showPage; window.loginUser = loginUser; window.registerUser = registerUser;
