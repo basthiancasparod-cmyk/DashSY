@@ -1,4 +1,4 @@
-// api/askAI.js - VERSIÓN FINAL CON PROMPT ESTRICTO
+// api/askAI.js - VERSIÓN FINAL CON URL CORRECTA
 export default async function handler(request, response) {
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -18,8 +18,6 @@ export default async function handler(request, response) {
     return response.status(400).json({ error: 'No se proporcionó ningún mensaje.' });
   }
 
-  // --- INICIO: PROMPT FINAL Y ESTRICTO ---
-  // Combinamos todas las instrucciones y datos en un solo bloque para ser más directos.
   const finalPrompt = `
     **ROL Y REGLAS ESTRICTAS:**
     - Eres un asistente de datos llamado DashSY.
@@ -40,11 +38,10 @@ export default async function handler(request, response) {
     **PREGUNTA DEL USUARIO:**
     ${message}
   `;
-  // --- FIN: PROMPT FINAL Y ESTRICTO ---
 
   try {
     const groqResponse = await fetch(
-      "https://api.gro.com/openai/v1/chat/completions",
+      "https://api.groq.com/openai/v1/chat/completions", // <-- URL CORREGIDA
       {
         method: "POST",
         headers: {
@@ -52,14 +49,8 @@ export default async function handler(request, response) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messages: [
-            // Ahora solo enviamos un mensaje de "usuario" con todas las instrucciones
-            { 
-              role: "user", 
-              content: finalPrompt 
-            }
-          ],
-          model: "gemma2-9b-it", 
+          messages: [{ role: "user", content: finalPrompt }],
+          model: "gemma2-9b-it",
         }),
       }
     );
