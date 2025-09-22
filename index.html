@@ -1081,7 +1081,9 @@
                 showPage('operate');
             } else {
                 currentUserId = null;
-                authSection.style.display = 'flex'; appContainer.style.display = 'none';
+                authSection.style.display = 'flex'; 
+
+                document.getElementById('loading-overlay').style.display = 'none';
             }
         });
 
