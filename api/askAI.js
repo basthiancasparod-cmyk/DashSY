@@ -21,7 +21,7 @@ export default async function handler(request, response) {
   // Llamar a la API de Hugging Face
   try {
     const apiResponse = await fetch(
-      "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+      "https://api-inference.huggingface.co/models/distilgpt2",
       {
         headers: {
           "Authorization": `Bearer ${process.env.HUGGING_FACE_API_KEY}`,
