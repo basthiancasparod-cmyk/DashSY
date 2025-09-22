@@ -1,4 +1,4 @@
-// api/askAI.js - VERSIÓN CON PROMPT MEJORADO
+// api/askAI.js - VERSIÓN FINAL CON PROMPT ESTRICTO
 export default async function handler(request, response) {
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -18,31 +18,33 @@ export default async function handler(request, response) {
     return response.status(400).json({ error: 'No se proporcionó ningún mensaje.' });
   }
 
-  // --- INICIO: PROMPT MEJORADO ---
-  const systemPrompt = `
-    Eres "DashSY", un asistente de trading P2P integrado en un dashboard. 
-    Tu única fuente de información son las métricas del día que se te proporcionan a continuación.
-    NUNCA inventes datos ni des información que no esté en las métricas.
-    Tus respuestas deben ser cortas, directas y al punto, como si fueras un analista de datos.
-    No te presentes ni menciones que eres una IA. Responde directamente a la pregunta del usuario usando los datos.
-  `;
-  // --- FIN: PROMPT MEJORADO ---
+  // --- INICIO: PROMPT FINAL Y ESTRICTO ---
+  // Combinamos todas las instrucciones y datos en un solo bloque para ser más directos.
+  const finalPrompt = `
+    **ROL Y REGLAS ESTRICTAS:**
+    - Eres un asistente de datos llamado DashSY.
+    - Tu única fuente de conocimiento son los DATOS DEL DÍA proporcionados a continuación.
+    - NUNCA menciones que eres un modelo de IA o que eres entrenado por Google.
+    - NUNCA te presentes.
+    - Responde de forma CORTA, PRECISA y DIRECTA a la PREGUNTA DEL USUARIO.
+    - USA ÚNICAMENTE LOS DATOS PROPORCIONADOS.
 
-  const userPrompt = `
-    Métricas del día:
-    - Ganancia Total VES: ${metrics.gananciaVes}
-    - Ganancia Total USDC: ${metrics.gananciaUsdc}
-    - Operaciones: ${metrics.totalOps}
-    - Promedio Compra: ${metrics.promCompra}
-    - Promedio Venta: ${metrics.promVenta}
-    - Brecha: ${metrics.brecha}%
+    **DATOS DEL DÍA:**
+    - Ganancia Total en VES: ${metrics.gananciaVes}
+    - Ganancia Total en USDC (aproximada): ${metrics.gananciaUsdc}
+    - Número de Operaciones: ${metrics.totalOps}
+    - Tasa de Compra Promedio: ${metrics.promCompra}
+    - Tasa de Venta Promedio: ${metrics.promVenta}
+    - Brecha (Spread): ${metrics.brecha}%
 
-    Pregunta del usuario: "${message}"
+    **PREGUNTA DEL USUARIO:**
+    ${message}
   `;
+  // --- FIN: PROMPT FINAL Y ESTRICTO ---
 
   try {
     const groqResponse = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
+      "https://api.gro.com/openai/v1/chat/completions",
       {
         method: "POST",
         headers: {
@@ -51,8 +53,11 @@ export default async function handler(request, response) {
         },
         body: JSON.stringify({
           messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
+            // Ahora solo enviamos un mensaje de "usuario" con todas las instrucciones
+            { 
+              role: "user", 
+              content: finalPrompt 
+            }
           ],
           model: "gemma2-9b-it", 
         }),
@@ -62,6 +67,7 @@ export default async function handler(request, response) {
     const result = await groqResponse.json();
     
     if (!result.choices || result.choices.length === 0) {
+      console.error("Respuesta inesperada de Groq:", result);
       throw new Error("La respuesta de Groq no contiene una respuesta válida.");
     }
     
