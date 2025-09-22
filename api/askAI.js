@@ -1,4 +1,4 @@
-// api/askAI.js - VERSIÓN INTELIGENTE CON CONTEXTO
+// api/askAI.js - VERSIÓN CON PROMPT MEJORADO
 export default async function handler(request, response) {
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -13,28 +13,29 @@ export default async function handler(request, response) {
     return response.status(500).json({ error: 'Error de configuración del servidor.' });
   }
 
-  // Ahora extraemos tanto el mensaje como las métricas
   const { message, metrics } = request.body;
   if (!message) {
     return response.status(400).json({ error: 'No se proporcionó ningún mensaje.' });
   }
 
-  // 1. Creamos el "personaje" o rol de la IA
+  // --- INICIO: PROMPT MEJORADO ---
   const systemPrompt = `
-    Eres "DashSY", un asistente experto en trading P2P de criptomonedas, especializado en el mercado venezolano.
-    Tu tono debe ser profesional, directo y útil. Proporciona respuestas cortas y precisas.
-    Analiza las métricas del día que se te proporcionan y responde la pregunta del usuario basándote en ellas.
+    Eres "DashSY", un asistente de trading P2P integrado en un dashboard. 
+    Tu única fuente de información son las métricas del día que se te proporcionan a continuación.
+    NUNCA inventes datos ni des información que no esté en las métricas.
+    Tus respuestas deben ser cortas, directas y al punto, como si fueras un analista de datos.
+    No te presentes ni menciones que eres una IA. Responde directamente a la pregunta del usuario usando los datos.
   `;
+  // --- FIN: PROMPT MEJORADO ---
 
-  // 2. Creamos la pregunta del usuario con su contexto
   const userPrompt = `
     Métricas del día:
-    - Ganancia Total: ${metrics.gananciaVes} VES
-    - Ganancia Total en Dólares (aprox): ${metrics.gananciaUsdc} USDC
-    - Número de Operaciones: ${metrics.totalOps}
-    - Tasa de Compra Promedio: ${metrics.promCompra} VES
-    - Tasa de Venta Promedio: ${metrics.promVenta} VES
-    - Brecha (Spread): ${metrics.brecha}
+    - Ganancia Total VES: ${metrics.gananciaVes}
+    - Ganancia Total USDC: ${metrics.gananciaUsdc}
+    - Operaciones: ${metrics.totalOps}
+    - Promedio Compra: ${metrics.promCompra}
+    - Promedio Venta: ${metrics.promVenta}
+    - Brecha: ${metrics.brecha}%
 
     Pregunta del usuario: "${message}"
   `;
@@ -50,7 +51,6 @@ export default async function handler(request, response) {
         },
         body: JSON.stringify({
           messages: [
-            // 3. Enviamos tanto el rol del sistema como la pregunta contextualizada
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt }
           ],
