@@ -999,37 +999,37 @@
             fab.addEventListener('click', () => chatWindow.classList.toggle('open'));
 
         const sendMessage = async () => {
-            const userMessage = input.value.trim();
-            if (userMessage === '') return;
+    const userMessage = input.value.trim();
+    if (userMessage === '') return;
 
-            appendMessage(userMessage, 'user');
-            input.value = '';
+    appendMessage(userMessage, 'user');
+    input.value = '';
 
-            const thinkingMessage = appendMessage('...', 'assistant');
+    const thinkingMessage = appendMessage('...', 'assistant');
 
-            // ¡NUEVO! Recolectamos las métricas antes de enviar.
-            const currentMetrics = getDashboardMetrics();
+    // ¡NUEVO! Recolectamos las métricas antes de enviar.
+    const currentMetrics = getDashboardMetrics();
 
-            try {
-                const response = await fetch('/api/askAI', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    // ¡NUEVO! Enviamos el mensaje Y las métricas.
-                    body: JSON.stringify({ message: userMessage, metrics: currentMetrics }),
-                });
+    try {
+        const response = await fetch('/api/askAI', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            // ¡NUEVO! Enviamos el mensaje Y las métricas.
+            body: JSON.stringify({ message: userMessage, metrics: currentMetrics }),
+        });
 
-                if (!response.ok) {
-                    throw new Error('La respuesta de la red no fue exitosa.');
-                }
+        if (!response.ok) {
+            throw new Error('La respuesta de la red no fue exitosa.');
+        }
 
-                const data = await response.json();
-                thinkingMessage.textContent = data.reply;
+        const data = await response.json();
+        thinkingMessage.textContent = data.reply;
 
-            } catch (error) {
-                console.error("Error al llamar a la IA:", error);
-                thinkingMessage.textContent = "Lo siento, tuve un problema para conectarme. Inténtalo de nuevo.";
-            }
-        };
+    } catch (error) {
+        console.error("Error al llamar a la IA:", error);
+        thinkingMessage.textContent = "Lo siento, tuve un problema para conectarme. Inténtalo de nuevo.";
+    }
+};
 
 
             const appendMessage = (text, type) => {
