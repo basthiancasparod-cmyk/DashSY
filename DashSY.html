@@ -885,6 +885,8 @@
             } else {
                 currentUserId = null;
                 authSection.style.display = 'flex'; appContainer.style.display = 'none';
+
+                document.getElementById('loading-overlay').style.display = 'none';
             }
         });
 
@@ -1842,3 +1844,4 @@
     </script>
 </body>
 </html>
+
