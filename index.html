@@ -1769,7 +1769,7 @@
         function updateWallySummary() {
             if(!wallyOperations) return;
             const currentOps = wallyOperations.filter(op => op.fecha === currentWallyDate);
-            const [totalGananciaUsdc, totalGananciaUsd] = calculateWallyGinsForPeriod(currentOps);
+            const [totalGananciaUsdc, totalGananciaUsd] = calculateWallyGainsForPeriod(currentOps);
             wallyTotalGains = { usdc: totalGananciaUsdc, usd: totalGananciaUsd };
             const valorInicial = parseFloat(userConfig.wallyInitialValue) || 0;
             const compras = currentOps.filter(op => op.operacion === 'Compra'), ventas = currentOps.filter(op => op.operacion === 'Venta');
