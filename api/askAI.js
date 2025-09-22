@@ -1,30 +1,45 @@
-// api/askAI.js - VERSIÓN FINAL Y FUNCIONAL CON GEMMA-2
+// api/askAI.js - VERSIÓN INTELIGENTE CON CONTEXTO
 export default async function handler(request, response) {
-  // Configuración para permitir que tu app frontend llame a esta función (CORS)
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Vercel maneja las solicitudes OPTIONS
   if (request.method === 'OPTIONS') {
     return response.status(200).end();
   }
-
-  // Lee la clave API secreta desde la configuración de Vercel
+  
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    console.error("Error Crítico: La variable de entorno GROQ_API_KEY no está configurada.");
     return response.status(500).json({ error: 'Error de configuración del servidor.' });
   }
 
-  // Extrae el mensaje del usuario de la solicitud
-  const { message } = request.body;
+  // Ahora extraemos tanto el mensaje como las métricas
+  const { message, metrics } = request.body;
   if (!message) {
     return response.status(400).json({ error: 'No se proporcionó ningún mensaje.' });
   }
 
+  // 1. Creamos el "personaje" o rol de la IA
+  const systemPrompt = `
+    Eres "DashSY", un asistente experto en trading P2P de criptomonedas, especializado en el mercado venezolano.
+    Tu tono debe ser profesional, directo y útil. Proporciona respuestas cortas y precisas.
+    Analiza las métricas del día que se te proporcionan y responde la pregunta del usuario basándote en ellas.
+  `;
+
+  // 2. Creamos la pregunta del usuario con su contexto
+  const userPrompt = `
+    Métricas del día:
+    - Ganancia Total: ${metrics.gananciaVes} VES
+    - Ganancia Total en Dólares (aprox): ${metrics.gananciaUsdc} USDC
+    - Número de Operaciones: ${metrics.totalOps}
+    - Tasa de Compra Promedio: ${metrics.promCompra} VES
+    - Tasa de Venta Promedio: ${metrics.promVenta} VES
+    - Brecha (Spread): ${metrics.brecha}
+
+    Pregunta del usuario: "${message}"
+  `;
+
   try {
-    // Realiza la llamada a la API de Groq
     const groqResponse = await fetch(
       "https://api.groq.com/openai/v1/chat/completions",
       {
@@ -34,24 +49,24 @@ export default async function handler(request, response) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messages: [{ role: "user", content: message }],
-          // --- ¡EL MODELO CORRECTO Y ACTIVO QUE ENCONTRASTE! ---
+          messages: [
+            // 3. Enviamos tanto el rol del sistema como la pregunta contextualizada
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
           model: "gemma2-9b-it", 
         }),
       }
     );
 
     const result = await groqResponse.json();
-
-    // Verificación de que la respuesta es válida
+    
     if (!result.choices || result.choices.length === 0) {
-      console.error("Respuesta inesperada de Groq:", result);
       throw new Error("La respuesta de Groq no contiene una respuesta válida.");
     }
-
+    
     const aiText = result.choices[0]?.message?.content || "Lo siento, no pude generar una respuesta.";
-
-    // Envía la respuesta de vuelta al chatbot
+    
     response.status(200).json({ reply: aiText });
 
   } catch (error) {
