@@ -655,7 +655,7 @@
     
     <div id="toast-container"></div>
     
-    <div id="operationModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold" id="modalTitle">Nueva Operación</h2><button class="close-btn" onclick="closeModal()">&times;</button></div><div class="modal-body"><div class="space-y-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Usuario</label><input type="text" id="usuario" placeholder="Nombre del usuario" class="w-full"></div><div class="grid grid-cols-2 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Referencia</label><input type="text" id="referencia" placeholder="Nº de referencia" class="w-full"></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Estatus</label><select id="estatus" class="w-full"><option value="En Curso">En Curso</option><option value="En Disputa">En Disputa</option><option value="Completado">Completado</option></select></div></div><div class="grid grid-cols-3 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Operación</label><select id="operacion" onchange="calculateAll()" class="w-full"><option value="Compra">Compra</option><option value="Venta">Venta</option></select></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Método de Pago</label><select id="metodoPago" onchange="calculateAll()" class="w-full"></select></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Plataforma P2P</label><select id="p2pPlatformSelect" onchange="calculateAll()" class="w-full"></select></div></div><hr class="border-gray-700"><div class="grid grid-cols-2 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Tasa de Cambio</label><input type="number" id="tasa" step="0.01" placeholder="0.00" onkeyup="calculateAll()" class="w-full"></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Monto USDC</label><input type="number" id="montoUsdc" step="0.001" placeholder="0.00" onkeyup="calculateAll()" class="w-full"></div></div><div class="calc-display space-y-2 text-sm"><div id="displayAdCommissionRow" class="calc-row" style="display: none;"><span id="displayAdCommissionLabel">Comisión Plataforma:</span><span id="displayAdCommission"></span></div><div class="calc-row"><span>Monto BS:</span><span id="displayMontoBs">0.00</span></div><div class="calc-row"><span>Comisión VES:</span><span id="displayComision">0.00</span></div><div class="calc-row total text-base"><span>Total:</span><span id="displayTotal">0.00</span></div></div><input type="hidden" id="montoBs"><input type="hidden" id="comisionVes"><input type="hidden" id="total"><input type="hidden" id="ves"><input type="hidden" id="usdc"><input type="hidden" id="lote"></div></div><div class="modal-buttons"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="pasteSpecial()">📋 Pegado Especial</button><button id="saveOperationBtn" class="btn btn-primary" onclick="saveOperation()"><div class="btn-spinner"></div>Guardar</button>
+    <div id="operationModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold" id="modalTitle">Nueva Operación</h2><button class="close-btn" onclick="closeModal()">&times;</button></div><div class="modal-body"><div class="space-y-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Usuario</label><input type="text" id="usuario" placeholder="Nombre del usuario" class="w-full"></div><div class="grid grid-cols-2 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Referencia</label><input type="text" id="referencia" placeholder="Nº de referencia" class="w-full"></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Estatus</label><select id="estatus" class="w-full"><option value="En Curso">En Curso</option><option value="En Disputa">En Disputa</option><option value="Completado">Completado</option></select></div></div><div class="grid grid-cols-3 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Operación</label><select id="operacion" onchange="calculateAll()" class="w-full"><option value="Compra">Compra</option><option value="Venta">Venta</option></select></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Método de Pago</label><select id="metodoPago" onchange="calculateAll()" class="w-full"></select></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Plataforma P2P</label><select id="p2pPlatformSelect" onchange="calculateAll()" class="w-full"></select></div></div><hr class="border-gray-700"><div class="grid grid-cols-2 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Tasa de Cambio</label><input type="number" id="tasa" step="0.01" placeholder="0.00" onkeyup="calculateAll()" class="w-full"></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Monto Cripto</label><input type="number" id="montoUsdc" step="0.001" placeholder="0.00" onkeyup="calculateAll()" class="w-full"></div></div><div class="calc-display space-y-2 text-sm"><div id="displayAdCommissionRow" class="calc-row" style="display: none;"><span id="displayAdCommissionLabel">Comisión Plataforma:</span><span id="displayAdCommission"></span></div><div class="calc-row"><span>Monto BS:</span><span id="displayMontoBs">0.00</span></div><div class="calc-row"><span>Comisión VES:</span><span id="displayComision">0.00</span></div><div class="calc-row total text-base"><span>Total:</span><span id="displayTotal">0.00</span></div></div><input type="hidden" id="montoBs"><input type="hidden" id="comisionVes"><input type="hidden" id="total"><input type="hidden" id="ves"><input type="hidden" id="usdc"><input type="hidden" id="lote"></div></div><div class="modal-buttons"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="pasteSpecial()">📋 Pegado Especial</button><button id="saveOperationBtn" class="btn btn-primary" onclick="saveOperation()"><div class="btn-spinner"></div>Guardar</button>
     </div>
     </div>
     </div>
@@ -705,7 +705,7 @@
                 <div class="space-y-6">
     
                     <div>
-                        <h3 class="text-base font-semibold mb-3">Metas de Ganancia Diaria</h3>
+                        <h3 class="text-base font-semibold mb-3">Metas de Ganancias Diarias</h3>
                         <div class="card p-4 bg-background space-y-4">
                             <div class="grid grid-cols-[1fr_auto] items-center gap-4">
                                 <label for="goalVes" class="font-medium text-sm">VES:</label>
@@ -730,19 +730,9 @@
                             </div>
                         </div>
                     </div>
-    
+                    <hr class="border-gray-700 !my-6">
                     <div>
-                        <h3 class="text-base font-semibold mb-3">Valores Iniciales</h3>
-                        <div class="card p-4 bg-background">
-                            <div class="form-group">
-                                <label class="text-sm font-medium mb-1 block">Valor Inicial (USD):</label>
-                                <input type="number" id="wallyInitialValueConfig" step="0.01" placeholder="0.00" class="w-full">
-                            </div>
-                        </div>
-                    </div>
-    
-                    <div>
-                        <h3 class="text-base font-semibold mb-3">Gestionar Plataformas P2P</h3>
+                        <h3 class="text-base font-semibold mb-3">Gestión de Plataformas P2P</h3>
                         <div id="p2pPlatformsList" class="space-y-2 mb-4"></div>
                         <div class="card p-4 bg-background">
                             <h4 class="font-semibold mb-2" id="platformFormTitle">Añadir Nueva Plataforma</h4>
@@ -769,14 +759,16 @@
                         </div>
                     </div>
     
+                    <hr class="border-gray-700 !my-6">
+
                     <div>
-                        <h3 class="text-base font-semibold mb-3">Mis Métodos de Pago (VES)</h3>
+                        <h3 class="text-base font-semibold mb-3">Métodos de Pago (VES)</h3>
                         <div id="paymentMethodsList" class="flex flex-wrap gap-2 mb-4"></div>
                         <div class="flex gap-2"><input type="text" id="newPaymentMethod" placeholder="Nuevo método..." class="form-field-grid flex-grow"><button class="btn btn-secondary" onclick="addPaymentMethod()">Añadir</button></div>
                     </div>
     
                     <div>
-                        <h3 class="text-base font-semibold mb-3">Mis Métodos de Pago (USD)</h3>
+                        <h3 class="text-base font-semibold mb-3">Métodos de Pago (USD)</h3>
                         <div id="usdPaymentMethodsList" class="flex flex-wrap gap-2 mb-4"></div>
                         <div class="flex gap-2"><input type="text" id="newUsdPaymentMethod" placeholder="Nuevo método USD..." class="form-field-grid flex-grow"><button class="btn btn-secondary" onclick="addUsdPaymentMethod()">Añadir</button></div>
                     </div>
@@ -957,6 +949,9 @@
                 document.getElementById('loading-overlay').style.display = 'none';
             }
         }
+
+
+
 
         const getLocalDate = () => {
             const today = new Date();
@@ -1459,7 +1454,6 @@
             document.getElementById('goalVes').value = userConfig.profitGoals.ves; 
             document.getElementById('goalCrypto').value = userConfig.profitGoals.crypto; 
             document.getElementById('goalUsd').value = userConfig.profitGoals.usd; 
-            document.getElementById('wallyInitialValueConfig').value = userConfig.wallyInitialValue || 0; 
             updateGoalToggleButtons();
             renderP2PPlatforms();
             renderPaymentMethodsConfig(); 
@@ -1494,7 +1488,6 @@
             userConfig.profitGoals.ves = parseFloat(document.getElementById('goalVes').value) || defaultProfitGoals.ves; 
             userConfig.profitGoals.crypto = parseFloat(document.getElementById('goalCrypto').value) || defaultProfitGoals.crypto; 
             userConfig.profitGoals.usd = parseFloat(document.getElementById('goalUsd').value) || defaultProfitGoals.usd; 
-            userConfig.wallyInitialValue = parseFloat(document.getElementById('wallyInitialValueConfig').value) || 0; 
 
             db.collection('users').doc(currentUserId).collection('settings').doc('userConfig').set(userConfig, {merge: true}).then(() => { 
                 applyConfig(); 
@@ -1725,7 +1718,7 @@
             nameInput.focus();
         }
 
-        function deleteManagedAccount(accountId) {
+       function deleteManagedAccount(accountId) {
             if (!confirm('¿Estás seguro de que deseas eliminar esta cuenta de forma permanente?')) {
                 return;
             }
@@ -1942,41 +1935,41 @@
         function closeWallyModal() { document.getElementById('wallyModal').classList.remove('show'); }
         
         function renderWallyForm(op = {}) {
-            const platforms = userConfig.p2pPlatforms || [];
-            const defaultPlatform = userConfig.p2pPlatforms.find(p => p.isDefault);
-            const platformOptions = platforms.map(p => {
-                const isSelected = op.platform ? op.platform === p.name : (defaultPlatform && defaultPlatform.name === p.name);
-                return `<option value="${p.name}" ${isSelected ? 'selected' : ''}>${p.name}</option>`;
-            }).join('');
+        const platforms = userConfig.p2pPlatforms || [];
+        const defaultPlatform = userConfig.p2pPlatforms.find(p => p.isDefault);
+        const platformOptions = platforms.map(p => {
+            const isSelected = op.platform ? op.platform === p.name : (defaultPlatform && defaultPlatform.name === p.name);
+            return `<option value="${p.name}" ${isSelected ? 'selected' : ''}>${p.name}</option>`;
+        }).join('');
 
-            const usdMethods = userConfig.paymentMethods.usd || [];
-            const usdMethodOptions = usdMethods.map(m => `<option value="${m}" ${op.metodoPago === m ? 'selected' : ''}>${m}</option>`).join('');
+        const usdMethods = userConfig.paymentMethods.usd || [];
+        const usdMethodOptions = usdMethods.map(m => `<option value="${m}" ${op.metodoPago === m ? 'selected' : ''}>${m}</option>`).join('');
 
-            document.getElementById('wallyFormContent').innerHTML = `
-                <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-5 items-center">
-                    <label class="text-sm text-gray-400 justify-self-end">Usuario</label> <input type="text" id="wallyUsuario" value="${op.usuario || ''}" class="form-field-grid">
-                    <label class="text-sm text-gray-400 justify-self-end">Referencia</label> <input type="text" id="wallyReferencia" value="${op.referencia || ''}" class="form-field-grid">
-                    <label class="text-sm text-gray-400 justify-self-end">Método de Pago</label> <select id="wallyMetodoPago" class="form-field-grid">${usdMethodOptions}</select>
-                    <label class="text-sm text-gray-400 justify-self-end">Plataforma P2P</label> <select id="wallyPlatform" onchange="updateWallyCalculations()" class="form-field-grid">${platformOptions}</select>
-                    <label class="text-sm text-gray-400 justify-self-end">Operación</label> <select id="wallyOperacion" onchange="updateWallyFormFields()" class="form-field-grid"><option value="Compra" ${op.operacion === 'Compra' || !op.operacion ? 'selected' : ''}>Compra (Recibo USDC)</option><option value="Venta" ${op.operacion === 'Venta' ? 'selected' : ''}>Venta (Recibo USD)</option></select>
-                    <hr class="border-gray-700 my-2 col-span-2">
-                    
-                    <label class="text-sm text-gray-400 justify-self-end wally-compra-field">Recibo USDC</label> <input type="number" id="reciboUsdc" value="${op.reciboUsdc || ''}" onkeyup="updateWallyCalculations()" class="form-field-grid wally-compra-field">
-                    <label class="text-sm text-gray-400 justify-self-end wally-compra-field">Tasa Compra</label> <input type="number" id="tasaCompra" value="${op.tasaCompra || ''}" onkeyup="updateWallyCalculations()" class="form-field-grid wally-compra-field">
-                    <label class="text-sm text-gray-500 justify-self-end wally-compra-field">Envío USD</label> <input type="number" id="envioUsd" value="${op.envioUsd || ''}" readonly class="form-field-grid bg-gray-800 border-gray-600 wally-compra-field">
-                    <label class="text-sm text-gray-500 justify-self-end wally-compra-field">Comisión USDC</label> <input type="number" id="commissionUsdc" value="${op.commissionAmount || ''}" readonly class="form-field-grid bg-gray-800 border-gray-600 wally-compra-field">
-                    <label class="text-sm text-green-400 font-bold justify-self-end wally-compra-field">Ganancia Neta</label> <input type="number" id="gananciaUsdc" value="${op.gananciaUsdc || ''}" readonly class="form-field-grid bg-gray-800 border-green-500/50 wally-compra-field">
-                    
-                    <label class="text-sm text-gray-400 justify-self-end wally-venta-field">Envío CRIPTO</label> <input type="number" id="envioUsdcVenta" value="${op.envioUsdc || ''}" onkeyup="updateWallyCalculations()" class="form-field-grid wally-venta-field">
-                    <label class="text-sm text-gray-400 justify-self-end wally-venta-field">Tasa Venta</label> <input type="number" id="tasaVenta" value="${op.tasaVenta || ''}" onkeyup="updateWallyCalculations()" class="form-field-grid wally-venta-field">
-                    <label class="text-sm text-gray-500 justify-self-end wally-venta-field">Recibo USD</label> <input type="number" id="reciboUsdCalculado" value="${op.reciboUsd || ''}" readonly class="form-field-grid bg-gray-800 border-gray-600 wally-venta-field">
-                    <label class="text-sm text-gray-500 justify-self-end wally-venta-field">Comisión USDC</label> <input type="number" id="commissionUsd" value="${op.commissionAmount || ''}" readonly class="form-field-grid bg-gray-800 border-gray-600 wally-venta-field">
-                    <label class="text-sm text-green-400 font-bold justify-self-end wally-venta-field">Ganancia Neta</label> <input type="number" id="gananciaUsd" value="${op.gananciaUsd || ''}" readonly class="form-field-grid bg-gray-800 border-green-500/50 wally-venta-field">
-                </div>
-            `;
-            updateWallyFormFields();
-        }
-        
+        document.getElementById('wallyFormContent').innerHTML = `
+            <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-5 items-center">
+                <label class="text-sm text-gray-400 justify-self-end">Usuario</label> <input type="text" id="wallyUsuario" value="${op.usuario || ''}" class="form-field-grid">
+                <label class="text-sm text-gray-400 justify-self-end">Referencia</label> <input type="text" id="wallyReferencia" value="${op.referencia || ''}" class="form-field-grid">
+                <label class="text-sm text-gray-400 justify-self-end">Método de Pago</label> <select id="wallyMetodoPago" class="form-field-grid">${usdMethodOptions}</select>
+                <label class="text-sm text-gray-400 justify-self-end">Plataforma P2P</label> <select id="wallyPlatform" onchange="updateWallyCalculations()" class="form-field-grid">${platformOptions}</select>
+                <label class="text-sm text-gray-400 justify-self-end">Operación</label> <select id="wallyOperacion" onchange="updateWallyFormFields()" class="form-field-grid"><option value="Compra" ${op.operacion === 'Compra' || !op.operacion ? 'selected' : ''}>Compra (Recibo Cripto)</option><option value="Venta" ${op.operacion === 'Venta' ? 'selected' : ''}>Venta (Recibo USD)</option></select>
+                <hr class="border-gray-700 my-2 col-span-2">
+
+                <label class="text-sm text-gray-400 justify-self-end wally-compra-field">Recibo Cripto</label> <input type="number" id="reciboUsdc" value="${op.reciboUsdc || ''}" onkeyup="updateWallyCalculations()" class="form-field-grid wally-compra-field">
+                <label class="text-sm text-gray-400 justify-self-end wally-compra-field">Tasa Compra</label> <input type="number" id="tasaCompra" value="${op.tasaCompra || ''}" onkeyup="updateWallyCalculations()" class="form-field-grid wally-compra-field">
+                <label class="text-sm text-gray-500 justify-self-end wally-compra-field">Envío USD</label> <input type="number" id="envioUsd" value="${op.envioUsd || ''}" readonly class="form-field-grid bg-gray-800 border-gray-600 wally-compra-field">
+                <label class="text-sm text-gray-500 justify-self-end wally-compra-field">Comisión Cripto</label> <input type="number" id="commissionUsdc" value="${op.commissionAmount || ''}" readonly class="form-field-grid bg-gray-800 border-gray-600 wally-compra-field">
+                <label class="text-sm text-green-400 font-bold justify-self-end wally-compra-field">Ganancia Neta</label> <input type="number" id="gananciaUsdc" value="${op.gananciaUsdc || ''}" readonly class="form-field-grid bg-gray-800 border-green-500/50 wally-compra-field">
+
+                <label class="text-sm text-gray-400 justify-self-end wally-venta-field">Envío CRIPTO</label> <input type="number" id="envioUsdcVenta" value="${op.envioUsdc || ''}" onkeyup="updateWallyCalculations()" class="form-field-grid wally-venta-field">
+                <label class="text-sm text-gray-400 justify-self-end wally-venta-field">Tasa Venta</label> <input type="number" id="tasaVenta" value="${op.tasaVenta || ''}" onkeyup="updateWallyCalculations()" class="form-field-grid wally-venta-field">
+                <label class="text-sm text-gray-500 justify-self-end wally-venta-field">Recibo USD</label> <input type="number" id="reciboUsdCalculado" value="${op.reciboUsd || ''}" readonly class="form-field-grid bg-gray-800 border-gray-600 wally-venta-field">
+                <label class="text-sm text-gray-500 justify-self-end wally-venta-field">Comisión Cripto</label> <input type="number" id="commissionUsd" value="${op.commissionAmount || ''}" readonly class="form-field-grid bg-gray-800 border-gray-600 wally-venta-field">
+                <label class="text-sm text-green-400 font-bold justify-self-end wally-venta-field">Ganancia Neta</label> <input type="number" id="gananciaUsd" value="${op.gananciaUsd || ''}" readonly class="form-field-grid bg-gray-800 border-green-500/50 wally-venta-field">
+            </div>
+        `;
+        updateWallyFormFields();
+    }
+
         function updateWallyFormFields() {
             const operacion = document.getElementById('wallyOperacion').value;
             document.querySelectorAll('.wally-compra-field').forEach(el => el.style.display = operacion === 'Compra' ? '' : 'none');
@@ -2117,7 +2110,6 @@
                 });
             }
         }
-        function saveWallyValorInicial() { userConfig.wallyInitialValue = parseFloat(document.getElementById('wallyValorInicialInput').value) || 0; saveConfig(); updateWallySummary(); }
         
         async function pasteSpecial() {
             try {
@@ -2280,7 +2272,6 @@
         window.closeGainsSummaryModal = closeGainsSummaryModal;
         window.openWallyGainsSummaryModal = openWallyGainsSummaryModal;
         window.closeWallyGainsSummaryModal = closeWallyGainsSummaryModal;
-        window.saveWallyValorInicial = saveWallyValorInicial;
         window.addPaymentMethod = addPaymentMethod; window.deletePaymentMethod = deletePaymentMethod;
         window.addUsdPaymentMethod = addUsdPaymentMethod; window.deleteUsdPaymentMethod = deleteUsdPaymentMethod;
         window.openRatingModal = openRatingModal; window.closeRatingModal = closeRatingModal; window.submitRating = submitRating;
@@ -2291,7 +2282,9 @@
         window.openInitialCapitalModal = openInitialCapitalModal;
         window.closeInitialCapitalModal = closeInitialCapitalModal;
         window.saveInitialCapital = saveInitialCapital;
-
+        window.addManagedAccount = addManagedAccount; // <-- AÑADE ESTA LÍNEA
+        window.deleteManagedAccount = deleteManagedAccount;
+        
     </script>
 </body>
 </html>
