@@ -1,4 +1,4 @@
-// api/askAI.js - VERSIÓN FINAL CON URL CORRECTA
+// api/askAI.js - VERSIÓN CON INTELIGENCIA AVANZADA
 export default async function handler(request, response) {
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -13,35 +13,37 @@ export default async function handler(request, response) {
     return response.status(500).json({ error: 'Error de configuración del servidor.' });
   }
 
-  const { message, metrics } = request.body;
+  const { message, context } = request.body;
   if (!message) {
     return response.status(400).json({ error: 'No se proporcionó ningún mensaje.' });
   }
 
-  const finalPrompt = `
-    **ROL Y REGLAS ESTRICTAS:**
-    - Eres un asistente de datos llamado DashSY.
-    - Tu única fuente de conocimiento son los DATOS DEL DÍA proporcionados a continuación.
-    - NUNCA menciones que eres un modelo de IA o que eres entrenado por Google.
-    - NUNCA te presentes.
-    - Responde de forma CORTA, PRECISA y DIRECTA a la PREGUNTA DEL USUARIO.
-    - USA ÚNICAMENTE LOS DATOS PROPORCIONADOS.
+  const systemPrompt = `
+    Eres "DashSY", un asistente experto en trading P2P de criptomonedas, integrado en un dashboard.
+    Tu principal fuente de información es el CONTEXTO JSON proporcionado. 
+    NUNCA inventes datos referentes a las metricas del dashboard.
+    Tu tono debe ser profesional, analítico y amigable, como el asistente Jarvis de Iron Man, 
+    incluso puede hacer chistes ocasiones e incluso ser sarcastica.
+    Proporciona respuestas amigables pero útiles.
+    No te presentes ni menciones que eres una IA.
+    Si la pregunta no puede ser respondida con el contexto, di "No tengo información sobre eso".
+    Interpreta los datos para dar resúmenes, comparaciones y sugerencias simples.
+  `;
+  
+  // Convertimos el objeto de contexto en un string legible para la IA
+  const contextString = JSON.stringify(context, null, 2);
 
-    **DATOS DEL DÍA:**
-    - Ganancia Total en VES: ${metrics.gananciaVes}
-    - Ganancia Total en USDC (aproximada): ${metrics.gananciaUsdc}
-    - Número de Operaciones: ${metrics.totalOps}
-    - Tasa de Compra Promedio: ${metrics.promCompra}
-    - Tasa de Venta Promedio: ${metrics.promVenta}
-    - Brecha (Spread): ${metrics.brecha}%
+  const userPrompt = `
+    CONTEXTO:
+    ${contextString}
 
-    **PREGUNTA DEL USUARIO:**
+    PREGUNTA DEL USUARIO:
     ${message}
   `;
 
   try {
     const groqResponse = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions", // <-- URL CORREGIDA
+      "https://api.groq.com/openai/v1/chat/completions",
       {
         method: "POST",
         headers: {
@@ -49,8 +51,11 @@ export default async function handler(request, response) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messages: [{ role: "user", content: finalPrompt }],
-          model: "gemma2-9b-it",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          model: "gemma2-9b-it", 
         }),
       }
     );
@@ -58,7 +63,6 @@ export default async function handler(request, response) {
     const result = await groqResponse.json();
     
     if (!result.choices || result.choices.length === 0) {
-      console.error("Respuesta inesperada de Groq:", result);
       throw new Error("La respuesta de Groq no contiene una respuesta válida.");
     }
     
