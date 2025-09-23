@@ -443,6 +443,22 @@
             color: var(--primary);
         }
         /* END: Platform Manager Styles */
+        .goal-toggle-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            background-color: var(--background);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .goal-toggle-btn.active {
+            background-color: var(--primary);
+            color: var(--background);
+            border-color: var(--primary);
+            font-weight: 600;
+        }
 
     </style>
 </head>
@@ -484,14 +500,27 @@
                         <div id="ganancias_usdc" class="text-lg font-semibold text-gray-300 mt-1">0.00 <span class="font-medium">USDC</span></div>
                     </div>
                     <div class="card text-center flex flex-col justify-center clickable" onclick="openWallyGainsSummaryModal()">
-                        <p class="text-sm font-medium text-gray-400 mb-2">GANANCIA USD</p>
+                        <p class="text-sm font-medium text-gray-400 mb-2">GANANCIAS CRIPTO/USD</p>
                         <div class="flex justify-center items-baseline gap-x-4">
                             <div id="wallyDashboardGainsUsdc" class="text-3xl font-bold text-orange-400">0.00 <span class="text-xl font-semibold">USDC</span></div>
                             <div id="wallyDashboardGainsUsd" class="text-3xl font-bold text-purple-400">0.00 <span class="text-xl font-semibold">USD</span></div>
                         </div>
                     </div>
                 </div>
-                <div class="card mb-6"><div class="flex justify-between items-center text-sm mb-2"><span class="font-medium text-gray-400">Meta Diaria</span><span id="dailyGoal" class="font-semibold">0 / 0 VES</span></div><div class="w-full bg-gray-700 rounded-full h-2"><div id="dailyProgressBar" class="bg-blue-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div></div></div>
+                <div id="dailyGoalsContainer" class="card mb-6 space-y-4">
+                </div>
+                <div class="card p-4 mb-6">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-semibold text-base">Capital Inicial del Día</h3>
+                        <button class="btn btn-secondary !py-2 !px-4 !text-sm !font-semibold" onclick="openInitialCapitalModal()">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 inline-block -mt-1 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 17.25v-.228a4.5 4.5 0 00-.12-1.03l-2.268-9.64a3.375 3.375 0 00-3.285-2.602H7.923a3.375 3.375 0 00-3.285 2.602l-2.268 9.64a4.5 4.5 0 00-.12 1.03v.228m19.5 0a3 3 0 01-3 3H5.25a3 3 0 01-3-3m19.5 0a3 3 0 00-3-3H5.25a3 3 0 00-3 3m16.5 0h.008v.008h-.008v-.008zm-3 0h.008v.008h-.008v-.008z" /></svg>
+                            <span>Registrar / Editar</span>
+                        </button>
+                    </div>
+                    <div id="initialCapitalSummary" class="mt-4 text-sm">
+                        <p class="text-gray-500">Cargando capital...</p>
+                    </div>
+                </div>
                 <div class="grid grid-cols-2 gap-4 mb-6">
                     <div class="card text-center"><p class="text-sm font-medium text-gray-400">Prom. Compra</p><p id="promCompra" class="text-xl font-bold mt-1">0.00</p></div>
                     <div class="card text-center"><p class="text-sm font-medium text-gray-400">Prom. Venta</p><p id="promVenta" class="text-xl font-bold mt-1">0.00</p></div>
@@ -533,7 +562,7 @@
                     <div class="card p-0">
                         <table>
                             <thead>
-                                <tr><th>USUARIO/MÉTODO</th><th>REF</th><th>OP</th><th>TASA</th><th>USDC</th><th>BS</th><th>GAN. VES</th><th>GAN. USDC</th><th>LOTE</th><th>ESTATUS</th><th>ACC</th></tr>
+                                <tr><th>USUARIO/MÉTODO</th><th>REF</th><th>OP</th><th>TASA</th><th>CRIPTO</th><th>BS</th><th>GAN. VES</th><th>GAN. CRIPTO</th><th>LOTE</th><th>ESTATUS</th><th>ACC</th></tr>
                             </thead>
                             <tbody id="operationsTable"></tbody>
                         </table>
@@ -555,13 +584,12 @@
                     </label>
                 </div>
                 <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div class="card text-center"><p class="text-sm text-gray-400">Val. Inicial</p><input type="number" id="wallyValorInicialInput" value="0.00" onchange="saveWallyValorInicial()" class="w-full bg-transparent text-center text-lg font-bold border-0 p-0"></div>
-                    <div class="card text-center"><p class="text-sm text-gray-400">Val. Actual</p><p id="wallyValorActual" class="text-lg font-bold">0.00</p></div>
-                    <div class="col-span-2 card text-center"><p class="text-sm text-gray-400">Ganancias</p><p id="wallyGanancias" class="text-lg font-bold">0 USDC / 0 USD</p></div>
+                    <div class="col-span-2 card text-center"><p class="text-sm text-gray-400">TOTAL CRIPTO/USD</p><p id="wallyValorActual" class="text-lg font-bold">0.00</p></div>
+                    <div class="col-span-2 card text-center"><p class="text-sm text-gray-400">Ganacias</p><p id="wallyGanancias" class="text-lg font-bold">0 USDC / 0 USD</p></div>
                 </div>
                 <div class="space-y-6">
                     <div>
-                    <h2 class="text-lg font-semibold mb-2 text-green-400">COMPRAS (Recibo USDC)</h2>
+                    <h2 class="text-lg font-semibold mb-2 text-green-400">COMPRA (Recibo CRIPTO)</h2>
                     <div id="wally-compras-empty-state" class="empty-state" style="margin-top: 0;">
                         <p>Sin Compras en USD</p>
                         <span>No hay operaciones de compra de USDC registradas para esta fecha.</span>
@@ -569,7 +597,7 @@
                     <div class="card p-0">
                         <div class="table-container">
                             <table class="w-full min-w-[600px]">
-                                <thead><tr><th>Usuario/Plataforma</th><th>Recibo USDC</th><th>Tasa</th><th>Envío USD</th><th>Gan. USDC</th><th>Acciones</th></tr></thead>
+                                <thead><tr><th>Usuario/Plataforma</th><th>Recibo CRIPTO</th><th>Tasa</th><th>Envío USD</th><th>Gan. CRIPTO</th><th>Acciones</th></tr></thead>
                                 <tbody id="wallyCompraTable"></tbody>
                             </table>
                         </div>
@@ -587,7 +615,7 @@
                     <div class="card p-0">
                         <div class="table-container">
                             <table class="w-full min-w-[600px]">
-                                <thead><tr><th>Usuario/Plataforma</th><th>Envío USDC</th><th>Tasa</th><th>Recibo USD</th><th>Gan. USD</th><th>Acciones</th></tr></thead>
+                                <thead><tr><th>Usuario/Plataforma</th><th>Envío CRIPTO</th><th>Tasa</th><th>Recibo USD</th><th>Gan. USD</th><th>Acciones</th></tr></thead>
                                 <tbody id="wallyVentaTable"></tbody>
                             </table>
                         </div>
@@ -631,46 +659,136 @@
     </div>
     </div>
     </div>
-    
-    <div id="configModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold">Configuración</h2><button class="close-btn" onclick="closeConfigModal()">&times;</button></div><div class="modal-body"><div class="space-y-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Meta de Ganancia Diaria (VES):</label><input type="number" id="dailyProfitGoal" step="0.01" placeholder="Ej: 1000.00" class="w-full"></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Valor Inicial (USD):</label><input type="number" id="wallyInitialValueConfig" step="0.01" placeholder="0.00" class="w-full"></div></div>
-    
-    <hr class="border-gray-700 my-6">
-    <div>
-        <h3 class="text-base font-semibold mb-3">Gestionar Plataformas P2P</h3>
-        <div id="p2pPlatformsList" class="space-y-2 mb-4">
+
+    <div id="initialCapitalModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="modal-title text-xl font-bold">Capital Inicial para <span id="capitalModalDate"></span></h2>
+                <button class="close-btn" onclick="closeInitialCapitalModal()">&times;</button>
             </div>
-        <div class="card p-4 bg-background">
-            <h4 class="font-semibold mb-2" id="platformFormTitle">Añadir Nueva Plataforma</h4>
-            <div class="grid grid-cols-[1fr_auto] gap-x-2 gap-y-2 items-end">
-                <div class="form-group">
-                    <label class="text-xs">Nombre</label>
-                    <input type="text" id="newPlatformName" placeholder="Ej: Syklo" class="form-field-grid">
+            <div class="modal-body space-y-4">
+                <div class="card p-4 bg-background">
+                    <h4 class="font-semibold mb-3 text-base">Añadir Nueva Cuenta</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+                        <div class="form-group">
+                            <label class="text-xs">Nombre de Cuenta (Ej: Wally, Banesco)</label>
+                            <input type="text" id="newAccountName" placeholder="Binance P2P" class="form-field-grid">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-xs">Moneda (Ej: USDT, VES)</label>
+                            <input type="text" id="newAccountCurrency" placeholder="USDT" class="form-field-grid">
+                        </div>
+                        <button id="addAccountBtn" onclick="addManagedAccount()" class="btn btn-secondary h-11">Añadir</button>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="text-xs">Comisión (%)</label>
-                    <input type="number" id="newPlatformCommission" placeholder="Ej: 0.2" step="0.1" class="form-field-grid w-28">
-                </div>
-                 <input type="hidden" id="editingPlatformIndex" value="-1">
-                <button id="addPlatformBtn" class="btn btn-secondary h-11 col-span-2">Añadir Plataforma</button>
+
+                <hr class="border-gray-700 !my-5">
+                
+                <div id="initialCapitalForm" class="space-y-3">
+                    </div>
+
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeInitialCapitalModal()">Cancelar</button>
+                <button id="saveCapitalBtn" class="btn btn-primary" onclick="saveInitialCapital()"><div class="btn-spinner"></div>Guardar Capital</button>
             </div>
         </div>
     </div>
-
-    <hr class="border-gray-700 my-6">
-    <div>
-        <h3 class="text-base font-semibold mb-3">Mis Métodos de Pago (VES)</h3>
-        <div id="paymentMethodsList" class="flex flex-wrap gap-2 mb-4"></div>
-        <div class="flex gap-2"><input type="text" id="newPaymentMethod" placeholder="Nuevo método..." class="form-field-grid flex-grow"><button class="btn btn-secondary" onclick="addPaymentMethod()">Añadir</button></div>
-    </div>
     
-    <hr class="border-gray-700 my-6">
-    <div>
-        <h3 class="text-base font-semibold mb-3">Mis Métodos de Pago (USD)</h3>
-        <div id="usdPaymentMethodsList" class="flex flex-wrap gap-2 mb-4"></div>
-        <div class="flex gap-2"><input type="text" id="newUsdPaymentMethod" placeholder="Nuevo método USD..." class="form-field-grid flex-grow"><button class="btn btn-secondary" onclick="addUsdPaymentMethod()">Añadir</button></div>
+    <div id="configModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="modal-title text-xl font-bold">Configuración</h2>
+                <button class="close-btn" onclick="closeConfigModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="space-y-6">
+    
+                    <div>
+                        <h3 class="text-base font-semibold mb-3">Metas de Ganancia Diaria</h3>
+                        <div class="card p-4 bg-background space-y-4">
+                            <div class="grid grid-cols-[1fr_auto] items-center gap-4">
+                                <label for="goalVes" class="font-medium text-sm">VES:</label>
+                                <input type="number" id="goalVes" step="0.01" placeholder="Ej: 1000.00" class="form-field-grid">
+                            </div>
+                            <div class="grid grid-cols-[1fr_auto] items-center gap-4">
+                                <label for="goalCrypto" class="font-medium text-sm">CRIPTO (USDC):</label>
+                                <input type="number" id="goalCrypto" step="0.01" placeholder="Ej: 50.00" class="form-field-grid">
+                            </div>
+                            <div class="grid grid-cols-[1fr_auto] items-center gap-4">
+                                <label for="goalUsd" class="font-medium text-sm">USD:</label>
+                                <input type="number" id="goalUsd" step="0.01" placeholder="Ej: 50.00" class="form-field-grid">
+                            </div>
+                            <hr class="border-gray-700 !my-5">
+                            <div>
+                                <label class="font-medium text-sm mb-3 block text-center">Mostrar en Dashboard:</label>
+                                <div id="dashboardGoalToggles" class="flex justify-center gap-3">
+                                    <button data-goal="ves" class="goal-toggle-btn">VES</button>
+                                    <button data-goal="crypto" class="goal-toggle-btn">CRIPTO</button>
+                                    <button data-goal="usd" class="goal-toggle-btn">USD</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+    
+                    <div>
+                        <h3 class="text-base font-semibold mb-3">Valores Iniciales</h3>
+                        <div class="card p-4 bg-background">
+                            <div class="form-group">
+                                <label class="text-sm font-medium mb-1 block">Valor Inicial (USD):</label>
+                                <input type="number" id="wallyInitialValueConfig" step="0.01" placeholder="0.00" class="w-full">
+                            </div>
+                        </div>
+                    </div>
+    
+                    <div>
+                        <h3 class="text-base font-semibold mb-3">Gestionar Plataformas P2P</h3>
+                        <div id="p2pPlatformsList" class="space-y-2 mb-4"></div>
+                        <div class="card p-4 bg-background">
+                            <h4 class="font-semibold mb-2" id="platformFormTitle">Añadir Nueva Plataforma</h4>
+                            <div class="grid grid-cols-2 gap-x-2 gap-y-3">
+                                <div class="form-group col-span-2">
+                                    <label class="text-xs">Nombre</label>
+                                    <input type="text" id="newPlatformName" placeholder="Ej: Syklo" class="form-field-grid">
+                                </div>
+                                <div class="form-group">
+                                    <label class="text-xs">Comisión (%)</label>
+                                    <input type="number" id="newPlatformCommission" placeholder="Ej: 0.2" step="0.1" class="form-field-grid">
+                                </div>
+                                <div class="form-group">
+                                    <label class="text-xs">Tipo</label>
+                                    <select id="newPlatformType" class="form-field-grid">
+                                        <option value="CRIPTO">CRIPTO</option>
+                                        <option value="USD">USD</option>
+                                        <option value="VES">VES</option>
+                                    </select>
+                                </div>
+                                <input type="hidden" id="editingPlatformIndex" value="-1">
+                                <button id="addPlatformBtn" class="btn btn-secondary h-11 col-span-2">Añadir Plataforma</button>
+                            </div>
+                        </div>
+                    </div>
+    
+                    <div>
+                        <h3 class="text-base font-semibold mb-3">Mis Métodos de Pago (VES)</h3>
+                        <div id="paymentMethodsList" class="flex flex-wrap gap-2 mb-4"></div>
+                        <div class="flex gap-2"><input type="text" id="newPaymentMethod" placeholder="Nuevo método..." class="form-field-grid flex-grow"><button class="btn btn-secondary" onclick="addPaymentMethod()">Añadir</button></div>
+                    </div>
+    
+                    <div>
+                        <h3 class="text-base font-semibold mb-3">Mis Métodos de Pago (USD)</h3>
+                        <div id="usdPaymentMethodsList" class="flex flex-wrap gap-2 mb-4"></div>
+                        <div class="flex gap-2"><input type="text" id="newUsdPaymentMethod" placeholder="Nuevo método USD..." class="form-field-grid flex-grow"><button class="btn btn-secondary" onclick="addUsdPaymentMethod()">Añadir</button></div>
+                    </div>
+    
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeConfigModal()">Cerrar</button>
+                <button id="saveConfigBtn" class="btn btn-primary" onclick="saveConfig()"><div class="btn-spinner"></div>Guardar Cambios</button>
+            </div>
+        </div>
     </div>
-
-    </div><div class="modal-buttons"><button class="btn btn-secondary" onclick="closeConfigModal()">Cerrar</button><button id="saveConfigBtn" class="btn btn-primary" onclick="saveConfig()"><div class="btn-spinner"></div>Guardar Cambios</button></div></div></div>
 
     <div id="wallyModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 id="wallyModalTitle" class="modal-title text-xl font-bold">Operación USD</h2><button class="close-btn" onclick="closeWallyModal()">&times;</button></div><div class="modal-body"><div id="wallyFormContent" class="space-y-4"></div></div><div class="modal-buttons"><button class="btn btn-secondary" onclick="closeWallyModal()">Cancelar</button><button class="btn btn-green" onclick="pasteSpecialWally()">📋 Pegado Especial</button><button id="saveWallyBtn" class="btn btn-primary" onclick="saveWallyOperation()"><div class="btn-spinner"></div>Guardar</button></div></div></div>
     
@@ -829,6 +947,8 @@
         let editingIndex = -1, editingWallyIndex = -1;
         let lastSavedUser = '', lastSavedOperationType = '';
         let initialLoadCounter = 0;
+        let currentDayCapital = null;
+
         const TOTAL_INITIAL_LOADS = 5; 
         
         function checkInitialLoadComplete() {
@@ -851,7 +971,9 @@
         let currentLotsData = new Map();
         let currentPendingData = { recompra: 0, reventa: 0, recompraOps: [], reventaOps: [] };
         let wallyTotalGains = { usdc: 0, usd: 0 };
-        const defaultProfitGoals = { daily: 1000.00 };
+        const defaultProfitGoals = { ves: 1000.00, crypto: 50.00, usd: 50.00 };
+        const defaultDashboardGoals = { ves: true, crypto: false, usd: false };
+
 
         const authSection = document.getElementById('authSection');
         const appContainer = document.querySelector('.app-container');
@@ -870,7 +992,7 @@
             wallyFab.style.display = pageName === 'wally' ? 'flex' : 'none';
         }
 
-        auth.onAuthStateChanged(user => {
+        auth.onAuthStateChanged(async (user) => {
             if (user) {
                 document.getElementById('loading-overlay').style.display = 'flex'; 
                 initialLoadCounter = 0; 
@@ -878,14 +1000,20 @@
                 currentUserId = user.uid;
                 authSection.style.display = 'none'; appContainer.style.display = 'flex';
                 userEmailEl.textContent = user.email.split('@')[0];
-                loadConfig(); loadOperations(); loadWallyOperations(); loadUserRatings(); loadUserProfiles();
+                
+                await loadConfig();
+                
+                loadOperations(); 
+                loadWallyOperations(); 
+                loadUserRatings(); 
+                loadUserProfiles();
+                
                 document.getElementById('selectedDate').value = currentDate;
                 document.getElementById('wallySelectedDate').value = currentWallyDate;
                 showPage('operate');
             } else {
                 currentUserId = null;
                 authSection.style.display = 'flex'; appContainer.style.display = 'none';
-
                 document.getElementById('loading-overlay').style.display = 'none';
             }
         });
@@ -1132,6 +1260,7 @@
         }
         
         function updateSummary() {
+            loadInitialCapital(currentDate); 
             if (!operations) return;
             applyFIFOForDate(currentDate); 
             const currentOps = operations.filter(op => op.fecha === currentDate);
@@ -1139,25 +1268,88 @@
             const promCompra = compras.length ? compras.reduce((s, o) => s + o.tasa, 0) / compras.length : 0;
             const promVenta = ventas.length ? ventas.reduce((s, o) => s + o.tasa, 0) / ventas.length : 0;
             const brecha = promCompra > 0 ? ((promVenta - promCompra) / promCompra * 100) : 0;
+            
             const [gananciasVes, gananciasUsdc] = calculateTotalGainsForPeriod(currentOps);
+            
             document.getElementById('ganancias').innerHTML = `${gananciasVes.toFixed(2)} <span class="text-2xl font-semibold">VES</span>`;
             document.getElementById('ganancias_usdc').innerHTML = `${gananciasUsdc.toFixed(4)} <span class="font-medium">USDC</span>`;
             document.getElementById('promCompra').textContent = promCompra.toFixed(2);
             document.getElementById('promVenta').textContent = promVenta.toFixed(2);
             document.getElementById('brecha').textContent = brecha.toFixed(2) + '%';
             document.getElementById('totalOps').textContent = currentOps.length;
+            
             const activeLotsCount = Array.from(currentLotsData.values()).filter(lot => lot.estado === 'activo').length;
             document.getElementById('activeLotsSummary').textContent = activeLotsCount;
             document.getElementById('pendingSummary').textContent = `${(currentPendingData.recompra + currentPendingData.reventa).toFixed(2)} USDC`;
-            const dailyGoalValue = userConfig.profitGoals ? userConfig.profitGoals.daily : defaultProfitGoals.daily;
-            document.getElementById('dailyGoal').textContent = `${gananciasVes.toFixed(2)} / ${dailyGoalValue.toFixed(2)} VES`;
-            const progressBar = document.getElementById('dailyProgressBar');
-            progressBar.style.width = `${Math.min(dailyGoalValue > 0 ? (gananciasVes / dailyGoalValue) * 100 : 0, 100)}%`;
+            
             const wallyOpsForSelectedDate = wallyOperations.filter(op => op.fecha === currentDate);
             const [wallyGainsUsdcForDate, wallyGainsUsdForDate] = calculateWallyGainsForPeriod(wallyOpsForSelectedDate);
+            
             document.getElementById('wallyDashboardGainsUsdc').innerHTML = `${wallyGainsUsdcForDate.toFixed(2)} <span class="text-xl font-semibold">USDC</span>`;
             document.getElementById('wallyDashboardGainsUsd').innerHTML = `${wallyGainsUsdForDate.toFixed(2)} <span class="text-xl font-semibold">USD</span>`;
+
+            renderDailyGoals(gananciasVes, wallyGainsUsdcForDate, wallyGainsUsdForDate);
+
             renderOperations();
+        }
+
+        function renderDailyGoals(currentVes, currentCrypto, currentUsd) {
+            const container = document.getElementById('dailyGoalsContainer');
+            container.innerHTML = ''; 
+
+            const goalsToShow = userConfig.dashboardGoals || defaultDashboardGoals;
+            const profitGoals = userConfig.profitGoals || defaultProfitGoals;
+            
+            let visibleGoalsCount = 0;
+
+            if (goalsToShow.ves) {
+                visibleGoalsCount++;
+                const goal = profitGoals.ves || 0;
+                const percentage = Math.min(goal > 0 ? (currentVes / goal) * 100 : 0, 100);
+                container.innerHTML += `
+                    <div>
+                        <div class="flex justify-between items-center text-sm mb-2">
+                            <span class="font-medium text-gray-400">Meta Diaria (VES)</span>
+                            <span class="font-semibold">${currentVes.toFixed(2)} / ${goal.toFixed(2)} VES</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>`;
+            }
+            if (goalsToShow.crypto) {
+                visibleGoalsCount++;
+                 const goal = profitGoals.crypto || 0;
+                const percentage = Math.min(goal > 0 ? (currentCrypto / goal) * 100 : 0, 100);
+                container.innerHTML += `
+                    <div>
+                        <div class="flex justify-between items-center text-sm mb-2">
+                            <span class="font-medium text-gray-400">Meta Diaria (CRIPTO)</span>
+                            <span class="font-semibold">${currentCrypto.toFixed(2)} / ${goal.toFixed(2)} USDC</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div class="bg-orange-400 h-2 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>`;
+            }
+            if (goalsToShow.usd) {
+                visibleGoalsCount++;
+                const goal = profitGoals.usd || 0;
+                const percentage = Math.min(goal > 0 ? (currentUsd / goal) * 100 : 0, 100);
+                 container.innerHTML += `
+                    <div>
+                        <div class="flex justify-between items-center text-sm mb-2">
+                            <span class="font-medium text-gray-400">Meta Diaria (USD)</span>
+                            <span class="font-semibold">${currentUsd.toFixed(2)} / ${goal.toFixed(2)} USD</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div class="bg-purple-400 h-2 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>`;
+            }
+            if (visibleGoalsCount === 0) {
+                 container.innerHTML = `<p class="text-center text-sm text-gray-500">No hay metas seleccionadas para mostrar. Ve a ⚙️ Ajustes para configurarlas.</p>`;
+            }
         }
 
         function getRatingIndicator(userName) {
@@ -1220,33 +1412,39 @@
             calculateAll(); 
         }
 
-        // --- START: NEW CONFIG AND PLATFORM MANAGEMENT ---
         function loadConfig() { 
             if (!currentUserId) return; 
-            db.collection('users').doc(currentUserId).collection('settings').doc('userConfig').get().then(doc => { 
-                const defaultConfig = { 
-                    profitGoals: defaultProfitGoals, 
-                    wallyInitialValue: 0, 
-                    p2pPlatforms: [
-                        { name: "Syklo", commission: 0, isDefault: true },
-                        { name: "Apolo", commission: 0.2, isDefault: false },
-                        { name: "Wally", commission: 0, isDefault: false },
-                        { name: "Zinli", commission: 1.5, isDefault: false }
-                    ],
-                    paymentMethods: {
-                        ves: ["Pagomovil", "Banesco", "Venezuela", "Bancamiga", "BNC"],
-                        usd: ["Wally", "Zinli"]
-                    }
-                };
-                userConfig = doc.exists ? { ...defaultConfig, ...doc.data() } : defaultConfig; 
-                
-                // --- Migration for older configs ---
-                if (!userConfig.p2pPlatforms) userConfig.p2pPlatforms = defaultConfig.p2pPlatforms;
-                if (!userConfig.paymentMethods) userConfig.paymentMethods = defaultConfig.paymentMethods;
-                
-                applyConfig(); 
-                checkInitialLoadComplete(); 
-            }).catch(e => { console.error(e); checkInitialLoadComplete(); });
+            return new Promise((resolve, reject) => {
+                db.collection('users').doc(currentUserId).collection('settings').doc('userConfig').get().then(doc => { 
+                    const defaultConfig = { 
+                        profitGoals: defaultProfitGoals,
+                        dashboardGoals: defaultDashboardGoals,
+                        wallyInitialValue: 0, 
+                        p2pPlatforms: [
+                            { name: "Syklo", commission: 0, isDefault: true, type: "CRIPTO" },
+                            { name: "Apolo", commission: 0.2, isDefault: false, type: "CRIPTO" },
+                            { name: "Wally", commission: 0, isDefault: false, type: "USD" },
+                            { name: "Zinli", commission: 1.5, isDefault: false, type: "USD" }
+                        ],
+                        paymentMethods: {
+                            ves: ["Pagomovil", "Banesco", "Venezuela", "Bancamiga", "BNC"],
+                            usd: ["Wally", "Zinli"]
+                        },
+                        managedAccounts: [] // <-- AÑADIMOS ESTA LÍNEA
+                    };
+                    userConfig = doc.exists ? { ...defaultConfig, ...doc.data() } : defaultConfig; 
+                    
+                    if (!userConfig.profitGoals) userConfig.profitGoals = defaultConfig.profitGoals;
+                    if (!userConfig.dashboardGoals) userConfig.dashboardGoals = defaultConfig.dashboardGoals;
+                    if (!userConfig.p2pPlatforms) userConfig.p2pPlatforms = defaultConfig.p2pPlatforms;
+                    if (!userConfig.paymentMethods) userConfig.paymentMethods = defaultConfig.paymentMethods;
+                    if (!userConfig.managedAccounts) userConfig.managedAccounts = defaultConfig.managedAccounts; // <-- AÑADIMOS ESTA LÍNEA
+
+                    applyConfig(); 
+                    checkInitialLoadComplete();
+                    resolve();
+                }).catch(e => { console.error(e); checkInitialLoadComplete(); reject(e); });
+            });
         }
         
         function applyConfig() { 
@@ -1257,24 +1455,46 @@
         }
         
         function openConfigModal() { 
-            document.getElementById('configModal').classList.add('show'); 
-            document.getElementById('dailyProfitGoal').value = userConfig.profitGoals.daily; 
+            document.getElementById('configModal').classList.add('show');
+            document.getElementById('goalVes').value = userConfig.profitGoals.ves; 
+            document.getElementById('goalCrypto').value = userConfig.profitGoals.crypto; 
+            document.getElementById('goalUsd').value = userConfig.profitGoals.usd; 
             document.getElementById('wallyInitialValueConfig').value = userConfig.wallyInitialValue || 0; 
+            updateGoalToggleButtons();
             renderP2PPlatforms();
             renderPaymentMethodsConfig(); 
             renderUsdPaymentMethodsConfig();
         }
+
+        function updateGoalToggleButtons() {
+            const toggles = document.querySelectorAll('#dashboardGoalToggles .goal-toggle-btn');
+            toggles.forEach(btn => {
+                const goalType = btn.dataset.goal;
+                if (userConfig.dashboardGoals[goalType]) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+        document.getElementById('dashboardGoalToggles').addEventListener('click', (e) => {
+            if (e.target.classList.contains('goal-toggle-btn')) {
+                const goalType = e.target.dataset.goal;
+                userConfig.dashboardGoals[goalType] = !userConfig.dashboardGoals[goalType];
+                e.target.classList.toggle('active');
+            }
+        });
+
         function closeConfigModal() { document.getElementById('configModal').classList.remove('show'); }
 
         function saveConfig() {
             const saveBtn = document.getElementById('saveConfigBtn'); 
             saveBtn.classList.add('loading'); 
 
-            userConfig.profitGoals.daily = parseFloat(document.getElementById('dailyProfitGoal').value) || defaultProfitGoals.daily; 
+            userConfig.profitGoals.ves = parseFloat(document.getElementById('goalVes').value) || defaultProfitGoals.ves; 
+            userConfig.profitGoals.crypto = parseFloat(document.getElementById('goalCrypto').value) || defaultProfitGoals.crypto; 
+            userConfig.profitGoals.usd = parseFloat(document.getElementById('goalUsd').value) || defaultProfitGoals.usd; 
             userConfig.wallyInitialValue = parseFloat(document.getElementById('wallyInitialValueConfig').value) || 0; 
-            
-            // p2pPlatforms and paymentMethods are already updated in memory by their respective functions.
-            // We just need to save the whole userConfig object.
 
             db.collection('users').doc(currentUserId).collection('settings').doc('userConfig').set(userConfig, {merge: true}).then(() => { 
                 applyConfig(); 
@@ -1283,16 +1503,26 @@
                 showToast('Error al guardar configuración.', 'error');
             }).finally(() => {
                 saveBtn.classList.remove('loading'); 
+                closeConfigModal();
             });
         }
 
         function renderP2PPlatforms() {
             const container = document.getElementById('p2pPlatformsList');
-            container.innerHTML = userConfig.p2pPlatforms.map((platform, index) => `
+            container.innerHTML = userConfig.p2pPlatforms.map((platform, index) => {
+                let typeColor = 'text-gray-400 border-gray-600';
+                if (platform.type === 'CRIPTO') typeColor = 'text-orange-400 border-orange-400/50';
+                if (platform.type === 'USD') typeColor = 'text-green-400 border-green-400/50';
+                if (platform.type === 'VES') typeColor = 'text-blue-400 border-blue-400/50';
+
+                return `
                 <div class="platform-item">
                     <input type="radio" name="defaultPlatform" onchange="setDefaultP2PPlatform(${index})" ${platform.isDefault ? 'checked' : ''}>
                     <div class="platform-item-info">
-                        <div class="platform-item-name">${platform.name}</div>
+                        <div class="flex items-center gap-2">
+                            <span class="platform-item-name">${platform.name}</span>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-full border ${typeColor}">${platform.type || 'SIN TIPO'}</span>
+                        </div>
                         <div class="platform-item-details">Comisión: ${platform.commission}% ${platform.isDefault ? '<strong>(Predeterminada)</strong>' : ''}</div>
                     </div>
                     <div class="platform-item-actions">
@@ -1300,16 +1530,18 @@
                         <button onclick="deleteP2PPlatform(${index})">🗑️</button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function addOrUpdateP2PPlatform() {
             const nameInput = document.getElementById('newPlatformName');
             const commissionInput = document.getElementById('newPlatformCommission');
+            const typeInput = document.getElementById('newPlatformType');
             const indexInput = document.getElementById('editingPlatformIndex');
             
             const name = nameInput.value.trim();
             const commission = parseFloat(commissionInput.value) || 0;
+            const type = typeInput.value;
             const index = parseInt(indexInput.value);
 
             if (!name) {
@@ -1317,24 +1549,25 @@
                 return;
             }
 
-            if (index > -1) { // Editing
+            if (index > -1) {
                 userConfig.p2pPlatforms[index].name = name;
                 userConfig.p2pPlatforms[index].commission = commission;
-            } else { // Adding
+                userConfig.p2pPlatforms[index].type = type;
+            } else {
                  if (userConfig.p2pPlatforms.some(p => p.name.toLowerCase() === name.toLowerCase())) {
                     showToast('Ya existe una plataforma con ese nombre.', 'warning');
                     return;
                 }
-                userConfig.p2pPlatforms.push({ name, commission, isDefault: userConfig.p2pPlatforms.length === 0 });
+                userConfig.p2pPlatforms.push({ name, commission, type, isDefault: userConfig.p2pPlatforms.length === 0 });
             }
 
             nameInput.value = '';
             commissionInput.value = '';
+            typeInput.value = 'CRIPTO';
             indexInput.value = -1;
             document.getElementById('platformFormTitle').textContent = 'Añadir Nueva Plataforma';
             document.getElementById('addPlatformBtn').textContent = 'Añadir Plataforma';
             
-            saveConfig();
             renderP2PPlatforms();
         }
         
@@ -1342,6 +1575,7 @@
             const platform = userConfig.p2pPlatforms[index];
             document.getElementById('newPlatformName').value = platform.name;
             document.getElementById('newPlatformCommission').value = platform.commission;
+            document.getElementById('newPlatformType').value = platform.type || 'CRIPTO';
             document.getElementById('editingPlatformIndex').value = index;
             document.getElementById('platformFormTitle').textContent = 'Editando Plataforma';
             document.getElementById('addPlatformBtn').textContent = 'Actualizar';
@@ -1354,7 +1588,6 @@
             }
             if (!confirm(`¿Seguro que quieres eliminar la plataforma "${userConfig.p2pPlatforms[index].name}"?`)) return;
             userConfig.p2pPlatforms.splice(index, 1);
-            saveConfig();
             renderP2PPlatforms();
         }
 
@@ -1362,7 +1595,6 @@
             userConfig.p2pPlatforms.forEach((p, i) => {
                 p.isDefault = i === index;
             });
-            saveConfig();
             renderP2PPlatforms();
         }
 
@@ -1370,7 +1602,6 @@
             const platforms = userConfig.p2pPlatforms || [];
             const optionsHtml = platforms.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
             document.getElementById('p2pPlatformSelect').innerHTML = optionsHtml;
-            // The Wally form is dynamic, so its select is populated when rendered.
         }
         
         function renderPaymentMethodsConfig() {
@@ -1382,15 +1613,14 @@
             const input = document.getElementById('newPaymentMethod');
             const newMethod = input.value.trim();
             if (!newMethod) return;
+            if(!userConfig.paymentMethods.ves) userConfig.paymentMethods.ves = [];
             userConfig.paymentMethods.ves.push(newMethod);
             input.value = '';
-            saveConfig();
             renderPaymentMethodsConfig();
         }
 
         function deletePaymentMethod(index) {
             userConfig.paymentMethods.ves.splice(index, 1);
-            saveConfig();
             renderPaymentMethodsConfig();
         }
         
@@ -1403,15 +1633,14 @@
             const input = document.getElementById('newUsdPaymentMethod');
             const newMethod = input.value.trim();
             if (!newMethod) return;
+            if(!userConfig.paymentMethods.usd) userConfig.paymentMethods.usd = [];
             userConfig.paymentMethods.usd.push(newMethod);
             input.value = '';
-            saveConfig();
             renderUsdPaymentMethodsConfig();
         }
 
         function deleteUsdPaymentMethod(index) {
             userConfig.paymentMethods.usd.splice(index, 1);
-            saveConfig();
             renderUsdPaymentMethodsConfig();
         }
 
@@ -1422,7 +1651,225 @@
             mainSelect.innerHTML = methods.map(m => `<option value="${m}">${m}</option>`).join(''); 
             filterSelect.innerHTML = '<option value="">Todos los Métodos</option>' + methods.map(m => `<option value="${m}">${m}</option>`).join('');
         }
-        // --- END: NEW CONFIG AND PLATFORM MANAGEMENT ---
+
+        function openInitialCapitalModal() {
+            document.getElementById('capitalModalDate').textContent = currentDate;
+            const formContainer = document.getElementById('initialCapitalForm');
+            formContainer.innerHTML = '<div class="loader mx-auto"></div>'; // Muestra un loader mientras carga
+
+            const accounts = userConfig.managedAccounts || [];
+            
+            // Si no hay cuentas, muestra un mensaje
+            if (accounts.length === 0) {
+                formContainer.innerHTML = '<p class="text-center text-sm text-gray-500 py-4">No has añadido ninguna cuenta. Usa el formulario de arriba para empezar.</p>';
+                document.getElementById('initialCapitalModal').classList.add('show');
+                return;
+            }
+
+            // Carga el capital del día actual para pre-rellenar los campos
+            const todaysCapital = currentDayCapital && currentDayCapital.balances ? currentDayCapital.balances : [];
+
+            let formHtml = '';
+            accounts.forEach(account => {
+                // Busca si ya hay un monto guardado para esta cuenta hoy
+                const existingEntry = todaysCapital.find(entry => entry.accountId === account.id);
+                const currentValue = existingEntry ? existingEntry.amount : '';
+
+                formHtml += `
+                    <div class="grid grid-cols-[1fr_120px_auto] items-center gap-3">
+                        <label for="capital-${account.id}" class="font-medium text-sm">
+                            ${account.name} <span class="text-xs text-gray-400">(${account.currency})</span>
+                        </label>
+                        <input type="number" step="0.01" id="capital-${account.id}" 
+                               data-account-id="${account.id}"
+                               value="${currentValue}"
+                               placeholder="0.00" class="form-field-grid text-right">
+                        <button class="text-red-400 p-2 hover:bg-red-500/10 rounded-full" onclick="deleteManagedAccount('${account.id}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.033-2.134H8.033c-1.12 0-2.033.954-2.033 2.134v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                        </button>
+                    </div>
+                `;
+            });
+            
+            formContainer.innerHTML = formHtml;
+            document.getElementById('initialCapitalModal').classList.add('show');
+        }
+
+        function closeInitialCapitalModal() {
+                    document.getElementById('initialCapitalModal').classList.remove('show');
+        }
+        
+        function addManagedAccount() {
+            const nameInput = document.getElementById('newAccountName');
+            const currencyInput = document.getElementById('newAccountCurrency');
+            const name = nameInput.value.trim();
+            const currency = currencyInput.value.trim().toUpperCase();
+
+            if (!name || !currency) {
+                showToast('El nombre y la moneda son obligatorios.', 'warning');
+                return;
+            }
+
+            const newAccount = {
+                id: Date.now().toString(), // ID único basado en el tiempo
+                name: name,
+                currency: currency
+            };
+
+            userConfig.managedAccounts.push(newAccount);
+            saveConfigAndRefreshCapitalModal('Cuenta añadida exitosamente.');
+            
+            // Limpiar inputs
+            nameInput.value = '';
+            currencyInput.value = '';
+            nameInput.focus();
+        }
+
+        function deleteManagedAccount(accountId) {
+            if (!confirm('¿Estás seguro de que deseas eliminar esta cuenta de forma permanente?')) {
+                return;
+            }
+
+            const accountIndex = userConfig.managedAccounts.findIndex(acc => acc.id === accountId);
+            if (accountIndex > -1) {
+                userConfig.managedAccounts.splice(accountIndex, 1);
+                saveConfigAndRefreshCapitalModal('Cuenta eliminada.');
+            }
+        }
+        
+        // Nueva función de ayuda para guardar la configuración y refrescar el modal
+        function saveConfigAndRefreshCapitalModal(successMessage) {
+            db.collection('users').doc(currentUserId).collection('settings').doc('userConfig').set(userConfig, {merge: true})
+            .then(() => {
+                showToast(successMessage, 'success');
+                // Volvemos a abrir/refrescar el modal para que se vean los cambios
+                openInitialCapitalModal(); 
+            })
+            .catch(e => {
+                showToast('Error al guardar la configuración.', 'error');
+            });
+        }
+
+        function saveInitialCapital() {
+            const saveBtn = document.getElementById('saveCapitalBtn');
+            saveBtn.classList.add('loading');
+
+            const inputs = document.querySelectorAll('#initialCapitalForm input[type="number"]');
+            const balances = [];
+
+            inputs.forEach(input => {
+                const amount = parseFloat(input.value) || 0;
+                if (amount > 0) {
+                    balances.push({
+                        accountId: input.dataset.accountId,
+                        amount: amount
+                    });
+                }
+            });
+
+            const dataToSave = {
+                date: currentDate,
+                balances: balances
+            };
+
+            db.collection('users').doc(currentUserId).collection('dailyCapital').doc(currentDate).set(dataToSave)
+                .then(() => {
+                    // Actualizamos la variable local con los nuevos datos
+                    currentDayCapital = dataToSave; 
+                    displayInitialCapitalSummary();
+                    closeInitialCapitalModal();
+                    showToast('Capital inicial guardado.', 'success');
+                })
+                .catch(e => {
+                    console.error("Error al guardar capital: ", e);
+                    showToast('Error al guardar el capital.', 'error');
+                })
+                .finally(() => {
+                    saveBtn.classList.remove('loading');
+                });
+        }
+        
+        async function loadInitialCapital(date) {
+            if (!currentUserId) return;
+            try {
+                const docRef = db.collection('users').doc(currentUserId).collection('dailyCapital').doc(date);
+                const docSnap = await docRef.get();
+                if (docSnap.exists) {
+                    currentDayCapital = docSnap.data();
+                } else {
+                    currentDayCapital = null;
+                }
+            } catch (error) {
+                console.error("Error cargando capital inicial:", error);
+                currentDayCapital = null;
+            }
+            displayInitialCapitalSummary();
+        }
+        
+        function displayInitialCapitalSummary() {
+            const container = document.getElementById('initialCapitalSummary');
+            
+            // Caso 1: No hay capital registrado para hoy
+            if (!currentDayCapital || !currentDayCapital.balances || currentDayCapital.balances.length === 0) {
+                container.innerHTML = `<p class="text-gray-500">No hay capital registrado para hoy.</p>`;
+                return;
+            }
+
+            // Objeto para acumular los totales por moneda
+            const totalsByCurrency = {};
+            
+            // Mapeamos los Ids a sus cuentas para una búsqueda rápida
+            const accountsMap = new Map(userConfig.managedAccounts.map(acc => [acc.id, acc]));
+
+            // Llenamos el objeto de totales
+            currentDayCapital.balances.forEach(balance => {
+                const account = accountsMap.get(balance.accountId);
+                if (account) {
+                    const currency = account.currency;
+                    if (!totalsByCurrency[currency]) {
+                        totalsByCurrency[currency] = 0;
+                    }
+                    totalsByCurrency[currency] += balance.amount;
+                }
+            });
+
+            // Caso 2: Hay datos pero todos los montos son cero
+            if (Object.keys(totalsByCurrency).length === 0) {
+                 container.innerHTML = `<p class="text-gray-500">No hay capital registrado para hoy.</p>`;
+                return;
+            }
+
+            // Preparamos el HTML final
+            let summaryHtml = '<div class="grid grid-cols-3 gap-x-4 gap-y-2">';
+            
+            // Damos un orden de prioridad a las monedas más comunes
+            const currencyOrder = ['USDT', 'USDC', 'USD', 'VES'];
+            const sortedCurrencies = Object.keys(totalsByCurrency).sort((a, b) => {
+                const indexA = currencyOrder.indexOf(a);
+                const indexB = currencyOrder.indexOf(b);
+                if (indexA === -1 && indexB === -1) return a.localeCompare(b); // Alfabético para los no listados
+                if (indexA === -1) return 1;
+                if (indexB === -1) return -1;
+                return indexA - indexB;
+            });
+            
+            sortedCurrencies.forEach(currency => {
+                const total = totalsByCurrency[currency];
+                let typeColor = 'text-gray-200';
+                if (currency.includes('USD')) typeColor = 'text-green-400';
+                if (currency === 'VES') typeColor = 'text-blue-400';
+
+                summaryHtml += `
+                    <div class="text-center">
+                        <span class="text-xs text-gray-400">${currency}</span>
+                        <p class="font-bold text-lg ${typeColor}">${total.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    </div>
+                `;
+            });
+
+            summaryHtml += '</div>';
+            container.innerHTML = summaryHtml;
+        }
 
         document.getElementById('selectedDate').addEventListener('change', function() { currentDate = this.value; updateSummary(); });
         document.getElementById('wallySelectedDate').addEventListener('change', function() { currentWallyDate = this.value; updateWallySummary(); });
@@ -1520,7 +1967,7 @@
                     <label class="text-sm text-gray-500 justify-self-end wally-compra-field">Comisión USDC</label> <input type="number" id="commissionUsdc" value="${op.commissionAmount || ''}" readonly class="form-field-grid bg-gray-800 border-gray-600 wally-compra-field">
                     <label class="text-sm text-green-400 font-bold justify-self-end wally-compra-field">Ganancia Neta</label> <input type="number" id="gananciaUsdc" value="${op.gananciaUsdc || ''}" readonly class="form-field-grid bg-gray-800 border-green-500/50 wally-compra-field">
                     
-                    <label class="text-sm text-gray-400 justify-self-end wally-venta-field">Envío USDC</label> <input type="number" id="envioUsdcVenta" value="${op.envioUsdc || ''}" onkeyup="updateWallyCalculations()" class="form-field-grid wally-venta-field">
+                    <label class="text-sm text-gray-400 justify-self-end wally-venta-field">Envío CRIPTO</label> <input type="number" id="envioUsdcVenta" value="${op.envioUsdc || ''}" onkeyup="updateWallyCalculations()" class="form-field-grid wally-venta-field">
                     <label class="text-sm text-gray-400 justify-self-end wally-venta-field">Tasa Venta</label> <input type="number" id="tasaVenta" value="${op.tasaVenta || ''}" onkeyup="updateWallyCalculations()" class="form-field-grid wally-venta-field">
                     <label class="text-sm text-gray-500 justify-self-end wally-venta-field">Recibo USD</label> <input type="number" id="reciboUsdCalculado" value="${op.reciboUsd || ''}" readonly class="form-field-grid bg-gray-800 border-gray-600 wally-venta-field">
                     <label class="text-sm text-gray-500 justify-self-end wally-venta-field">Comisión USDC</label> <input type="number" id="commissionUsd" value="${op.commissionAmount || ''}" readonly class="form-field-grid bg-gray-800 border-gray-600 wally-venta-field">
@@ -1559,7 +2006,7 @@
                 const t = parseFloat(document.getElementById('tasaVenta').value) || 0;
                 const recibo = e * t;
                 const grossGain = recibo - e;
-                const commissionAmount = e * (commissionRate / 100); // Commission on the amount sent
+                const commissionAmount = e * (commissionRate / 100);
                 const netGain = grossGain - commissionAmount;
 
                 document.getElementById('reciboUsdCalculado').value = recibo.toFixed(2);
@@ -1618,11 +2065,11 @@
             const valorInicial = parseFloat(userConfig.wallyInitialValue) || 0;
             const compras = currentOps.filter(op => op.operacion === 'Compra'), ventas = currentOps.filter(op => op.operacion === 'Venta');
             const valorActual = valorInicial + compras.reduce((s,o)=>s+(o.reciboUsdc || 0),0) - compras.reduce((s,o)=>s+(o.envioUsd || 0),0) + ventas.reduce((s,o)=>s+(o.reciboUsd || 0),0) - ventas.reduce((s,o)=>s+(o.envioUsdc || 0),0);
-            document.getElementById("wallyValorInicialInput").value = valorInicial.toFixed(2);
+            
             document.getElementById("wallyValorActual").textContent = valorActual.toFixed(2);
             document.getElementById("wallyGanancias").textContent = `${totalGananciaUsdc.toFixed(2)} USDC / ${totalGananciaUsd.toFixed(2)} USD`;
             renderWallyTables();
-            updateSummary(); // Real-time update fix
+            updateSummary();
         }
 
         function renderWallyTables() {
@@ -1664,7 +2111,7 @@
                     const globalIndex = wallyOperations.indexOf(op);
                     const relationIndicator = `${op.metodoPago || ''} ⬅️ ${op.platform || ''}`;
                     const tableRowHtml = `<tr><td class="text-left"><div class="font-semibold flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}</div><div class="text-xs text-gray-400">${relationIndicator}</div></td><td>${(op.envioUsdc || 0).toFixed(2)}</td><td>${(op.tasaVenta || 0).toFixed(3)}</td><td>${(op.reciboUsd || 0).toFixed(2)}</td><td class="font-semibold text-green-400">${(op.gananciaUsd || 0).toFixed(4)}</td><td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button><button class="text-red-400 p-1" onclick="deleteWallyOperation(${globalIndex})">🗑️</button></td></tr>`;
-                    const cardHtml = `<div class="operation-card venta"><div class="card-header"><div class="user-info flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}</div><div class="flex"><button class="action-btn edit" onclick="openWallyModal(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button><button class="action-btn delete" onclick="deleteWallyOperation(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.033-2.134H8.033c-1.12 0-2.033.954-2.033 2.134v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button></div></div><div class="payment-method text-xs text-gray-400 text-left mt-1">${relationIndicator}</div><div class="card-grid"><div class="grid-item"><span class="label">Envío USDC</span><span class="value">${(op.envioUsdc || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasaVenta || 0).toFixed(3)}</span></div><div class="grid-item"><span class="label">Recibo USD</span><span class="value">${(op.reciboUsd || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Gan. Neta</span><span class="value profit-green">${(op.gananciaUsd || 0).toFixed(4)}</span></div></div></div>`;
+                    const cardHtml = `<div class="operation-card venta"><div class="card-header"><div class="user-info flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}</div><div class="flex"><button class="action-btn edit" onclick="openWallyModal(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button><button class="action-btn delete" onclick="deleteWallyOperation(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.033-2.134H8.033c-1.12 0-2.033.954-2.033 2.134v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button></div></div><div class="payment-method text-xs text-gray-400 text-left mt-1">${relationIndicator}</div><div class="card-grid"><div class="grid-item"><span class="label">Envío CRIPTO</span><span class="value">${(op.envioUsdc || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasaVenta || 0).toFixed(3)}</span></div><div class="grid-item"><span class="label">Recibo USD</span><span class="value">${(op.reciboUsd || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Gan. Neta</span><span class="value profit-green">${(op.gananciaUsd || 0).toFixed(4)}</span></div></div></div>`;
                     ventaTableBody.innerHTML += tableRowHtml; 
                     ventaListContainer.innerHTML += cardHtml;
                 });
@@ -1841,7 +2288,10 @@
         window.closeUserProfileModal = closeUserProfileModal; window.saveProfileNotes = saveProfileNotes;
         window.deleteWallyOperation = deleteWallyOperation;
         window.editP2PPlatform = editP2PPlatform; window.deleteP2PPlatform = deleteP2PPlatform; window.setDefaultP2PPlatform = setDefaultP2PPlatform;
+        window.openInitialCapitalModal = openInitialCapitalModal;
+        window.closeInitialCapitalModal = closeInitialCapitalModal;
+        window.saveInitialCapital = saveInitialCapital;
+
     </script>
 </body>
 </html>
-
