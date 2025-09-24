@@ -1,7 +1,7 @@
 const CACHE_NAME = 'dashsy-cache-v1';
 const urlsToCache = [
   './',
-  './DashSY V4 - Corriendo.html',
+  './index.html',
   './manifest.json',
   './icons/icon-192x192.png',
   './icons/icon-512x512.png'
@@ -45,4 +45,5 @@ self.addEventListener('activate', event => {
       );
     })
   );
+
 });
