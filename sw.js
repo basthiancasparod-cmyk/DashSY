@@ -1,3 +1,4 @@
+// Versión 1.0.1 - Habilitado animación y sonido
 const CACHE_NAME = 'dashsy-cache-v1';
 const urlsToCache = [
   './',
@@ -47,3 +48,4 @@ self.addEventListener('activate', event => {
   );
 
 });
+
