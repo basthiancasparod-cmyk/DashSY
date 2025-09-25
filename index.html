@@ -525,23 +525,91 @@
         }
 
 
+        /* ESTILOS PARA EL BANNER DE ACTUALIZACIÓN */
+        .update-banner {
+            display: none; /* Oculto por defecto */
+            position: fixed;
+            bottom: calc(5.5rem + env(safe-area-inset-bottom)); /* Justo arriba del menú de navegación */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--primary);
+            color: var(--background);
+            padding: 0.75rem 1.25rem;
+            border-radius: 12px;
+            z-index: 1002; /* Por encima del FAB, por debajo de los modales */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            font-weight: 600;
+            align-items: center;
+            gap: 1rem;
+        }
+        .update-banner.show {
+            display: flex;
+            animation: slideUp 0.5s ease-out;
+        }
+        .update-button {
+            background-color: rgba(0,0,0,0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        @keyframes slideUp {
+            from { transform: translate(-50%, 100px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
     </style>
 
 <link rel="manifest" href="manifest.json">
 <script>
+    // --- NUEVO SISTEMA DE REGISTRO Y ACTUALIZACIÓN DEL SERVICE WORKER ---
     if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').then(registration => { // La barra inicial '/' es clave aquí
-            console.log('Service Worker registrado con éxito:', registration);
-        }).catch(error => {
-            console.log('Fallo al registrar el Service Worker:', error);
+        window.addEventListener('load', () => {
+            let newWorker;
+            
+            navigator.serviceWorker.register('./sw.js').then(reg => {
+                // 1. Escucha por una nueva versión del SW que se está instalando
+                reg.addEventListener('updatefound', () => {
+                    console.log('Nueva versión del Service Worker encontrada. Instalando...');
+                    newWorker = reg.installing;
+                    
+                    // 2. Cuando el nuevo SW se instala, mostramos la notificación
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                           // Muestra el banner de actualización
+                           const notification = document.getElementById('update-notification');
+                           notification.classList.add('show');
+                        }
+                    });
+                });
+            });
+
+            // 3. El usuario hace clic en el botón "Actualizar"
+            const reloadButton = document.getElementById('update-reload-button');
+            reloadButton.addEventListener('click', () => {
+                // Envía un mensaje al nuevo SW para que se active
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+            });
+            
+            // 4. Cuando el nuevo SW toma el control, recargamos la página
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
+            });
         });
-    });
-}
+    }
 </script>
 
 </head>
 <body class="overscroll-none">
+
+    <body class="overscroll-none">
+        <div id="update-notification" class="update-banner">
+            <span>Hay una nueva versión disponible.</span>
+            <button id="update-reload-button" class="update-button">Actualizar</button>
+    </div>
+
 
     <div id="loading-overlay" class="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[9999]" style="display: flex;">
         <div class="loader"></div>
