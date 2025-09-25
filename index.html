@@ -460,6 +460,71 @@
             font-weight: 600;
         }
 
+
+        /* ESTILOS PARA LA ANIMACIÓN DE LOTE CERRADO */
+        .lot-animation-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 9998;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            pointer-events: none;
+        }
+        .lot-animation-container.show {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        .lot-animation-card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-primary);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transform: scale(0.9);
+            opacity: 0;
+        }
+        .lot-animation-container.show .lot-animation-card {
+           animation: fadeInUp 0.4s 0.1s ease-out forwards;
+        }
+        .lot-animation-container.hide .lot-animation-card {
+           animation: fadeOutDown 0.4s ease-in forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                transform: translate3d(0, 40px, 0) scale(0.95);
+                opacity: 0;
+            }
+            to {
+                transform: translate3d(0, 0, 0) scale(1);
+                opacity: 1;
+            }
+        }
+        @keyframes fadeOutDown {
+             from {
+                transform: translate3d(0, 0, 0) scale(1);
+                opacity: 1;
+            }
+            to {
+                transform: translate3d(0, 50px, 0) scale(0.95);
+                opacity: 0;
+            }
+        }
+
+
     </style>
 
 <link rel="manifest" href="manifest.json">
@@ -954,6 +1019,7 @@
         let lastSavedUser = '', lastSavedOperationType = '';
         let initialLoadCounter = 0;
         let currentDayCapital = null;
+        let closedLotsBeforeUpdate = new Set();
 
         const TOTAL_INITIAL_LOADS = 5; 
         
@@ -964,7 +1030,32 @@
             }
         }
 
+        function calculateLotProfit(lot) {
+         const revenue = lot.ventaOp.tasa * lot.montoTotal;
+         const cost = lot.comprasAsociadas.reduce((total, compra) => {
+             return total + (compra.op.tasa * compra.monto);
+         }, 0);
+         return revenue - cost;
+     }
 
+     function showLotClosedAnimation(profit) {
+         const container = document.getElementById('lotClosedAnimation');
+         const profitEl = document.getElementById('lotAnimationProfit');
+         const sound = document.getElementById('notificationSound');
+         
+         profitEl.textContent = `${profit.toFixed(2)} VES`;
+         
+         sound.currentTime = 0; // Reinicia el audio por si se activa de nuevo rápidamente
+         sound.play().catch(error => console.log("La reproducción de audio fue bloqueada por el navegador. Se requiere interacción del usuario."));
+
+         container.classList.remove('hide');
+         container.classList.add('show');
+
+         setTimeout(() => {
+             container.classList.remove('show');
+             container.classList.add('hide');
+         }, 3500); // La animación permanece visible por 3.5 segundos
+     }
 
 
         const getLocalDate = () => {
@@ -1272,6 +1363,28 @@
             loadInitialCapital(currentDate); 
             if (!operations) return;
             applyFIFOForDate(currentDate); 
+
+            // --- INICIO: Lógica para detectar cierre de lotes ---
+         const newlyClosedLots = [];
+         for (const [lotId, lot] of currentLotsData.entries()) {
+             if (lot.estado === 'cerrado' && !closedLotsBeforeUpdate.has(lotId)) {
+                 newlyClosedLots.push(lot);
+             }
+         }
+         
+         if (newlyClosedLots.length > 0) {
+             // Si se cierran varios lotes a la vez, se muestra una animación por cada uno
+             newlyClosedLots.forEach((lot, index) => {
+                 setTimeout(() => {
+                     const profit = calculateLotProfit(lot);
+                     if (profit > 0) {
+                         showLotClosedAnimation(profit);
+                     }
+                 }, index * 1000); // Pequeño retraso si se cierra más de un lote a la vez
+             });
+         }
+         // --- FIN: Lógica para detectar cierre de lotes ---
+
             const currentOps = operations.filter(op => op.fecha === currentDate);
             const compras = currentOps.filter(op => op.operacion === 'Compra'), ventas = currentOps.filter(op => op.operacion === 'Venta');
             const promCompra = compras.length ? compras.reduce((s, o) => s + o.tasa, 0) / compras.length : 0;
@@ -1300,6 +1413,11 @@
             renderDailyGoals(gananciasVes, wallyGainsUsdcForDate, wallyGainsUsdForDate);
 
             renderOperations();
+
+         // Actualiza el estado de los lotes cerrados para la próxima revisión
+         closedLotsBeforeUpdate = new Set(Array.from(currentLotsData.values()).filter(l => l.estado === 'cerrado').map(l => l.id));
+
+
         }
 
         function renderDailyGoals(currentVes, currentCrypto, currentUsd) {
@@ -2300,5 +2418,19 @@
         window.deleteManagedAccount = deleteManagedAccount;
         
     </script>
+
+    <div id="lotClosedAnimation" class="lot-animation-container">
+        <div class="lot-animation-card">
+            <div class="text-6xl mb-4">🎉</div>
+            <h3 class="text-2xl font-bold mb-2">¡Lote Completado!</h3>
+            <p class="text-lg text-gray-300">Ganancia del Lote:</p>
+            <p id="lotAnimationProfit" class="text-3xl font-extrabold text-green-400 mt-1">0.00 VES</p>
+        </div>
+    </div>
+
+    <audio id="notificationSound" preload="auto">
+        <source src="https://firebasestorage.googleapis.com/v0/b/dashboard-operaciones-a9996.appspot.com/o/notification.mp3?alt=media&token=862d476b-9549-4303-a178-57f41532c57c" type="audio/mpeg">
+    </audio>
+
 </body>
 </html>
