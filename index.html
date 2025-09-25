@@ -604,11 +604,11 @@
 </head>
 <body class="overscroll-none">
 
-    <body class="overscroll-none">
+    
         <div id="update-notification" class="update-banner">
             <span>Hay una nueva versión disponible.</span>
             <button id="update-reload-button" class="update-button">Actualizar</button>
-    </div>
+        </div>
 
 
     <div id="loading-overlay" class="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[9999]" style="display: flex;">
@@ -787,7 +787,13 @@
             </div>
             <div id="page-settings" class="page">
                 <h1 class="text-2xl font-bold mb-6">Ajustes</h1>
-                <div class="space-y-4"><button onclick="openConfigModal()" class="w-full text-left p-4 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors">⚙️ Configuración General</button><button onclick="logoutUser()" class="w-full text-left p-4 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors">🚪 Cerrar Sesión</button></div>
+                <div class="space-y-4">
+                    <button onclick="openConfigModal()" class="w-full text-left p-4 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors">⚙️ Configuración General</button>
+                    
+                    <button id="enableSoundBtn" onclick="enableAudio()" class="w-full text-left p-4 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors">🔊 Habilitar Sonido para Notificaciones</button>
+                    
+                    <button onclick="logoutUser()" class="w-full text-left p-4 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors">🚪 Cerrar Sesión</button>
+                </div>
             </div>
             <button id="main-fab" class="btn-fab" onclick="openModal()"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg></button>
         </main>
@@ -1087,7 +1093,7 @@
         let lastSavedUser = '', lastSavedOperationType = '';
         let initialLoadCounter = 0;
         let currentDayCapital = null;
-        let closedLotsBeforeUpdate = new Set();
+        
 
         const TOTAL_INITIAL_LOADS = 5; 
         
@@ -1096,6 +1102,22 @@
             if (initialLoadCounter >= TOTAL_INITIAL_LOADS) {
                 document.getElementById('loading-overlay').style.display = 'none';
             }
+        }
+        
+        // AÑADE ESTA FUNCIÓN NUEVA AQUÍ
+        function enableAudio() {
+            const sound = document.getElementById('notificationSound');
+            sound.play().then(() => {
+                sound.pause();
+                sound.currentTime = 0;
+                // Guardamos en la memoria del navegador que el sonido ya está permitido.
+                localStorage.setItem('soundEnabled', 'true'); 
+                showToast('¡Sonido habilitado!', 'success');
+                const btn = document.getElementById('enableSoundBtn');
+                if (btn) btn.style.display = 'none'; 
+            }).catch(error => {
+                showToast('El navegador bloqueó el audio.', 'error');
+            });
         }
 
         function calculateLotProfit(lot) {
@@ -1106,6 +1128,18 @@
          return revenue - cost;
      }
 
+     // --- NUEVAS FUNCIONES DE MEMORIA PERSISTENTE ---
+        function getShownLots() {
+            const shownLotsJSON = localStorage.getItem('shownLotNotifications');
+            return shownLotsJSON ? new Set(JSON.parse(shownLotsJSON)) : new Set();
+        }
+
+        function addShownLot(lotId) {
+            const shownLots = getShownLots();
+            shownLots.add(lotId);
+            localStorage.setItem('shownLotNotifications', JSON.stringify(Array.from(shownLots)));
+        }
+
      function showLotClosedAnimation(profit) {
          const container = document.getElementById('lotClosedAnimation');
          const profitEl = document.getElementById('lotAnimationProfit');
@@ -1114,7 +1148,11 @@
          profitEl.textContent = `${profit.toFixed(2)} VES`;
          
          sound.currentTime = 0; // Reinicia el audio por si se activa de nuevo rápidamente
-         sound.play().catch(error => console.log("La reproducción de audio fue bloqueada por el navegador. Se requiere interacción del usuario."));
+         sound.play().catch(error => {
+            console.log("Error de audio:", error);
+            // Mostramos una notificación amigable en lugar de solo un mensaje en la consola.
+            showToast('Sonido bloqueado. Habilítalo en Ajustes.', 'warning');
+        });
 
          container.classList.remove('hide');
          container.classList.add('show');
@@ -1168,6 +1206,11 @@
                 currentUserId = user.uid;
                 authSection.style.display = 'none'; appContainer.style.display = 'flex';
                 userEmailEl.textContent = user.email.split('@')[0];
+                
+                if (localStorage.getItem('soundEnabled') === 'true') {
+                    const btn = document.getElementById('enableSoundBtn');
+                    if (btn) btn.style.display = 'none';
+                }
                 
                 await loadConfig();
                 
@@ -1432,25 +1475,29 @@
             if (!operations) return;
             applyFIFOForDate(currentDate); 
 
-            // --- INICIO: Lógica para detectar cierre de lotes ---
-         const newlyClosedLots = [];
-         for (const [lotId, lot] of currentLotsData.entries()) {
-             if (lot.estado === 'cerrado' && !closedLotsBeforeUpdate.has(lotId)) {
-                 newlyClosedLots.push(lot);
-             }
-         }
-         
-         if (newlyClosedLots.length > 0) {
-             // Si se cierran varios lotes a la vez, se muestra una animación por cada uno
-             newlyClosedLots.forEach((lot, index) => {
-                 setTimeout(() => {
-                     const profit = calculateLotProfit(lot);
-                     if (profit > 0) {
-                         showLotClosedAnimation(profit);
-                     }
-                 }, index * 1000); // Pequeño retraso si se cierra más de un lote a la vez
-             });
-         }
+            // --- INICIO: Lógica MEJORADA para detectar cierre de lotes ---
+            const shownLots = getShownLots(); // Lee la memoria de notificaciones ya mostradas
+            const newlyClosedLots = [];
+
+            for (const [lotId, lot] of currentLotsData.entries()) {
+                // Comprueba si el lote está cerrado Y si NO se ha mostrado antes una notificación para él
+                if (lot.estado === 'cerrado' && !shownLots.has(lotId)) {
+                    newlyClosedLots.push(lot);
+                }
+            }
+            
+            if (newlyClosedLots.length > 0) {
+                newlyClosedLots.forEach((lot, index) => {
+                    setTimeout(() => {
+                        const profit = calculateLotProfit(lot);
+                        if (profit > 0) {
+                            showLotClosedAnimation(profit);
+                            // IMPORTANTE: Anota en la memoria que ya mostramos esta notificación
+                            addShownLot(lot.id); 
+                        }
+                    }, index * 1000); 
+                });
+            }
          // --- FIN: Lógica para detectar cierre de lotes ---
 
             const currentOps = operations.filter(op => op.fecha === currentDate);
@@ -1481,9 +1528,7 @@
             renderDailyGoals(gananciasVes, wallyGainsUsdcForDate, wallyGainsUsdForDate);
 
             renderOperations();
-
-         // Actualiza el estado de los lotes cerrados para la próxima revisión
-         closedLotsBeforeUpdate = new Set(Array.from(currentLotsData.values()).filter(l => l.estado === 'cerrado').map(l => l.id));
+         
 
 
         }
@@ -2482,9 +2527,12 @@
         window.openInitialCapitalModal = openInitialCapitalModal;
         window.closeInitialCapitalModal = closeInitialCapitalModal;
         window.saveInitialCapital = saveInitialCapital;
-        window.addManagedAccount = addManagedAccount; // <-- AÑADE ESTA LÍNEA
+        // ... (el resto de las funciones window)
+        window.addManagedAccount = addManagedAccount; 
         window.deleteManagedAccount = deleteManagedAccount;
-        
+
+        // AÑADE ESTA LÍNEA AL FINAL
+        window.enableAudio = enableAudio;
     </script>
 
     <div id="lotClosedAnimation" class="lot-animation-container">
