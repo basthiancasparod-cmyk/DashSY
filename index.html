@@ -1152,22 +1152,6 @@
                 document.getElementById('loading-overlay').style.display = 'none';
             }
         }
-        
-        // AÑADE ESTA FUNCIÓN NUEVA AQUÍ
-        function enableAudio() {
-            const sound = document.getElementById('notificationSound');
-            sound.play().then(() => {
-                sound.pause();
-                sound.currentTime = 0;
-                // Guardamos en la memoria del navegador que el sonido ya está permitido.
-                localStorage.setItem('soundEnabled', 'true'); 
-                showToast('¡Sonido habilitado!', 'success');
-                const btn = document.getElementById('enableSoundBtn');
-                if (btn) btn.style.display = 'none'; 
-            }).catch(error => {
-                showToast('El navegador bloqueó el audio.', 'error');
-            });
-        }
 
         function calculateLotProfit(lot) {
          const revenue = lot.ventaOp.tasa * lot.montoTotal;
