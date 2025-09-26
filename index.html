@@ -1246,104 +1246,123 @@
         function loadWallyOperations() { if (!currentUserId) return; db.collection('users').doc(currentUserId).collection('wallyOperations').orderBy('timestamp', 'desc').onSnapshot(s => { wallyOperations = s.docs.map(d => ({ id: d.id, ...d.data() })); updateWallySummary(); checkInitialLoadComplete(); }, e => { console.error(e); checkInitialLoadComplete(); });}
         
         function saveOperation() {
-            if (!currentUserId) return;
-            const saveBtn = document.getElementById('saveOperationBtn');
-            saveBtn.classList.add('loading');
+    if (!currentUserId) return;
+    const saveBtn = document.getElementById('saveOperationBtn');
+    saveBtn.classList.add('loading');
 
-            const originalUsdc = parseFloat(document.getElementById('montoUsdc').value) || 0;
-            const operacion = document.getElementById('operacion').value;
-            const platformSelect = document.getElementById('p2pPlatformSelect');
-            const selectedPlatformName = platformSelect.value;
-            const platform = userConfig.p2pPlatforms.find(p => p.name === selectedPlatformName);
-            const commissionRate = platform ? platform.commission : 0;
-            
-            let finalUsdc = originalUsdc;
-            if (commissionRate > 0 && originalUsdc > 0) {
-                const commissionAmount = originalUsdc * (commissionRate / 100);
-                // La comisión SIEMPRE reduce el neto, tanto en compra como en venta.
-                if (operacion === 'Compra' || operacion === 'Venta') {
-                    finalUsdc = originalUsdc - commissionAmount;
-                }
-            }
+    const operacion = document.getElementById('operacion').value;
+    const tasa = parseFloat(document.getElementById('tasa').value) || 0;
+    const metodoPago = document.getElementById('metodoPago').value;
+    const platformSelect = document.getElementById('p2pPlatformSelect');
+    const platform = userConfig.p2pPlatforms.find(p => p.name === platformSelect.value);
+    const commissionRate = platform ? platform.commission / 100 : 0;
+    
+    // La regla de oro: Siempre usamos el monto BRUTO (ej: 1.000) del input.
+    const grossUsdc = parseFloat(document.getElementById('montoUsdc').value) || 0;
+    
+    const montoBs = grossUsdc * tasa;
+    
+    let comisionVes = 0;
+    if (operacion === 'Compra' && metodoPago === 'Pagomovil') {
+        comisionVes = montoBs * 0.003;
+    }
+    const total = montoBs + comisionVes;
 
-            const operationData = { 
-                usuario: document.getElementById('usuario').value, 
-                referencia: document.getElementById('referencia').value, 
-                operacion, 
-                p2pPlatform: selectedPlatformName,
-                tasa: parseFloat(document.getElementById('tasa').value) || 0, 
-                metodoPago: document.getElementById('metodoPago').value, 
-                montoUsdc: finalUsdc, 
-                montoBs: parseFloat(document.getElementById('montoBs').value) || 0, 
-                comisionVes: parseFloat(document.getElementById('comisionVes').value) || 0, 
-                total: parseFloat(document.getElementById('total').value) || 0, 
-                ves: 0, 
-                usdc: 0, 
-                lote: '', 
-                estatus: document.getElementById('estatus').value, 
-                fecha: currentDate, 
-                timestamp: Date.now(), 
-                adCommissionPercent: commissionRate 
-            };
+    const operationData = { 
+        usuario: document.getElementById('usuario').value, 
+        referencia: document.getElementById('referencia').value, 
+        operacion, 
+        p2pPlatform: platformSelect.value,
+        tasa, 
+        metodoPago, 
+        montoUsdc: grossUsdc, // Y guardamos ese monto BRUTO.
+        montoBs,
+        comisionVes,
+        total,
+        ves: 0, 
+        usdc: 0, 
+        lote: '', 
+        estatus: document.getElementById('estatus').value, 
+        fecha: currentDate, 
+        timestamp: Date.now(), 
+        adCommissionPercent: commissionRate * 100
+    };
 
-            if (!operationData.usuario || !operationData.tasa || !originalUsdc) { 
-                showToast('Por favor, complete todos los campos obligatorios.', 'error'); 
-                saveBtn.classList.remove('loading');
-                return; 
-            }
+    if (!operationData.usuario || !operationData.tasa || !grossUsdc) { 
+        showToast('Por favor, complete todos los campos obligatorios.', 'error'); 
+        saveBtn.classList.remove('loading');
+        return; 
+    }
 
-            const isEditing = editingIndex > -1;
-            const opId = isEditing ? operations[editingIndex].id : db.collection('users').doc(currentUserId).collection('operations').doc().id;
-            operationData.id = opId;
-            db.collection('users').doc(currentUserId).collection('operations').doc(opId).set(operationData, { merge: true }).then(() => { 
-                closeModal(); 
-                showToast('Operación guardada.', 'success'); 
-                if (!isEditing) {
-                    lastSavedUser = operationData.usuario;
-                    lastSavedOperationType = 'main';
-                    openRatingModal(operationData.usuario);
-                }
-            }).catch(e => {
-                showToast('Error al guardar.', 'error');
-            }).finally(() => {
-                saveBtn.classList.remove('loading');
-            });
+    const isEditing = editingIndex > -1;
+    const opId = isEditing ? operations[editingIndex].id : db.collection('users').doc(currentUserId).collection('operations').doc().id;
+    operationData.id = opId;
+    db.collection('users').doc(currentUserId).collection('operations').doc(opId).set(operationData, { merge: true }).then(() => { 
+        closeModal(); 
+        showToast('Operación guardada.', 'success'); 
+        if (!isEditing) {
+            lastSavedUser = operationData.usuario;
+            lastSavedOperationType = 'main';
+            openRatingModal(operationData.usuario);
         }
+    }).catch(e => {
+        showToast('Error al guardar.', 'error');
+    }).finally(() => {
+        saveBtn.classList.remove('loading');
+    });
+}
+
         
         function calculateAll() {
-            const tasa = parseFloat(document.getElementById('tasa').value) || 0;
-            const montoUsdcOriginal = parseFloat(document.getElementById('montoUsdc').value) || 0;
-            const operacion = document.getElementById('operacion').value;
-            const metodoPago = document.getElementById('metodoPago').value;
-            const platformSelect = document.getElementById('p2pPlatformSelect');
-            const platform = userConfig.p2pPlatforms.find(p => p.name === platformSelect.value);
-            const commissionRate = platform ? platform.commission : 0;
-            
-            const adCommissionRow = document.getElementById('displayAdCommissionRow');
+    const tasa = parseFloat(document.getElementById('tasa').value) || 0;
+    const montoUsdcOriginal = parseFloat(document.getElementById('montoUsdc').value) || 0; // Este es el monto BRUTO
+    const operacion = document.getElementById('operacion').value;
+    const metodoPago = document.getElementById('metodoPago').value;
+    const platformSelect = document.getElementById('p2pPlatformSelect');
+    const platform = userConfig.p2pPlatforms.find(p => p.name === platformSelect.value);
+    const commissionRate = platform ? platform.commission / 100 : 0;
 
-            if (commissionRate > 0 && montoUsdcOriginal > 0) {
-                const commissionAmountUsdc = montoUsdcOriginal * (commissionRate / 100);
-                const montoUsdcFinal = montoUsdcOriginal - commissionAmountUsdc; // Lógica unificada: la comisión siempre reduce el neto.
-                
-                document.getElementById('displayAdCommissionLabel').textContent = `Comisión ${platform.name} (${commissionRate}%):`;
-                document.getElementById('displayAdCommission').textContent = `-${commissionAmountUsdc.toFixed(3)} (Neto: ${montoUsdcFinal.toFixed(3)})`; 
-                
-                adCommissionRow.style.display = 'flex';
-            } else { 
-                adCommissionRow.style.display = 'none'; 
-            }
+    // El "Monto BS" SIEMPRE se calcula sobre el monto BRUTO, ya que es el valor de la transacción P2P.
+    const montoBs = montoUsdcOriginal * tasa;
+    let comisionVes = 0;
+    let total = montoBs;
 
-            const montoBs = tasa * montoUsdcOriginal; 
-            let comisionVes = 0;
-            if (operacion === 'Compra' && metodoPago === 'Pagomovil') { 
-                comisionVes = montoBs * 0.003; 
-            }
-            const total = montoBs + comisionVes;
+    const adCommissionRow = document.getElementById('displayAdCommissionRow');
+    const adCommissionLabel = document.getElementById('displayAdCommissionLabel');
+    const adCommissionDisplay = document.getElementById('displayAdCommission');
+
+    if (commissionRate > 0 && montoUsdcOriginal > 0) {
+        const commissionAmountUsdc = montoUsdcOriginal * commissionRate;
+        
+        if (operacion === 'Venta') {
+            // En una VENTA, la comisión se SUMA a lo que te descuentan.
+            const totalDebitUsdc = montoUsdcOriginal * (1 + commissionRate);
+            adCommissionLabel.textContent = `Comisión Apolo (0.2%):`;
+            adCommissionDisplay.textContent = `+${commissionAmountUsdc.toFixed(4)} (Costo Total: ${totalDebitUsdc.toFixed(4)} USDT)`;
+            comisionVes = 0;
+            total = montoBs;
+
+        } else { // Es una COMPRA
+            const netReceivedUsdc = montoUsdcOriginal * (1 - commissionRate);
+            adCommissionLabel.textContent = `Comisión Apolo (0.2%):`;
+            adCommissionDisplay.textContent = `-${commissionAmountUsdc.toFixed(4)} (Neto a recibir: ${netReceivedUsdc.toFixed(4)} USDT)`;
             
-            ['displayMontoBs', 'montoBs'].forEach(id => document.getElementById(id).textContent = document.getElementById(id).value = montoBs.toFixed(2));
-            ['displayComision', 'comisionVes'].forEach(id => document.getElementById(id).textContent = document.getElementById(id).value = comisionVes.toFixed(2));
-            ['displayTotal', 'total'].forEach(id => document.getElementById(id).textContent = document.getElementById(id).value = total.toFixed(2));
+            if (metodoPago === 'Pagomovil') {
+                comisionVes = montoBs * 0.003;
+            }
+            total = montoBs + comisionVes;
         }
+        adCommissionRow.style.display = 'flex';
+    } else {
+        adCommissionRow.style.display = 'none';
+    }
+    
+    // Actualizar todos los campos de la UI con los valores correctos
+    ['displayMontoBs', 'montoBs'].forEach(id => document.getElementById(id).textContent = document.getElementById(id).value = montoBs.toFixed(2));
+    ['displayComision', 'comisionVes'].forEach(id => document.getElementById(id).textContent = document.getElementById(id).value = comisionVes.toFixed(2));
+    ['displayTotal', 'total'].forEach(id => document.getElementById(id).textContent = document.getElementById(id).value = total.toFixed(2));
+}
+
 
         function editOperation(index) {
             editingIndex = index; 
@@ -1352,11 +1371,9 @@
             
             let originalMontoUsdc = op.montoUsdc;
             if (op.adCommissionPercent > 0) {
-                if (op.operacion === 'Compra') { 
-                    originalMontoUsdc = op.montoUsdc / (1 - op.adCommissionPercent / 100); 
-                } else { 
-                    originalMontoUsdc = op.montoUsdc / (1 + op.adCommissionPercent / 100); 
-                }
+                // si guardaste siempre como neto (final = original - original*percent),
+                // la forma de recuperar el original es dividir entre (1 - percent)
+                originalMontoUsdc = op.montoUsdc / (1 - op.adCommissionPercent / 100);
             }
             
             document.getElementById('usuario').value = op.usuario; 
@@ -1372,34 +1389,6 @@
             openModal();
         }
 
-        function calculateTotalGainsForPeriod(periodOps) {
-            const opsCopy = JSON.parse(JSON.stringify(periodOps));
-            const uniqueDates = [...new Set(opsCopy.map(op => op.fecha))];
-            let totalGainVes = 0, totalGainUsdc = 0;
-            for (const fecha of uniqueDates) {
-                const dailyOps = opsCopy.filter(op => op.fecha === fecha).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-                dailyOps.forEach(op => { if (op.operacion === 'Compra') op._unmatchedAmount = op.montoUsdc; });
-                const purchases = dailyOps.filter(op => op.operacion === 'Compra');
-                const sales = dailyOps.filter(op => op.operacion === 'Venta');
-                sales.forEach(sale => {
-                    let remainingSaleAmount = sale.montoUsdc;
-                    for (const purchase of purchases) {
-                        if (purchase._unmatchedAmount > 1e-5 && remainingSaleAmount > 1e-5) {
-                            const amountToMatch = Math.min(remainingSaleAmount, purchase._unmatchedAmount);
-                            const cost = amountToMatch * purchase.tasa;
-                            const revenue = amountToMatch * sale.tasa;
-                            totalGainVes += (revenue - cost);
-                            totalGainUsdc += (revenue - cost) / (purchase.tasa || 1);
-                            remainingSaleAmount -= amountToMatch;
-                            purchase._unmatchedAmount -= amountToMatch;
-                        }
-                        if (remainingSaleAmount < 1e-5) break;
-                    }
-                });
-            }
-            return [totalGainVes, totalGainUsdc];
-        }
-
         function populateUsdPaymentMethodsFilter() {
             const methods = userConfig.paymentMethods ? userConfig.paymentMethods.usd || [] : [];
             const filterSelect = document.getElementById('filterWallyMetodoPago');
@@ -1408,6 +1397,58 @@
             }
         }
         
+        function calculateFIFOGainsForOps(opsArray) {
+    if (!opsArray || opsArray.length === 0) {
+        return [0, 0]; // Devuelve [gananciaVes, gananciaUsdc]
+    }
+
+    // Usamos una copia para no alterar los datos originales
+    const opsCopy = JSON.parse(JSON.stringify(opsArray));
+    let totalGainVes = 0;
+    let totalGainUsdc = 0;
+
+    const sales = opsCopy.filter(op => op.operacion === 'Venta').sort((a, b) => a.timestamp - b.timestamp);
+    const purchases = opsCopy.filter(op => op.operacion === 'Compra').sort((a, b) => a.timestamp - b.timestamp);
+
+    purchases.forEach(p => p._unmatchedAmount = p.montoUsdc); // montoUsdc es el monto BRUTO
+
+    sales.forEach(sale => {
+        let remainingSaleAmount = sale.montoUsdc; // BRUTO de la venta
+
+        for (const purchase of purchases) {
+            if (purchase._unmatchedAmount > 1e-5 && remainingSaleAmount > 1e-5) {
+                const amountToMatch = Math.min(remainingSaleAmount, purchase._unmatchedAmount); // Monto BRUTO a parear
+
+                const commissionRate = (purchase.adCommissionPercent || 0) / 100;
+
+                // 1. Ganancia por la diferencia de Tasa (Spread)
+                const revenueVes = amountToMatch * sale.tasa;
+                const costVes = amountToMatch * purchase.tasa;
+                // Calculamos la comisión bancaria proporcional al monto pareado
+                const bankFeeForMatch = (purchase.comisionVes / purchase.montoUsdc) * amountToMatch;
+                const spreadGainInVes = revenueVes - costVes - bankFeeForMatch;
+                const spreadGainInUsdt = spreadGainInVes / purchase.tasa;
+
+                // 2. Costo total por las comisiones de la plataforma (Apolo)
+                const totalCommissionCostInUsdt = (amountToMatch * commissionRate) * 2; // (comisión de compra + comisión de venta)
+                
+                // 3. Ganancia NETA final en USDT para este ciclo
+                const netGainInUsdt = spreadGainInUsdt - totalCommissionCostInUsdt;
+                const netGainInVes = netGainInUsdt * purchase.tasa;
+
+                totalGainVes += netGainInVes;
+                totalGainUsdc += netGainInUsdt;
+
+                remainingSaleAmount -= amountToMatch;
+                purchase._unmatchedAmount -= amountToMatch;
+            }
+            if (remainingSaleAmount < 1e-5) break;
+        }
+    });
+
+    return [totalGainVes, totalGainUsdc];
+}
+
         function calculateWallyGainsForPeriod(periodOps) {
             const compras = periodOps.filter(op => op.operacion === 'Compra');
             const ventas = periodOps.filter(op => op.operacion === 'Venta');
@@ -1434,49 +1475,77 @@
         
        function applyFIFOForDate(fecha) {
             const dailyOps = operations.filter(op => op.fecha === fecha).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            
             dailyOps.forEach(op => {
                 op.ves = 0;
                 op.usdc = 0;
                 op.lote = '';
-                if (op.operacion === 'Compra') {
-                    op._unmatchedAmount = op.montoUsdc;
+                if (op.operacion === 'Venta') { // Usamos las ventas como punto de partida para el FIFO
+                    op._unmatchedAmount = op.montoUsdc; // montoUsdc ahora es el monto BRUTO
                 }
             });
+
             const purchases = dailyOps.filter(op => op.operacion === 'Compra');
             const sales = dailyOps.filter(op => op.operacion === 'Venta');
             currentLotsData.clear();
             let lotCounter = 1;
+
+            // Reiniciamos las compras no pareadas
+            purchases.forEach(p => p._unmatchedAmount = p.montoUsdc);
+
             sales.forEach(sale => {
                 const lotId = `L${lotCounter++}`;
-                let remainingSaleAmount = sale.montoUsdc;
+                let remainingSaleAmount = sale.montoUsdc; // BRUTO de la venta
                 sale.lote = lotId;
+
                 const lot = { id: lotId, ventaOp: sale, montoTotal: sale.montoUsdc, montoConsumido: 0, comprasAsociadas: [], estado: 'activo' };
+
                 for (const purchase of purchases) {
                     if (purchase._unmatchedAmount > 1e-5 && remainingSaleAmount > 1e-5) {
-                        const amountToMatch = Math.min(remainingSaleAmount, purchase._unmatchedAmount);
-                        const cost = amountToMatch * purchase.tasa;
-                        const revenue = amountToMatch * sale.tasa;
-                        const gainVes = revenue - cost;
-                        const gainUsdc = gainVes / (sale.tasa || 1);
-                        purchase.ves += gainVes;
-                        purchase.usdc += gainUsdc;
+                        const amountToMatch = Math.min(remainingSaleAmount, purchase._unmatchedAmount); // Monto BRUTO a parear
+
+                        const commissionRate = (purchase.adCommissionPercent || 0) / 100;
+
+                        // 1. Ganancia por la diferencia de Tasa (Spread)
+                        const revenueVes = amountToMatch * sale.tasa;
+                        const costVes = amountToMatch * purchase.tasa;
+                        const bankFeeForMatch = costVes * 0.003;
+                        const spreadGainInVes = revenueVes - costVes - bankFeeForMatch;
+                        const spreadGainInUsdt = spreadGainInVes / purchase.tasa;
+
+                        // 2. Costo por las comisiones de plataforma (Apolo)
+                        const costOfSaleCommission = amountToMatch * commissionRate; // Al vender, te CUESTA 0.2% extra
+                        const costOfPurchaseCommission = amountToMatch * commissionRate; // Al comprar, RECIBES 0.2% menos (es un costo)
+                        const totalCommissionCostInUsdt = costOfSaleCommission + costOfPurchaseCommission;
+                        
+                        // 3. Ganancia NETA final en USDT para este ciclo
+                        const netGainInUsdt = spreadGainInUsdt - totalCommissionCostInUsdt;
+                        const netGainInVes = netGainInUsdt * purchase.tasa;
+
+                        // Asignar ganancias a las operaciones correspondientes
+                        purchase.usdc += netGainInUsdt;
+                        purchase.ves += netGainInVes;
+                        
                         const existingLote = purchase.lote ? purchase.lote + ', ' : '';
                         purchase.lote = `${existingLote}${lotId}(${amountToMatch.toFixed(2)})`;
+                        
                         remainingSaleAmount -= amountToMatch;
                         purchase._unmatchedAmount -= amountToMatch;
+                        
                         lot.montoConsumido += amountToMatch;
                         lot.comprasAsociadas.push({ op: purchase, monto: amountToMatch });
                     }
                     if (remainingSaleAmount < 1e-5) { break; }
                 }
+                
                 if (lot.montoConsumido >= lot.montoTotal - 1e-5) {
                     lot.estado = 'cerrado';
                 }
                 currentLotsData.set(lotId, lot);
             });
-            dailyOps.forEach(op => {
-                delete op._unmatchedAmount;
-            });
+
+            // Limpieza y cálculo de pendientes
+            dailyOps.forEach(op => { delete op._unmatchedAmount; });
             let totalComprado = purchases.reduce((sum, op) => sum + op.montoUsdc, 0);
             let totalVendido = sales.reduce((sum, op) => sum + op.montoUsdc, 0);
             currentPendingData = { recompra: Math.max(0, totalVendido - totalComprado), reventa: Math.max(0, totalComprado - totalVendido), recompraOps: [], reventaOps: [] };
@@ -1560,12 +1629,13 @@ function calculateLotProfit(lot) {
 function updateSummary() {
     loadInitialCapital(currentDate); 
     
-    // --- INICIO DE LA CORRECCIÓN ---
-    // Solo procesamos la parte de VES si los datos de operations ya llegaron.
+    // Filtra las operaciones del día actual ANTES de cualquier cálculo
+    const currentOps = operations.filter(op => op.fecha === currentDate);
+
     if (operations && operations.length > 0) {
+        // Ejecuta el motor FIFO. Esto calcula y añade .ves y .usdc a cada operación del día.
         applyFIFOForDate(currentDate); 
         
-        // Lógica de notificaciones
         const shownLots = getShownLots();
         const newlyClosedLots = [];
         for (const [lotId, lot] of currentLotsData.entries()) {
@@ -1585,9 +1655,8 @@ function updateSummary() {
             });
         }
         
-        // Actualizaciones de la UI para VES
-        const currentOps = operations.filter(op => op.fecha === currentDate);
-        const compras = currentOps.filter(op => op.operacion === 'Compra'), ventas = currentOps.filter(op => op.operacion === 'Venta');
+        const compras = currentOps.filter(op => op.operacion === 'Compra');
+        const ventas = currentOps.filter(op => op.operacion === 'Venta');
         const promCompra = compras.length ? compras.reduce((s, o) => s + o.tasa, 0) / compras.length : 0;
         const promVenta = ventas.length ? ventas.reduce((s, o) => s + o.tasa, 0) / ventas.length : 0;
         const brecha = promCompra > 0 ? ((promVenta - promCompra) / promCompra * 100) : 0;
@@ -1603,10 +1672,12 @@ function updateSummary() {
         
         renderOperations();
     }
-    // --- FIN DE LA CORRECCIÓN ---
 
-    // El resto de la función (la parte de USD/Cripto) se ejecuta siempre.
-    const [gananciasVes, gananciasUsdc] = calculateTotalGainsForPeriod(operations.filter(op => op.fecha === currentDate));
+    // --- LÓGICA DE GANANCIAS CORREGIDA ---
+    // En lugar de llamar a una función obsoleta, ahora sumamos las ganancias que applyFIFOForDate ya calculó.
+    const gananciasVes = currentOps.reduce((total, op) => total + (op.ves || 0), 0);
+    const gananciasUsdc = currentOps.reduce((total, op) => total + (op.usdc || 0), 0);
+    
     const [wallyGainsUsdcForDate, wallyGainsUsdForDate] = calculateWallyGainsForPeriod(wallyOperations.filter(op => op.fecha === currentDate));
 
     document.getElementById('ganancias').innerHTML = `${gananciasVes.toFixed(2)} <span class="text-2xl font-semibold">VES</span>`;
@@ -1682,42 +1753,50 @@ function updateSummary() {
         }
 
         function renderOperations() {
-            const tableBody = document.getElementById('operationsTable');
-            const listContainer = document.getElementById('operationsList');
-            const emptyState = document.getElementById('reports-empty-state');
-            const desktopTableContainer = document.querySelector('#page-reports .table-container');
-            const mobileListContainer = document.querySelector('#page-reports .operations-list-container');
+    const tableBody = document.getElementById('operationsTable');
+    const listContainer = document.getElementById('operationsList');
+    const emptyState = document.getElementById('reports-empty-state');
+    const desktopTableContainer = document.querySelector('#page-reports .table-container');
+    const mobileListContainer = document.querySelector('#page-reports .operations-list-container');
 
-            const searchTerm = document.getElementById('searchOperations').value.toLowerCase();
-            const filterOperacion = document.getElementById('filterOperacion').value;
-            const filterMetodo = document.getElementById('filterMetodoPago').value;
-            const filteredOps = operations.filter(op => (op.fecha === currentDate) && (op.usuario.toLowerCase().includes(searchTerm) || (op.referencia && op.referencia.toLowerCase().includes(searchTerm))) && (filterOperacion === '' || op.operacion === filterOperacion) && (filterMetodo === '' || op.metodoPago === filterMetodo));
+    const searchTerm = document.getElementById('searchOperations').value.toLowerCase();
+    const filterOperacion = document.getElementById('filterOperacion').value;
+    const filterMetodo = document.getElementById('filterMetodoPago').value;
+    const filteredOps = operations.filter(op => (op.fecha === currentDate) && (op.usuario.toLowerCase().includes(searchTerm) || (op.referencia && op.referencia.toLowerCase().includes(searchTerm))) && (filterOperacion === '' || op.operacion === filterOperacion) && (filterMetodo === '' || op.metodoPago === filterMetodo));
 
-            if (filteredOps.length === 0) {
-                emptyState.style.display = 'block';
-                desktopTableContainer.style.display = 'none';
-                mobileListContainer.style.display = 'none';
-                return; 
-            } else {
-                emptyState.style.display = 'none';
-                desktopTableContainer.style.display = ''; 
-                mobileListContainer.style.display = '';
-            }
+    if (filteredOps.length === 0) {
+        emptyState.style.display = 'block';
+        desktopTableContainer.style.display = 'none';
+        mobileListContainer.style.display = 'none';
+        return; 
+    } else {
+        emptyState.style.display = 'none';
+        desktopTableContainer.style.display = ''; 
+        mobileListContainer.style.display = '';
+    }
 
-            tableBody.innerHTML = '';
-            listContainer.innerHTML = '';
-            filteredOps.forEach((op, index) => {
-                const globalIndex = operations.indexOf(op);
-                const relationIndicator = op.operacion === 'Compra' ? `${op.metodoPago} ➡️ ${op.p2pPlatform || ''}` : `${op.metodoPago} ⬅️ ${op.p2pPlatform || ''}`;
-                const commissionIndicator = op.adCommissionPercent > 0 ? `<span class="text-xs ${op.operacion === 'Venta' ? 'text-green-400' : 'text-red-400'}">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
-                const mobileCommissionIndicator = op.adCommissionPercent > 0 ? `<span class="commission">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
-                
-                const tableRowHtml = `<tr class="hover:bg-[var(--surface)]"><td class="text-left"><div class="font-semibold flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}</div><div class="text-xs text-gray-400">${relationIndicator}</div></td><td>${op.referencia || ''}</td><td>${op.operacion.substring(0,1)}</td><td>${(op.tasa || 0).toFixed(2)}</td><td><div class="flex flex-col items-center">${(op.montoUsdc || 0).toFixed(3)} ${commissionIndicator}</div></td><td>${(op.montoBs || 0).toFixed(2)}</td><td class="font-semibold ${op.ves >= 0 ? 'text-green-400':'text-red-400'}">${(op.ves || 0).toFixed(2)}</td><td class="font-semibold ${op.usdc >= 0 ? 'text-green-400':'text-red-400'}">${(op.usdc || 0).toFixed(4)}</td><td>${op.lote || ''}</td><td><span class="px-2 py-1 text-xs font-semibold rounded-full ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></td><td><button class="text-blue-400 p-1" onclick="editOperation(${globalIndex})">✏️</button><button class="text-red-400 p-1" onclick="deleteOperation(${globalIndex})">🗑️</button></td></tr>`;
-                const cardHtml = `<div class="operation-card ${op.operacion.toLowerCase()}"><div class="card-header"><div class="user-info flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}<div class="payment-method ml-auto">${relationIndicator}</div></div><span class="status-badge ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></div><div class="card-grid"><div class="grid-item"><span class="label">Monto USDC</span><span class="value">${(op.montoUsdc || 0).toFixed(3)} ${mobileCommissionIndicator}</span></div><div class="grid-item"><span class="label">Monto BS</span><span class="value">${(op.montoBs || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasa || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Ganancia VES</span><span class="value ${(op.ves || 0) >= 0 ? 'profit-green' : 'profit-red'}">${(op.ves || 0).toFixed(2)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}<br>LOTE: ${op.lote || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="editOperation(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button><button class="action-btn delete" onclick="deleteOperation(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.033-2.134H8.033c-1.12 0-2.033.954-2.033 2.134v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button></div></div></div>`;
-                tableBody.innerHTML += tableRowHtml;
-                listContainer.innerHTML += cardHtml;
-            });
+    tableBody.innerHTML = '';
+    listContainer.innerHTML = '';
+    filteredOps.forEach((op, index) => {
+        const globalIndex = operations.indexOf(op);
+
+        // La regla de oro: Siempre calculamos el valor a mostrar a partir del monto BRUTO guardado.
+        let cryptoValueToDisplay = op.montoUsdc; 
+        if (op.operacion === 'Venta' && op.adCommissionPercent > 0) {
+            // Si es una VENTA, mostramos el costo total (bruto + comisión)
+            cryptoValueToDisplay = op.montoUsdc * (1 + (op.adCommissionPercent / 100));
         }
+
+        const relationIndicator = op.operacion === 'Compra' ? `${op.metodoPago} ➡️ ${op.p2pPlatform || ''}` : `${op.metodoPago} ⬅️ ${op.p2pPlatform || ''}`;
+        const commissionIndicator = op.adCommissionPercent > 0 ? `<span class="text-xs ${op.operacion === 'Venta' ? 'text-green-400' : 'text-red-400'}">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
+        const mobileCommissionIndicator = op.adCommissionPercent > 0 ? `<span class="commission">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
+        
+        const tableRowHtml = `<tr class="hover:bg-[var(--surface)]"><td class="text-left"><div class="font-semibold flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}</div><div class="text-xs text-gray-400">${relationIndicator}</div></td><td>${op.referencia || ''}</td><td>${op.operacion.substring(0,1)}</td><td>${(op.tasa || 0).toFixed(2)}</td><td><div class="flex flex-col items-center">${(cryptoValueToDisplay || 0).toFixed(3)} ${commissionIndicator}</div></td><td>${(op.montoBs || 0).toFixed(2)}</td><td class="font-semibold ${op.ves >= 0 ? 'text-green-400':'text-red-400'}">${(op.ves || 0).toFixed(2)}</td><td class="font-semibold ${op.usdc >= 0 ? 'text-green-400':'text-red-400'}">${(op.usdc || 0).toFixed(4)}</td><td>${op.lote || ''}</td><td><span class="px-2 py-1 text-xs font-semibold rounded-full ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></td><td><button class="text-blue-400 p-1" onclick="editOperation(${globalIndex})">✏️</button><button class="text-red-400 p-1" onclick="deleteOperation(${globalIndex})">🗑️</button></td></tr>`;
+        const cardHtml = `<div class="operation-card ${op.operacion.toLowerCase()}"><div class="card-header"><div class="user-info flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}<div class="payment-method ml-auto">${relationIndicator}</div></div><span class="status-badge ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></div><div class="card-grid"><div class="grid-item"><span class="label">Monto USDC</span><span class="value">${(cryptoValueToDisplay || 0).toFixed(3)} ${mobileCommissionIndicator}</span></div><div class="grid-item"><span class="label">Monto BS</span><span class="value">${(op.montoBs || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasa || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Ganancia VES</span><span class="value ${(op.ves || 0) >= 0 ? 'profit-green' : 'profit-red'}">${(op.ves || 0).toFixed(2)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}<br>LOTE: ${op.lote || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="editOperation(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0.0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button><button class="action-btn delete" onclick="deleteOperation(${globalIndex})"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0.0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.033-2.134H8.033c-1.12 0-2.033.954-2.033 2.134v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button></div></div></div>`;
+        tableBody.innerHTML += tableRowHtml;
+        listContainer.innerHTML += cardHtml;
+    });
+}
         
         function openModal() { document.getElementById('operationModal').classList.add('show'); if(editingIndex === -1) clearForm();}
         function closeModal() { document.getElementById('operationModal').classList.remove('show'); editingIndex = -1; }
@@ -2208,16 +2287,32 @@ function updateSummary() {
         function closePendingDetailsModal() { document.getElementById('pendingDetailsModal').classList.remove('show'); }
         
         function openGainsSummaryModal() {
-            const formatDate = (dateObj) => { const year = dateObj.getFullYear(); const month = String(dateObj.getMonth() + 1).padStart(2, '0'); const day = String(dateObj.getDate()).padStart(2, '0'); return `${year}-${month}-${day}`; };
-            const today = new Date(); const startOfWeek = new Date(today); startOfWeek.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1)); const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-            const todayStr = formatDate(today), startOfWeekStr = formatDate(startOfWeek), startOfMonthStr = formatDate(startOfMonth);
-            const dailyOps = operations.filter(op => op.fecha === todayStr); const weeklyOps = operations.filter(op => op.fecha >= startOfWeekStr && op.fecha <= todayStr); const monthlyOps = operations.filter(op => op.fecha >= startOfMonthStr && op.fecha <= todayStr);
-            const [dailyGainsVes, dailyGainsUsdc] = calculateTotalGainsForPeriod(dailyOps); const [weeklyGainsVes, weeklyGainsUsdc] = calculateTotalGainsForPeriod(weeklyOps); const [monthlyGainsVes, monthlyGainsUsdc] = calculateTotalGainsForPeriod(monthlyOps);
-            document.getElementById('summaryGananciasHoyVes').textContent = `${dailyGainsVes.toFixed(2)} VES`; document.getElementById('summaryGananciasHoyUsdc').textContent = `${dailyGainsUsdc.toFixed(4)} USDC`;
-            document.getElementById('summaryGananciasSemanaVes').textContent = `${weeklyGainsVes.toFixed(2)} VES`; document.getElementById('summaryGananciasSemanaUsdc').textContent = `${weeklyGainsUsdc.toFixed(4)} USDC`;
-            document.getElementById('summaryGananciasMesVes').textContent = `${monthlyGainsVes.toFixed(2)} VES`; document.getElementById('summaryGananciasMesUsdc').textContent = `${monthlyGainsUsdc.toFixed(4)} USDC`;
-            document.getElementById('gainsSummaryModal').classList.add('show');
-        }
+    const formatDate = (dateObj) => { const year = dateObj.getFullYear(); const month = String(dateObj.getMonth() + 1).padStart(2, '0'); const day = String(dateObj.getDate()).padStart(2, '0'); return `${year}-${month}-${day}`; };
+    const today = new Date(); const startOfWeek = new Date(today); startOfWeek.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1)); const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const todayStr = formatDate(today), startOfWeekStr = formatDate(startOfWeek), startOfMonthStr = formatDate(startOfMonth);
+    
+    // Filtramos las operaciones para cada período
+    const dailyOps = operations.filter(op => op.fecha === todayStr);
+    const weeklyOps = operations.filter(op => op.fecha >= startOfWeekStr && op.fecha <= todayStr);
+    const monthlyOps = operations.filter(op => op.fecha >= startOfMonthStr && op.fecha <= todayStr);
+    
+    // Usamos la nueva función centralizada para obtener los totales correctos
+    const [dailyGainsVes, dailyGainsUsdc] = calculateFIFOGainsForOps(dailyOps);
+    const [weeklyGainsVes, weeklyGainsUsdc] = calculateFIFOGainsForOps(weeklyOps);
+    const [monthlyGainsVes, monthlyGainsUsdc] = calculateFIFOGainsForOps(monthlyOps);
+    
+    // Actualizamos el contenido del modal
+    document.getElementById('summaryGananciasHoyVes').textContent = `${dailyGainsVes.toFixed(2)} VES`;
+    document.getElementById('summaryGananciasHoyUsdc').textContent = `${dailyGainsUsdc.toFixed(4)} USDC`;
+    document.getElementById('summaryGananciasSemanaVes').textContent = `${weeklyGainsVes.toFixed(2)} VES`;
+    document.getElementById('summaryGananciasSemanaUsdc').textContent = `${weeklyGainsUsdc.toFixed(4)} USDC`;
+    document.getElementById('summaryGananciasMesVes').textContent = `${monthlyGainsVes.toFixed(2)} VES`;
+    document.getElementById('summaryGananciasMesUsdc').textContent = `${monthlyGainsUsdc.toFixed(4)} USDC`;
+    
+    // Mostramos el modal
+    document.getElementById('gainsSummaryModal').classList.add('show');
+}
+
         function closeGainsSummaryModal() { document.getElementById('gainsSummaryModal').classList.remove('show'); }
 
         function openWallyGainsSummaryModal() {
