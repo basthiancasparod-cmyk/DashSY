@@ -1,6 +1,6 @@
 // 1. CAMBIA LA VERSIÓN DEL CACHÉ.
 //    Cada vez que subas una nueva versión de tu app, deberás incrementar este número (v2, v3, etc.).
-const CACHE_NAME = 'dashsy-cache-v1.0.6'; 
+const CACHE_NAME = 'dashsy-cache-v1.0.7'; 
 
 const urlsToCache = [
   './',
@@ -57,5 +57,6 @@ self.addEventListener('message', event => {
     self.skipWaiting();
   }
 });
+
 
 
