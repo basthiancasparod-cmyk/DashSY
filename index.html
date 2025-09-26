@@ -575,6 +575,18 @@
     border-bottom-color: var(--primary);
 }
 
+
+.update-button .btn-text {
+    transition: opacity 0.2s;
+}
+.update-button.loading .btn-text {
+    opacity: 0;
+}
+.update-button .btn-spinner {
+    border-color: rgba(255, 255, 255, 0.5);
+    border-top-color: white;
+}
+
     </style>
 
 <link rel="manifest" href="manifest.json">
@@ -596,16 +608,21 @@
                            // Muestra el banner de actualización
                            const notification = document.getElementById('update-notification');
                            notification.classList.add('show');
+
+                           // 3. AHORA que el banner es visible, le damos la funcionalidad al botón
+                           const reloadButton = document.getElementById('update-reload-button');
+                           reloadButton.addEventListener('click', () => {
+                               // Añadimos feedback visual inmediato
+                               reloadButton.classList.add('loading'); // Activa el spinner
+                               const textSpan = reloadButton.querySelector('.btn-text');
+                               if(textSpan) textSpan.textContent = 'Actualizando...'; // Cambia el texto
+
+                               // Esto le dice al nuevo Service Worker que se active
+                               newWorker.postMessage({ type: 'SKIP_WAITING' });
+                           });
                         }
                     });
                 });
-            });
-
-            // 3. El usuario hace clic en el botón "Actualizar"
-            const reloadButton = document.getElementById('update-reload-button');
-            reloadButton.addEventListener('click', () => {
-                // Envía un mensaje al nuevo SW para que se active
-                newWorker.postMessage({ type: 'SKIP_WAITING' });
             });
             
             // 4. Cuando el nuevo SW toma el control, recargamos la página
@@ -622,9 +639,11 @@
     
         <div id="update-notification" class="update-banner">
             <span>Hay una nueva versión disponible.</span>
-            <button id="update-reload-button" class="update-button">Actualizar</button>
+                <button id="update-reload-button" class="update-button btn">
+            <span class="btn-text">Actualizar</span>
+                <div class="btn-spinner"></div>
+            </button>
         </div>
-
 
     <div id="loading-overlay" class="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[9999]" style="display: flex;">
         <div class="loader"></div>
