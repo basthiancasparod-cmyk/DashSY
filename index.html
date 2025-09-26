@@ -1322,35 +1322,36 @@
     const platform = userConfig.p2pPlatforms.find(p => p.name === platformSelect.value);
     const commissionRate = platform ? platform.commission / 100 : 0;
 
-    // El "Monto BS" SIEMPRE se calcula sobre el monto BRUTO, ya que es el valor de la transacción P2P.
+    // El "Monto BS" siempre se calcula sobre el monto BRUTO.
     const montoBs = montoUsdcOriginal * tasa;
     let comisionVes = 0;
-    let total = montoBs;
+
+    // --- INICIO DE LA CORRECCIÓN ---
+    // La comisión bancaria (Pago Móvil) depende solo del método de pago y la operación,
+    // por eso esta lógica ahora está fuera del bloque de la comisión de plataforma.
+    if (operacion === 'Compra' && metodoPago === 'Pagomovil') {
+        comisionVes = montoBs * 0.003;
+    }
+    // --- FIN DE LA CORRECCIÓN ---
+
+    let total = montoBs + comisionVes;
 
     const adCommissionRow = document.getElementById('displayAdCommissionRow');
     const adCommissionLabel = document.getElementById('displayAdCommissionLabel');
     const adCommissionDisplay = document.getElementById('displayAdCommission');
 
+    // Lógica para mostrar la comisión de la PLATAFORMA (Apolo, etc.)
     if (commissionRate > 0 && montoUsdcOriginal > 0) {
         const commissionAmountUsdc = montoUsdcOriginal * commissionRate;
         
         if (operacion === 'Venta') {
-            // En una VENTA, la comisión se SUMA a lo que te descuentan.
             const totalDebitUsdc = montoUsdcOriginal * (1 + commissionRate);
             adCommissionLabel.textContent = `Comisión Apolo (0.2%):`;
             adCommissionDisplay.textContent = `+${commissionAmountUsdc.toFixed(4)} (Costo Total: ${totalDebitUsdc.toFixed(4)} USDT)`;
-            comisionVes = 0;
-            total = montoBs;
-
         } else { // Es una COMPRA
             const netReceivedUsdc = montoUsdcOriginal * (1 - commissionRate);
             adCommissionLabel.textContent = `Comisión Apolo (0.2%):`;
             adCommissionDisplay.textContent = `-${commissionAmountUsdc.toFixed(4)} (Neto a recibir: ${netReceivedUsdc.toFixed(4)} USDT)`;
-            
-            if (metodoPago === 'Pagomovil') {
-                comisionVes = montoBs * 0.003;
-            }
-            total = montoBs + comisionVes;
         }
         adCommissionRow.style.display = 'flex';
     } else {
