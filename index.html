@@ -1541,68 +1541,66 @@ function calculateLotProfit(lot) {
 // == FIN: BLOQUE DE CÓDIGO PARA NOTIFICACIONES SONORAS             ==
 // ===================================================================
 
-        function updateSummary() {
-            loadInitialCapital(currentDate); 
-            if (!operations) return;
-            applyFIFOForDate(currentDate); 
-
-            // --- INICIO: Lógica MEJORADA para detectar cierre de lotes ---
-            const shownLots = getShownLots(); // Lee la memoria de notificaciones ya mostradas
-            const newlyClosedLots = [];
-
-            for (const [lotId, lot] of currentLotsData.entries()) {
-                // Comprueba si el lote está cerrado Y si NO se ha mostrado antes una notificación para él
-                if (lot.estado === 'cerrado' && !shownLots.has(lotId)) {
-                    newlyClosedLots.push(lot);
-                }
+        // REEMPLAZA tu función updateSummary con esta:
+function updateSummary() {
+    loadInitialCapital(currentDate); 
+    
+    // --- INICIO DE LA CORRECCIÓN ---
+    // Solo procesamos la parte de VES si los datos de operations ya llegaron.
+    if (operations && operations.length > 0) {
+        applyFIFOForDate(currentDate); 
+        
+        // Lógica de notificaciones
+        const shownLots = getShownLots();
+        const newlyClosedLots = [];
+        for (const [lotId, lot] of currentLotsData.entries()) {
+            if (lot.estado === 'cerrado' && !shownLots.has(lotId)) {
+                newlyClosedLots.push(lot);
             }
-            
-            if (newlyClosedLots.length > 0) {
-                newlyClosedLots.forEach((lot, index) => {
-                    setTimeout(() => {
-                        const profit = calculateLotProfit(lot);
-                        if (profit > 0) {
-                            showLotClosedAnimation(profit);
-                            // IMPORTANTE: Anota en la memoria que ya mostramos esta notificación
-                            addShownLot(lot.id); 
-                        }
-                    }, index * 1000); 
-                });
-            }
-         // --- FIN: Lógica para detectar cierre de lotes ---
-
-            const currentOps = operations.filter(op => op.fecha === currentDate);
-            const compras = currentOps.filter(op => op.operacion === 'Compra'), ventas = currentOps.filter(op => op.operacion === 'Venta');
-            const promCompra = compras.length ? compras.reduce((s, o) => s + o.tasa, 0) / compras.length : 0;
-            const promVenta = ventas.length ? ventas.reduce((s, o) => s + o.tasa, 0) / ventas.length : 0;
-            const brecha = promCompra > 0 ? ((promVenta - promCompra) / promCompra * 100) : 0;
-            
-            const [gananciasVes, gananciasUsdc] = calculateTotalGainsForPeriod(currentOps);
-            
-            document.getElementById('ganancias').innerHTML = `${gananciasVes.toFixed(2)} <span class="text-2xl font-semibold">VES</span>`;
-            document.getElementById('ganancias_usdc').innerHTML = `${gananciasUsdc.toFixed(4)} <span class="font-medium">USDC</span>`;
-            document.getElementById('promCompra').textContent = promCompra.toFixed(2);
-            document.getElementById('promVenta').textContent = promVenta.toFixed(2);
-            document.getElementById('brecha').textContent = brecha.toFixed(2) + '%';
-            document.getElementById('totalOps').textContent = currentOps.length;
-            
-            const activeLotsCount = Array.from(currentLotsData.values()).filter(lot => lot.estado === 'activo').length;
-            document.getElementById('activeLotsSummary').textContent = activeLotsCount;
-            document.getElementById('pendingSummary').textContent = `${(currentPendingData.recompra + currentPendingData.reventa).toFixed(2)} USDC`;
-            
-            const wallyOpsForSelectedDate = wallyOperations.filter(op => op.fecha === currentDate);
-            const [wallyGainsUsdcForDate, wallyGainsUsdForDate] = calculateWallyGainsForPeriod(wallyOpsForSelectedDate);
-            
-            document.getElementById('wallyDashboardGainsUsdc').innerHTML = `${wallyGainsUsdcForDate.toFixed(2)} <span class="text-xl font-semibold">USDC</span>`;
-            document.getElementById('wallyDashboardGainsUsd').innerHTML = `${wallyGainsUsdForDate.toFixed(2)} <span class="text-xl font-semibold">USD</span>`;
-
-            renderDailyGoals(gananciasVes, wallyGainsUsdcForDate, wallyGainsUsdForDate);
-
-            renderOperations();
-         
-
-
         }
+        if (newlyClosedLots.length > 0) {
+            newlyClosedLots.forEach((lot, index) => {
+                setTimeout(() => {
+                    const profit = calculateLotProfit(lot);
+                    if (profit > 0) {
+                        showLotClosedAnimation(profit);
+                        addShownLot(lot.id); 
+                    }
+                }, index * 1000); 
+            });
+        }
+        
+        // Actualizaciones de la UI para VES
+        const currentOps = operations.filter(op => op.fecha === currentDate);
+        const compras = currentOps.filter(op => op.operacion === 'Compra'), ventas = currentOps.filter(op => op.operacion === 'Venta');
+        const promCompra = compras.length ? compras.reduce((s, o) => s + o.tasa, 0) / compras.length : 0;
+        const promVenta = ventas.length ? ventas.reduce((s, o) => s + o.tasa, 0) / ventas.length : 0;
+        const brecha = promCompra > 0 ? ((promVenta - promCompra) / promCompra * 100) : 0;
+
+        document.getElementById('promCompra').textContent = promCompra.toFixed(2);
+        document.getElementById('promVenta').textContent = promVenta.toFixed(2);
+        document.getElementById('brecha').textContent = brecha.toFixed(2) + '%';
+        document.getElementById('totalOps').textContent = currentOps.length;
+        
+        const activeLotsCount = Array.from(currentLotsData.values()).filter(lot => lot.estado === 'activo').length;
+        document.getElementById('activeLotsSummary').textContent = activeLotsCount;
+        document.getElementById('pendingSummary').textContent = `${(currentPendingData.recompra + currentPendingData.reventa).toFixed(2)} USDC`;
+        
+        renderOperations();
+    }
+    // --- FIN DE LA CORRECCIÓN ---
+
+    // El resto de la función (la parte de USD/Cripto) se ejecuta siempre.
+    const [gananciasVes, gananciasUsdc] = calculateTotalGainsForPeriod(operations.filter(op => op.fecha === currentDate));
+    const [wallyGainsUsdcForDate, wallyGainsUsdForDate] = calculateWallyGainsForPeriod(wallyOperations.filter(op => op.fecha === currentDate));
+
+    document.getElementById('ganancias').innerHTML = `${gananciasVes.toFixed(2)} <span class="text-2xl font-semibold">VES</span>`;
+    document.getElementById('ganancias_usdc').innerHTML = `${gananciasUsdc.toFixed(4)} <span class="font-medium">USDC</span>`;
+    document.getElementById('wallyDashboardGainsUsdc').innerHTML = `${wallyGainsUsdcForDate.toFixed(2)} <span class="text-xl font-semibold">USDC</span>`;
+    document.getElementById('wallyDashboardGainsUsd').innerHTML = `${wallyGainsUsdForDate.toFixed(2)} <span class="text-xl font-semibold">USD</span>`;
+
+    renderDailyGoals(gananciasVes, wallyGainsUsdcForDate, wallyGainsUsdForDate);
+}
 
         function renderDailyGoals(currentVes, currentCrypto, currentUsd) {
             const container = document.getElementById('dailyGoalsContainer');
@@ -2366,35 +2364,38 @@ function calculateLotProfit(lot) {
             });
         }
 
-        function updateWallySummary() {
-            if(!wallyOperations) return;
-            const currentOps = wallyOperations.filter(op => op.fecha === currentWallyDate);
-            const [totalGananciaUsdc, totalGananciaUsd] = calculateWallyGainsForPeriod(currentOps);
-            wallyTotalGains = { usdc: totalGananciaUsdc, usd: totalGananciaUsd };
-            
-            const valorInicial = parseFloat(userConfig.wallyInitialValue) || 0;
-            const compras = currentOps.filter(op => op.operacion === 'Compra'), ventas = currentOps.filter(op => op.operacion === 'Venta');
-            
-            
-            
-            
-            renderWallyTables();
-            updateSummary();
-        }
+        // REEMPLAZA tu función updateWallySummary con esta:
+function updateWallySummary() {
+    if(!wallyOperations) return;
+    const currentOps = wallyOperations.filter(op => op.fecha === currentWallyDate);
+    const [totalGananciaUsdc, totalGananciaUsd] = calculateWallyGainsForPeriod(currentOps);
+    wallyTotalGains = { usdc: totalGananciaUsdc, usd: totalGananciaUsd };
 
-        function renderWallyTables() {
-    // 1. Lee los valores de los nuevos filtros
+    // --- LÍNEA AÑADIDA ---
+    // Esta es la línea que faltaba para actualizar la tarjeta de ganancias en la página.
+    const wallyGananciasEl = document.getElementById("wallyGanancias");
+    if (wallyGananciasEl) {
+        wallyGananciasEl.innerHTML = `
+            <span class="text-orange-400">${totalGananciaUsdc.toFixed(2)}</span> <span class="text-xl font-semibold">USDC</span> / 
+            <span class="text-purple-400">${totalGananciaUsd.toFixed(2)}</span> <span class="text-xl font-semibold">USD</span>`;
+    }
+    // --- FIN DE LA LÍNEA AÑADIDA ---
+            
+    renderWallyTables();
+    updateSummary();
+    // Se eliminó la llamada a updateSummary() que estaba aquí para evitar bucles.
+}
+
+        // REEMPLAZA tu función renderWallyTables con esta:
+function renderWallyTables() {
     const searchTerm = document.getElementById('searchWallyOperations').value.toLowerCase();
     const filterOperacion = document.getElementById('filterWallyOperacion').value;
     const filterMetodo = document.getElementById('filterWallyMetodoPago').value;
 
-    // 2. Filtra la lista de operaciones basándose en los filtros
     const filteredOps = wallyOperations.filter(op => {
-        const searchMatch = op.usuario.toLowerCase().includes(searchTerm) || 
-                            (op.referencia && op.referencia.toLowerCase().includes(searchTerm));
+        const searchMatch = op.usuario.toLowerCase().includes(searchTerm) || (op.referencia && op.referencia.toLowerCase().includes(searchTerm));
         const operacionMatch = filterOperacion === '' || op.operacion === filterOperacion;
         const metodoMatch = filterMetodo === '' || op.metodoPago === filterMetodo;
-
         return op.fecha === currentWallyDate && searchMatch && operacionMatch && metodoMatch;
     });
 
@@ -2405,28 +2406,42 @@ function calculateLotProfit(lot) {
     const comprasCardContainer = document.querySelector('#wallyCompraList').closest('.card');
     const ventasCardContainer = document.querySelector('#wallyVentaList').closest('.card');
     
-    compraTableBody.innerHTML = ''; 
-    compraListContainer.innerHTML = ''; 
-    ventaTableBody.innerHTML = ''; 
-    ventaListContainer.innerHTML = '';
+    compraTableBody.innerHTML = ''; compraListContainer.innerHTML = ''; 
+    ventaTableBody.innerHTML = ''; ventaListContainer.innerHTML = '';
     
-    // 3. Separa las operaciones ya filtradas en compras y ventas
     const compras = filteredOps.filter(op => op.operacion === 'Compra');
     const ventas = filteredOps.filter(op => op.operacion === 'Venta');
 
-    // El resto de la función para renderizar las tablas sigue exactamente igual,
-    // pero ahora trabaja con las listas ya filtradas de 'compras' y 'ventas'.
-    
     if (compras.length === 0) {
-        // ... (código existente para el estado vacío)
+        comprasCardContainer.style.display = 'none';
+        comprasEmptyState.style.display = 'block';
     } else {
-        // ... (código existente para renderizar compras)
+        comprasCardContainer.style.display = 'block';
+        comprasEmptyState.style.display = 'none';
+        compras.forEach((op, index) => {
+            const globalIndex = wallyOperations.indexOf(op);
+            // --- CORRECCIÓN AQUÍ --- (Se quitaron 'C' y '$')
+            const tableRowHtml = `<tr><td class="text-left">${op.usuario}<br><span class="text-xs text-gray-400">${op.platform}</span></td><td>${(op.reciboUsdc||0).toFixed(2)}</td><td>${(op.tasaCompra||0).toFixed(4)}</td><td>${(op.envioUsd||0).toFixed(2)}</td><td class="font-semibold text-green-400">${(op.gananciaUsdc||0).toFixed(4)}</td><td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button><button class="text-red-400 p-1" onclick="deleteWallyOperation(${globalIndex})">🗑️</button></td></tr>`;
+            const cardHtml = `<div class="operation-card compra"><div class="card-header"><div class="user-info">${op.usuario}</div></div><div class="card-grid"><div class="grid-item"><span class="label">Recibo Cripto</span><span class="value">${(op.reciboUsdc||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Envío USD</span><span class="value">${(op.envioUsd||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasaCompra||0).toFixed(4)}</span></div><div class="grid-item"><span class="label">Ganancia Cripto</span><span class="value profit-green">${(op.gananciaUsdc||0).toFixed(4)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="openWallyModal(${globalIndex})">✏️</button><button class="action-btn delete" onclick="deleteWallyOperation(${globalIndex})">🗑️</button></div></div></div>`;
+            compraTableBody.innerHTML += tableRowHtml;
+            compraListContainer.innerHTML += cardHtml;
+        });
     }
 
     if (ventas.length === 0) {
-        // ... (código existente para el estado vacío)
+        ventasCardContainer.style.display = 'none';
+        ventasEmptyState.style.display = 'block';
     } else {
-        // ... (código existente para renderizar ventas)
+        ventasCardContainer.style.display = 'block';
+        ventasEmptyState.style.display = 'none';
+        ventas.forEach((op, index) => {
+            const globalIndex = wallyOperations.indexOf(op);
+            // --- CORRECCIÓN AQUÍ --- (Se quitaron 'C' y '$')
+            const tableRowHtml = `<tr><td class="text-left">${op.usuario}<br><span class="text-xs text-gray-400">${op.platform}</span></td><td>${(op.envioUsdc||0).toFixed(2)}</td><td>${(op.tasaVenta||0).toFixed(4)}</td><td>${(op.reciboUsd||0).toFixed(2)}</td><td class="font-semibold text-green-400">${(op.gananciaUsd||0).toFixed(4)}</td><td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button><button class="text-red-400 p-1" onclick="deleteWallyOperation(${globalIndex})">🗑️</button></td></tr>`;
+            const cardHtml = `<div class="operation-card venta"><div class="card-header"><div class="user-info">${op.usuario}</div></div><div class="card-grid"><div class="grid-item"><span class="label">Envío Cripto</span><span class="value">${(op.envioUsdc||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Recibo USD</span><span class="value">${(op.reciboUsd||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasaVenta||0).toFixed(4)}</span></div><div class="grid-item"><span class="label">Ganancia USD</span><span class="value profit-green">${(op.gananciaUsd||0).toFixed(4)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="openWallyModal(${globalIndex})">✏️</button><button class="action-btn delete" onclick="deleteWallyOperation(${globalIndex})">🗑️</button></div></div></div>`;
+            ventaTableBody.innerHTML += tableRowHtml;
+            ventaListContainer.innerHTML += cardHtml;
+        });
     }
 }
         
@@ -2607,6 +2622,10 @@ function calculateLotProfit(lot) {
  * Cambia la pestaña activa en el modal de perfil de usuario y muestra la tabla correspondiente.
  * @param {'ves' | 'usd'} tabName - El tipo de operaciones a mostrar.
  */
+/**
+ * Cambia la pestaña activa en el modal de perfil de usuario y muestra la tabla correspondiente.
+ * @param {'ves' | 'usd'} tabName - El tipo de operaciones a mostrar.
+ */
 function switchProfileTab(tabName) {
     // Actualiza el estado visual de los botones de las pestañas
     document.querySelectorAll('.profile-tab').forEach(tab => {
@@ -2629,10 +2648,11 @@ function switchProfileTab(tabName) {
                 <tbody class="text-xs">${opsToShow.map(op => `<tr><td>${op.fecha}</td><td>${op.operacion.substring(0,1)}</td><td>${op.montoUsdc.toFixed(2)}</td><td>${op.tasa.toFixed(2)}</td></tr>`).join('')}</tbody>
                 </table></div>`;
     } else { // tabName === 'usd'
+        // --- CORRECCIÓN AQUÍ: Se quitaron las 'C' y '$' sobrantes ---
         tableHtml = `
             <div class="table-container max-h-48">
                 <table class="w-full min-w-[300px]"><thead class="text-xs"><tr><th>Fecha</th><th>Op</th><th>Monto</th><th>Ganancia</th></tr></thead>
-                <tbody class="text-xs">${opsToShow.map(op => `<tr><td>${op.fecha}</td><td>${op.operacion.substring(0,1)}</td><td class="font-semibold">${op.operacion === 'Compra' ? `${(op.reciboUsdc || 0).toFixed(2)} C` : `${(op.envioUsdc || 0).toFixed(2)} C`}</td><td class="font-semibold text-green-400">${op.operacion === 'Compra' ? `${(op.gananciaUsdc || 0).toFixed(3)} C` : `${(op.gananciaUsd || 0).toFixed(3)} $`}</td></tr>`).join('')}</tbody>
+                <tbody class="text-xs">${opsToShow.map(op => `<tr><td>${op.fecha}</td><td>${op.operacion.substring(0,1)}</td><td class="font-semibold">${op.operacion === 'Compra' ? (op.reciboUsdc || 0).toFixed(2) : (op.envioUsdc || 0).toFixed(2)}</td><td class="font-semibold text-green-400">${op.operacion === 'Compra' ? (op.gananciaUsdc || 0).toFixed(3) : (op.gananciaUsd || 0).toFixed(3)}</td></tr>`).join('')}</tbody>
                 </table></div>`;
     }
     contentDiv.innerHTML = tableHtml;
