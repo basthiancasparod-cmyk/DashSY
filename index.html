@@ -1260,8 +1260,10 @@
             let finalUsdc = originalUsdc;
             if (commissionRate > 0 && originalUsdc > 0) {
                 const commissionAmount = originalUsdc * (commissionRate / 100);
-                if (operacion === 'Compra') finalUsdc = originalUsdc - commissionAmount; 
-                else if (operacion === 'Venta') finalUsdc = originalUsdc + commissionAmount;
+                // La comisión SIEMPRE reduce el neto, tanto en compra como en venta.
+                if (operacion === 'Compra' || operacion === 'Venta') {
+                    finalUsdc = originalUsdc - commissionAmount;
+                }
             }
 
             const operationData = { 
@@ -1317,21 +1319,15 @@
             const platform = userConfig.p2pPlatforms.find(p => p.name === platformSelect.value);
             const commissionRate = platform ? platform.commission : 0;
             
-            let montoUsdcFinal = montoUsdcOriginal;
-            let commissionAmountUsdc = 0;
             const adCommissionRow = document.getElementById('displayAdCommissionRow');
 
             if (commissionRate > 0 && montoUsdcOriginal > 0) {
-                commissionAmountUsdc = montoUsdcOriginal * (commissionRate / 100);
-                if (operacion === 'Compra') { 
-                    montoUsdcFinal = montoUsdcOriginal - commissionAmountUsdc; 
-                    document.getElementById('displayAdCommissionLabel').textContent = `Comisión ${platform.name} (${commissionRate}%):`;
-                    document.getElementById('displayAdCommission').textContent = `-${commissionAmountUsdc.toFixed(3)} (${montoUsdcFinal.toFixed(3)})`; 
-                } else if (operacion === 'Venta') { 
-                    montoUsdcFinal = montoUsdcOriginal + commissionAmountUsdc; 
-                    document.getElementById('displayAdCommissionLabel').textContent = `Comisión ${platform.name} (${commissionRate}%):`;
-                    document.getElementById('displayAdCommission').textContent = `+${commissionAmountUsdc.toFixed(3)} (${montoUsdcFinal.toFixed(3)})`; 
-                }
+                const commissionAmountUsdc = montoUsdcOriginal * (commissionRate / 100);
+                const montoUsdcFinal = montoUsdcOriginal - commissionAmountUsdc; // Lógica unificada: la comisión siempre reduce el neto.
+                
+                document.getElementById('displayAdCommissionLabel').textContent = `Comisión ${platform.name} (${commissionRate}%):`;
+                document.getElementById('displayAdCommission').textContent = `-${commissionAmountUsdc.toFixed(3)} (Neto: ${montoUsdcFinal.toFixed(3)})`; 
+                
                 adCommissionRow.style.display = 'flex';
             } else { 
                 adCommissionRow.style.display = 'none'; 
