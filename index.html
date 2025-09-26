@@ -1153,50 +1153,6 @@
             }
         }
 
-        function calculateLotProfit(lot) {
-         const revenue = lot.ventaOp.tasa * lot.montoTotal;
-         const cost = lot.comprasAsociadas.reduce((total, compra) => {
-             return total + (compra.op.tasa * compra.monto);
-         }, 0);
-         return revenue - cost;
-     }
-
-     // --- NUEVAS FUNCIONES DE MEMORIA PERSISTENTE ---
-        function getShownLots() {
-            const shownLotsJSON = localStorage.getItem('shownLotNotifications');
-            return shownLotsJSON ? new Set(JSON.parse(shownLotsJSON)) : new Set();
-        }
-
-        function addShownLot(lotId) {
-            const shownLots = getShownLots();
-            shownLots.add(lotId);
-            localStorage.setItem('shownLotNotifications', JSON.stringify(Array.from(shownLots)));
-        }
-
-     function showLotClosedAnimation(profit) {
-         const container = document.getElementById('lotClosedAnimation');
-         const profitEl = document.getElementById('lotAnimationProfit');
-         const sound = document.getElementById('notificationSound');
-         
-         profitEl.textContent = `${profit.toFixed(2)} VES`;
-         
-         sound.currentTime = 0; // Reinicia el audio por si se activa de nuevo rápidamente
-         sound.play().catch(error => {
-            console.log("Error de audio:", error);
-            // Mostramos una notificación amigable en lugar de solo un mensaje en la consola.
-            showToast('Sonido bloqueado. Habilítalo en Ajustes.', 'warning');
-        });
-
-         container.classList.remove('hide');
-         container.classList.add('show');
-
-         setTimeout(() => {
-             container.classList.remove('show');
-             container.classList.add('hide');
-         }, 3500); // La animación permanece visible por 3.5 segundos
-     }
-
-
         const getLocalDate = () => {
             const today = new Date();
             const year = today.getFullYear();
