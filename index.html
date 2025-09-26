@@ -712,7 +712,7 @@
                 </div>
             </div>
             <div id="page-reports" class="page">
-                    <h1 class="text-2xl font-bold mb-4">Reporte de Operaciones</h1>
+                    <h1 class="text-2xl font-bold mb-4">Operaciones VES</h1>
                     <div class="filter-controls">
                         <div class="filter-item search-bar">
                             <label for="searchOperations">Buscar</label>
@@ -1369,23 +1369,21 @@
             editingIndex = index; 
             const op = operations[index];
             document.getElementById('modalTitle').textContent = 'Editar Operación';
-            
-            let originalMontoUsdc = op.montoUsdc;
-            if (op.adCommissionPercent > 0) {
-                // si guardaste siempre como neto (final = original - original*percent),
-                // la forma de recuperar el original es dividir entre (1 - percent)
-                originalMontoUsdc = op.montoUsdc / (1 - op.adCommissionPercent / 100);
-            }
-            
+
+            // --- LÓGICA CORREGIDA ---
+            // Como ahora siempre guardamos el monto BRUTO, no necesitamos reconstruir nada.
+            // Simplemente usamos el valor guardado directamente.
+            document.getElementById('montoUsdc').value = op.montoUsdc.toFixed(3);
+
+            // Llenamos el resto del formulario como antes
             document.getElementById('usuario').value = op.usuario; 
             document.getElementById('referencia').value = op.referencia;
             document.getElementById('operacion').value = op.operacion; 
             document.getElementById('tasa').value = op.tasa;
             document.getElementById('metodoPago').value = op.metodoPago;
             document.getElementById('p2pPlatformSelect').value = op.p2pPlatform || (userConfig.p2pPlatforms.find(p=>p.isDefault)?.name || '');
-            document.getElementById('montoUsdc').value = originalMontoUsdc.toFixed(3);
             document.getElementById('estatus').value = op.estatus; 
-            
+
             calculateAll(); 
             openModal();
         }
@@ -1510,7 +1508,7 @@
                         // 1. Ganancia por la diferencia de Tasa (Spread)
                         const revenueVes = amountToMatch * sale.tasa;
                         const costVes = amountToMatch * purchase.tasa;
-                        const bankFeeForMatch = costVes * 0.003;
+                        const bankFeeForMatch = (purchase.comisionVes / purchase.montoUsdc) * amountToMatch;
                         const spreadGainInVes = revenueVes - costVes - bankFeeForMatch;
                         const spreadGainInUsdt = spreadGainInVes / purchase.tasa;
 
@@ -1985,11 +1983,22 @@ function updateSummary() {
         }
 
         function deleteP2PPlatform(index) {
+            // --- INICIO DE LA CORRECCIÓN ---
+            // Nueva validación: Impide borrar la última plataforma existente.
+            if (userConfig.p2pPlatforms.length === 1) {
+                showToast('No puedes eliminar la última plataforma. Debes tener al menos una.', 'error');
+                return;
+            }
+            // --- FIN DE LA CORRECCIÓN ---
+
+            // Validación existente: Impide borrar la plataforma predeterminada si hay más de una.
             if (userConfig.p2pPlatforms[index].isDefault && userConfig.p2pPlatforms.length > 1) {
                 showToast('No puedes eliminar la plataforma predeterminada. Elige otra primero.', 'error');
                 return;
             }
+            
             if (!confirm(`¿Seguro que quieres eliminar la plataforma "${userConfig.p2pPlatforms[index].name}"?`)) return;
+            
             userConfig.p2pPlatforms.splice(index, 1);
             renderP2PPlatforms();
         }
