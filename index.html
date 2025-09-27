@@ -1614,11 +1614,12 @@ function addShownLot(lotId) {
 }
 
 function calculateLotProfit(lot) {
-    const revenue = lot.ventaOp.tasa * lot.montoTotal;
-    const cost = lot.comprasAsociadas.reduce((total, compra) => {
-        return total + (compra.op.tasa * compra.monto);
+    // La nueva lógica suma las ganancias en VES que ya fueron calculadas
+    // por el motor FIFO principal para cada compra asociada a este lote.
+    return lot.comprasAsociadas.reduce((totalProfit, compra) => {
+        // Accedemos a la ganancia en VES de la operación de compra original.
+        return totalProfit + (compra.op.ves || 0);
     }, 0);
-    return revenue - cost;
 }
 
 // ===================================================================
