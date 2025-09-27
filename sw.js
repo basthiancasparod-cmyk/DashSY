@@ -1,5 +1,5 @@
 // 1. VERSIÓN DEL CACHÉ INCREMENTADA
-const CACHE_NAME = 'dashsy-cache-v1.1.5'; // <-- CAMBIO #1
+const CACHE_NAME = 'dashsy-cache-v1.1.6'; // <-- CAMBIO #1
 
 const urlsToCache = [
   './',
@@ -50,3 +50,4 @@ self.addEventListener('message', event => {
     self.skipWaiting();
   }
 });
+
