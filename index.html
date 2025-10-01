@@ -590,6 +590,8 @@
     border-top-color: white;
 }
 
+
+
     </style>
 
 <link rel="manifest" href="manifest.json">
@@ -729,6 +731,14 @@
                                 <p class="text-base font-bold text-teal-400">Análisis Mensual</p>
                             </div>
                         </div>
+                </div>
+                <div class="card text-center clickable col-span-2" onclick="openUsdAnalysisModal()">
+                    <div class="flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-sky-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V6.375c0-.621.504-1.125 1.125-1.125h.375m18 0h-4.5m-4.5 0h-4.5m0 0h-4.5m0 0l-1.5 1.5m1.5-1.5l1.5 1.5m0 0l1.5-1.5m1.5 1.5l1.5-1.5m-3-3l1.5-1.5m1.5 1.5l1.5-1.5m-4.5 9l1.5-1.5m-1.5 1.5l1.5 1.5m0 0l-1.5 1.5m1.5-1.5l1.5 1.5M9 12l1.5 1.5m-1.5-1.5L9 12m0 0l-1.5-1.5m1.5 1.5L9 12m-3 3l1.5-1.5m-1.5 1.5L6 15m0 0l-1.5-1.5m1.5 1.5L6 15m6-3l1.5 1.5m-1.5-1.5L15 12m0 0l-1.5-1.5m1.5 1.5L15 12m0 0l-1.5 1.5m-1.5-1.5l-1.5-1.5" />
+                        </svg>
+                        <p class="text-base font-bold text-sky-400">Análisis USD</p>
+                    </div>
                 </div>
             </div>
             <div id="page-reports" class="page">
@@ -1229,7 +1239,9 @@
         let currentProfileUserOps = { ves: [], usd: [] };
         let weeklyChartInstance; // Guardará nuestro gráfico para poder destruirlo después
         let monthlyChartInstance; // Guardará el gráfico mensual
-        // ...
+        let usdWeeklyChartInstance, usdWeeklyPaymentMethodChartInstance, usdWeeklyP2pPlatformChartInstance;
+let usdMonthlyChartInstance, usdMonthlyPaymentMethodChartInstance, usdMonthlyP2pPlatformChartInstance;
+        let currentUsdAnalysisTab = 'weekly'; // 'weekly' o 'monthly'
         // ...
 
         // AÑADE ESTAS DOS LÍNEAS
@@ -1825,7 +1837,8 @@ function updateSummary() {
             return avg > 0 ? `<span class="text-xs text-yellow-400 font-bold ml-2">${avg.toFixed(1)} ★</span>` : '';
         }
 
-        function renderOperations() {
+       // REEMPLAZA ESTA FUNCIÓN COMPLETA EN TU SCRIPT
+function renderOperations() {
     const tableBody = document.getElementById('operationsTable');
     const listContainer = document.getElementById('operationsList');
     const emptyState = document.getElementById('reports-empty-state');
@@ -1836,6 +1849,11 @@ function updateSummary() {
     const filterOperacion = document.getElementById('filterOperacion').value;
     const filterMetodo = document.getElementById('filterMetodoPago').value;
     const filteredOps = operations.filter(op => (op.fecha === currentDate) && (op.usuario.toLowerCase().includes(searchTerm) || (op.referencia && op.referencia.toLowerCase().includes(searchTerm))) && (filterOperacion === '' || op.operacion === filterOperacion) && (filterMetodo === '' || op.metodoPago === filterMetodo));
+
+    // --- LÍNEA AÑADIDA: Forzamos el ordenamiento ---
+    // Esto asegura que las operaciones siempre se muestren de la más nueva a la más antigua.
+    filteredOps.sort((a, b) => b.timestamp - a.timestamp);
+    // --- FIN DE LA LÍNEA AÑADIDA ---
 
     if (filteredOps.length === 0) {
         emptyState.style.display = 'block';
@@ -1853,10 +1871,8 @@ function updateSummary() {
     filteredOps.forEach((op, index) => {
         const globalIndex = operations.indexOf(op);
 
-        // La regla de oro: Siempre calculamos el valor a mostrar a partir del monto BRUTO guardado.
         let cryptoValueToDisplay = op.montoUsdc; 
         if (op.operacion === 'Venta' && op.adCommissionPercent > 0) {
-            // Si es una VENTA, mostramos el costo total (bruto + comisión)
             cryptoValueToDisplay = op.montoUsdc * (1 + (op.adCommissionPercent / 100));
         }
 
@@ -3383,6 +3399,375 @@ function renderMonthlySummary(results) {
 }
 
 
+// ===================================================================
+// == INICIO: BLOQUE DE CÓDIGO PARA EL NUEVO MODAL DE ANÁLISIS USD   ==
+// ===================================================================
+
+function openUsdAnalysisModal() {
+    document.getElementById('usdAnalysisModal').classList.add('show');
+    populateUsdMonthSelector();
+    switchUsdAnalysisTab('weekly'); // Inicia en la pestaña semanal por defecto
+}
+
+function closeUsdAnalysisModal() {
+    document.getElementById('usdAnalysisModal').classList.remove('show');
+    // Destruir todos los gráficos para liberar memoria
+    if (usdWeeklyChartInstance) usdWeeklyChartInstance.destroy();
+    if (usdWeeklyPaymentMethodChartInstance) usdWeeklyPaymentMethodChartInstance.destroy();
+    if (usdWeeklyP2pPlatformChartInstance) usdWeeklyP2pPlatformChartInstance.destroy();
+    if (usdMonthlyChartInstance) usdMonthlyChartInstance.destroy();
+    if (usdMonthlyPaymentMethodChartInstance) usdMonthlyPaymentMethodChartInstance.destroy();
+    if (usdMonthlyP2pPlatformChartInstance) usdMonthlyP2pPlatformChartInstance.destroy();
+}
+
+function switchUsdAnalysisTab(tabName) {
+    currentUsdAnalysisTab = tabName;
+    document.getElementById('usd-analysis-tab-weekly').classList.toggle('active', tabName === 'weekly');
+    document.getElementById('usd-analysis-tab-monthly').classList.toggle('active', tabName === 'monthly');
+    document.getElementById('usd-month-selector-container').classList.toggle('hidden', tabName !== 'monthly');
+    renderUsdAnalysis();
+}
+
+function populateUsdMonthSelector() {
+    const selector = document.getElementById('usdMonthSelector');
+    if (!wallyOperations || wallyOperations.length === 0) return;
+    selector.innerHTML = '';
+    const uniqueMonths = [...new Set(wallyOperations.map(op => op.fecha.substring(0, 7)))].sort().reverse();
+    
+    uniqueMonths.forEach(monthValue => {
+        const [year, month] = monthValue.split('-');
+        const date = new Date(year, month - 1, 1);
+        const monthName = date.toLocaleDateString('es-VE', { month: 'long', year: 'numeric' });
+        const option = document.createElement('option');
+        option.value = monthValue;
+        option.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+        selector.appendChild(option);
+    });
+}
+
+// REEMPLAZA ESTA FUNCIÓN COMPLETA
+// REEMPLAZA ESTA FUNCIÓN COMPLETA
+function renderUsdAnalysis() {
+    const contentContainer = document.getElementById('usdAnalysisContent');
+    contentContainer.innerHTML = `<div class="text-center py-8"><div class="loader mx-auto"></div><p class="mt-2 text-sm text-gray-400">Calculando análisis...</p></div>`;
+
+    setTimeout(() => {
+        let opsToAnalyze = [];
+        let periodTitle = "";
+        let groupBy = 'day';
+
+        if (currentUsdAnalysisTab === 'weekly') {
+            periodTitle = "Semana Actual";
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+            const monday = new Date();
+            monday.setDate(today.getDate() - diff);
+            monday.setHours(0, 0, 0, 0);
+            const formatDate = (d) => d.toISOString().split('T')[0];
+            const mondayStr = formatDate(monday);
+            const todayStr = formatDate(today);
+            opsToAnalyze = wallyOperations.filter(op => op.fecha >= mondayStr && op.fecha <= todayStr);
+        } else {
+            const selectedMonth = document.getElementById('usdMonthSelector').value;
+            periodTitle = document.getElementById('usdMonthSelector').options[document.getElementById('usdMonthSelector').selectedIndex]?.text || "Mes Seleccionado";
+            if (selectedMonth) {
+                opsToAnalyze = wallyOperations.filter(op => op.fecha.startsWith(selectedMonth));
+            }
+            groupBy = 'week';
+        }
+
+        if (opsToAnalyze.length === 0) {
+            contentContainer.innerHTML = `<p class="text-center text-gray-400 py-8">No hay operaciones en '${periodTitle}' para analizar.</p>`;
+            return;
+        }
+
+        const analysisResults = analyzeUsdData(opsToAnalyze, groupBy);
+        contentContainer.innerHTML = generateUsdAnalysisHTML(analysisResults, currentUsdAnalysisTab);
+
+        if (currentUsdAnalysisTab === 'weekly') {
+            renderUsdChart(analysisResults.groupedData, 'usdWeeklyChart', 'usdWeeklyChartInstance');
+            // --- LLAMADAS A LOS NUEVOS GRÁFICOS ---
+            renderUsdP2pPlatformChart(analysisResults.gainsByP2pPlatform, 'usdWeeklyP2pPlatformChart', 'usdWeeklyP2pPlatformChartInstance');
+            renderUsdPaymentMethodChart(analysisResults.gainsByPaymentMethod, 'usdWeeklyPaymentMethodChart', 'usdWeeklyPaymentMethodChartInstance');
+        } else {
+            renderUsdChart(analysisResults.groupedData, 'usdMonthlyChart', 'usdMonthlyChartInstance');
+            // --- LLAMADAS A LOS NUEVOS GRÁFICOS ---
+            renderUsdP2pPlatformChart(analysisResults.gainsByP2pPlatform, 'usdMonthlyP2pPlatformChart', 'usdMonthlyP2pPlatformChartInstance');
+            renderUsdPaymentMethodChart(analysisResults.gainsByPaymentMethod, 'usdMonthlyPaymentMethodChart', 'usdMonthlyPaymentMethodChartInstance');
+        }
+    }, 50);
+}
+
+// REEMPLAZA ESTA FUNCIÓN COMPLETA EN TU SCRIPT
+function analyzeUsdData(ops, groupBy = 'day') {
+    const groupedData = {};
+    const gainsByPaymentMethod = {};
+    const gainsByP2pPlatform = {};
+    let totalProfitUsd = 0, totalProfitUsdc = 0, totalCryptoVolume = 0, totalFiatVolume = 0;
+    let compraOps = 0, ventaOps = 0;
+
+    // --- INICIO DE LA LÓGICA CORREGIDA ---
+    // Obtenemos la lista de nombres de las plataformas P2P reales desde la configuración.
+    // Asumimos que estas son las que manejan intercambios, no solo transferencias USD.
+    const p2pPlatformNames = userConfig.p2pPlatforms
+        .filter(p => p.type === 'CRIPTO' || p.type === 'VES')
+        .map(p => p.name);
+    // --- FIN DE LA LÓGICA CORREGIDA ---
+
+    ops.forEach(op => {
+        const opDate = new Date(op.fecha + 'T12:00:00');
+        let key;
+        if (groupBy === 'week') {
+            key = Math.ceil(opDate.getDate() / 7);
+        } else {
+            key = op.fecha;
+        }
+
+        if (!groupedData[key]) {
+            groupedData[key] = { profitUsd: 0, profitUsdc: 0 };
+        }
+        groupedData[key].profitUsd += op.gananciaUsd || 0;
+        groupedData[key].profitUsdc += op.gananciaUsdc || 0;
+
+        // 1. Agrupar por Método de Pago (sin cambios, esto es correcto)
+        const paymentMethod = op.metodoPago || 'No especificado';
+        if (!gainsByPaymentMethod[paymentMethod]) {
+            gainsByPaymentMethod[paymentMethod] = { profitUsd: 0, profitUsdc: 0 };
+        }
+        gainsByPaymentMethod[paymentMethod].profitUsd += op.gananciaUsd || 0;
+        gainsByPaymentMethod[paymentMethod].profitUsdc += op.gananciaUsdc || 0;
+
+        // --- INICIO DE LA LÓGICA CORREGIDA ---
+        // 2. Agrupar por Plataforma P2P, pero SOLO si la plataforma está en nuestra lista filtrada.
+        if (op.platform && p2pPlatformNames.includes(op.platform)) {
+            const p2pPlatform = op.platform;
+            if (!gainsByP2pPlatform[p2pPlatform]) {
+                gainsByP2pPlatform[p2pPlatform] = { profitUsd: 0, profitUsdc: 0 };
+            }
+            gainsByP2pPlatform[p2pPlatform].profitUsd += op.gananciaUsd || 0;
+            gainsByP2pPlatform[p2pPlatform].profitUsdc += op.gananciaUsdc || 0;
+        }
+        // --- FIN DE LA LÓGICA CORREGIDA ---
+
+        totalProfitUsd += op.gananciaUsd || 0;
+        totalProfitUsdc += op.gananciaUsdc || 0;
+        
+        if(op.operacion === 'Compra') {
+            compraOps++;
+            totalCryptoVolume += op.reciboUsdc || 0;
+            totalFiatVolume += op.envioUsd || 0;
+        } else { // Venta
+            ventaOps++;
+            totalCryptoVolume += op.envioUsdc || 0;
+            totalFiatVolume += op.reciboUsd || 0;
+        }
+    });
+
+    const topUser = Object.entries(ops.reduce((acc, op) => {
+        acc[op.usuario] = (acc[op.usuario] || 0) + (op.reciboUsdc || op.envioUsdc || 0);
+        return acc;
+    }, {})).sort((a,b) => b[1]-a[1])[0];
+
+    return {
+        totalProfitUsd, totalProfitUsdc,
+        totalCryptoVolume, totalFiatVolume,
+        totalOps: ops.length, compraOps, ventaOps,
+        roi: totalFiatVolume > 0 ? ((totalProfitUsd + totalProfitUsdc) / totalFiatVolume) * 100 : 0,
+        groupedData,
+        gainsByPaymentMethod,
+        gainsByP2pPlatform,
+        topUser: { name: topUser ? topUser[0] : 'N/A', volume: topUser ? topUser[1] : 0 }
+    };
+}
+
+function generateUsdAnalysisHTML(results, period) {
+    // IDs para los gráficos de ganancias por período (semanal/mensual)
+    const chartId = period === 'weekly' ? 'usdWeeklyChart' : 'usdMonthlyChart';
+    // IDs para los gráficos de desglose (Método de Pago / Plataforma)
+    const paymentMethodChartId = period === 'weekly' ? 'usdWeeklyPaymentMethodChart' : 'usdMonthlyPaymentMethodChart';
+    const p2pPlatformChartId = period === 'weekly' ? 'usdWeeklyP2pPlatformChart' : 'usdMonthlyP2pPlatformChart';
+
+    return `
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+            <div class="xl:col-span-2 h-72 md:h-80">
+                <p class="text-center font-semibold text-sm text-gray-400 mb-2">Ganancias por ${period === 'weekly' ? 'Día' : 'Semana'}</p>
+                <canvas id="${chartId}"></canvas>
+            </div>
+
+            <hr class="border-gray-700 !my-6">
+
+            <div class="space-y-6">
+                <div class="h-60">
+                    <p class="text-center font-semibold text-sm text-gray-400 mb-2">Ganancias por Plataforma P2P</p>
+                    <canvas id="${p2pPlatformChartId}"></canvas>
+                </div>
+                <hr class="border-gray-700">
+                <div class="h-60">
+                     <p class="text-center font-semibold text-sm text-gray-400 mb-2">Ganancias por Método de Pago</p>
+                    <canvas id="${paymentMethodChartId}"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <hr class="border-gray-700 !my-6">
+
+        <div class="card p-4 bg-background space-y-3">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center text-sm">
+                <div class="info-card !p-2"><div class="info-card-title !text-xs">GANANCIA NETA USD</div><div class="info-card-value !text-base text-green-400">${results.totalProfitUsd.toFixed(2)} USD</div></div>
+                <div class="info-card !p-2"><div class="info-card-title !text-xs">GANANCIA NETA CRIPTO</div><div class="info-card-value !text-base text-orange-400">${results.totalProfitUsdc.toFixed(4)} USDC</div></div>
+                <div class="info-card !p-2"><div class="info-card-title !text-xs">VOLUMEN FIAT</div><div class="info-card-value !text-lg">${results.totalFiatVolume.toFixed(2)} USD</div></div>
+                <div class="info-card !p-2"><div class="info-card-title !text-xs">ROI GENERAL</div><div class="info-card-value !text-lg text-blue-400">${results.roi.toFixed(2)}%</div></div>
+            </div>
+            <hr class="border-gray-700 !my-4">
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between items-center"><span><strong>Total Operaciones:</strong></span><span class="font-mono">${results.totalOps} (C: ${results.compraOps} / V: ${results.ventaOps})</span></div>
+                <div class="flex justify-between items-center"><span><strong>Usuario más valioso (Vol.):</strong></span><span class="font-mono">${results.topUser.name} (${results.topUser.volume.toFixed(2)} USDC)</span></div>
+            </div>
+        </div>`;
+}
+
+// REEMPLAZA ESTA FUNCIÓN COMPLETA
+function renderUsdChart(data, canvasId, instanceVarName) {
+    const ctx = document.getElementById(canvasId)?.getContext('2d');
+    if (!ctx) return;
+    if (window[instanceVarName]) window[instanceVarName].destroy();
+    
+    const labelsRaw = Object.keys(data).sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
+    
+    // --- INICIO DE LÓGICA DE ETIQUETAS INTELIGENTE ---
+    const labels = labelsRaw.map(key => {
+        // Si la clave es un número (ej: '1', '2'), es una semana.
+        if (!isNaN(key)) {
+            return `Semana ${key}`;
+        }
+        // Si no, es una fecha.
+        return new Date(key + 'T12:00:00').toLocaleDateString('es-VE', {day:'2-digit', month:'short'});
+    });
+    // --- FIN DE LÓGICA DE ETIQUETAS ---
+
+    const profitUsd = labelsRaw.map(key => data[key].profitUsd);
+    const profitUsdc = labelsRaw.map(key => data[key].profitUsdc);
+
+    window[instanceVarName] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'Ganancia USD', data: profitUsd, backgroundColor: 'rgba(52, 211, 153, 0.7)', yAxisID: 'y' },
+                { label: 'Ganancia USDC', data: profitUsdc, backgroundColor: 'rgba(251, 191, 36, 0.7)', yAxisID: 'y1' }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: {
+                y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'USD' } },
+                y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'USDC' }, grid: { drawOnChartArea: false } }
+            }
+        }
+    });
+}
+
+// AÑADE ESTAS DOS NUEVAS FUNCIONES A TU SCRIPT
+
+function renderUsdP2pPlatformChart(data, canvasId, instanceVarName) {
+    const ctx = document.getElementById(canvasId)?.getContext('2d');
+    if (!ctx) return;
+    if (window[instanceVarName]) window[instanceVarName].destroy();
+
+    // Filtramos data para solo incluir plataformas con ganancias y que no sean "No especificada"
+    const labels = Object.keys(data).filter(key => key !== 'No especificada' && (data[key].profitUsd + data[key].profitUsdc) > 0);
+    const chartData = labels.map(p => (data[p].profitUsd || 0) + (data[p].profitUsdc || 0));
+
+    if (labels.length === 0) {
+        ctx.font = "14px Inter";
+        ctx.fillStyle = "grey";
+        ctx.textAlign = "center";
+        ctx.fillText("Sin datos de plataformas P2P", ctx.canvas.width/2, ctx.canvas.height/2);
+        return;
+    }
+    
+    window[instanceVarName] = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{
+                data: chartData,
+                backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(239, 68, 68, 0.8)', 'rgba(245, 158, 11, 0.8)'],
+                borderColor: 'var(--surface)', borderWidth: 3
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom', labels: { color: '#C9D1D9', boxWidth: 12 } } } }
+    });
+}
+
+function renderUsdPaymentMethodChart(data, canvasId, instanceVarName) {
+    const ctx = document.getElementById(canvasId)?.getContext('2d');
+    if (!ctx) return;
+    if (window[instanceVarName]) window[instanceVarName].destroy();
+
+    const labels = Object.keys(data).filter(key => key !== 'No especificado' && (data[key].profitUsd + data[key].profitUsdc) > 0);
+    const chartData = labels.map(p => (data[p].profitUsd || 0) + (data[p].profitUsdc || 0));
+
+    if (labels.length === 0) {
+        ctx.font = "14px Inter";
+        ctx.fillStyle = "grey";
+        ctx.textAlign = "center";
+        ctx.fillText("Sin datos de métodos de pago", ctx.canvas.width/2, ctx.canvas.height/2);
+        return;
+    }
+
+    window[instanceVarName] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Ganancia Equivalente (USD)',
+                data: chartData,
+                backgroundColor: 'rgba(34, 211, 238, 0.7)',
+                borderColor: 'rgba(34, 211, 238, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y', // Gráfico de barras horizontal
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { ticks: { color: '#C9D1D9' } },
+                x: { ticks: { color: '#C9D1D9' } }
+            }
+        }
+    });
+}
+
+function renderUsdPlatformChart(gainsByPlatform, canvasId, instanceVarName) {
+    const ctx = document.getElementById(canvasId)?.getContext('2d');
+    if (!ctx) return;
+    if (window[instanceVarName]) window[instanceVarName].destroy();
+
+    const labels = Object.keys(gainsByPlatform);
+    const data = labels.map(p => (gainsByPlatform[p].profitUsd || 0) + (gainsByPlatform[p].profitUsdc || 0));
+    
+    window[instanceVarName] = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{
+                data,
+                backgroundColor: ['rgba(59, 130, 246, 0.7)', 'rgba(249, 115, 22, 0.7)', 'rgba(239, 68, 68, 0.7)', 'rgba(16, 185, 129, 0.7)'],
+                borderColor: 'var(--surface)', borderWidth: 2
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+    });
+}
+
+// ===================================================================
+// == FIN: BLOQUE DE CÓDIGO PARA EL NUEVO MODAL DE ANÁLISIS USD     ==
+// ===================================================================
+
         // ===== FIN DEL CÓDIGO A PEGAR (BLOQUE PRINCIPAL) =====
         window.showPage = showPage; window.loginUser = loginUser; window.registerUser = registerUser;
         window.toggleAuthForms = toggleAuthForms; window.logoutUser = logoutUser; window.openModal = openModal;
@@ -3422,6 +3807,10 @@ function renderMonthlySummary(results) {
         window.openMonthlyAnalysisModal = openMonthlyAnalysisModal;
         window.closeMonthlyAnalysisModal = closeMonthlyAnalysisModal;
         window.runMonthlyAnalysis = runMonthlyAnalysis;
+        window.openUsdAnalysisModal = openUsdAnalysisModal;
+        window.closeUsdAnalysisModal = closeUsdAnalysisModal;
+        window.switchUsdAnalysisTab = switchUsdAnalysisTab;
+        window.renderUsdAnalysis = renderUsdAnalysis;
         // AÑADE ESTA LÍNEA AL FINAL
         window.enableAudio = enableAudio;
         
@@ -3440,5 +3829,30 @@ function renderMonthlySummary(results) {
         <source src="https://cdn.jsdelivr.net/gh/basthiancasparod-cmyk/DashSY/assets/notification.mp3" type="audio/mpeg">
     </audio>
 
+        <div id="usdAnalysisModal" class="modal">
+        <div class="modal-content !max-w-4xl">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="modal-title text-xl font-bold">📈 Análisis de Operaciones USD</h2>
+                <button class="close-btn" onclick="closeUsdAnalysisModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="flex justify-between items-center border-b border-gray-700 mb-4">
+                    <div class="flex space-x-2">
+                        <button id="usd-analysis-tab-weekly" class="profile-tab active" onclick="switchUsdAnalysisTab('weekly')">Análisis Semanal</button>
+                        <button id="usd-analysis-tab-monthly" class="profile-tab" onclick="switchUsdAnalysisTab('monthly')">Análisis Mensual</button>
+                    </div>
+                    <div id="usd-month-selector-container" class="filter-item !min-w-[200px] hidden">
+                        <select id="usdMonthSelector" onchange="renderUsdAnalysis()"></select>
+                    </div>
+                </div>
+
+                <div id="usdAnalysisContent">
+                    </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeUsdAnalysisModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
