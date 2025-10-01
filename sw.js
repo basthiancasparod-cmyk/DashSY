@@ -1,7 +1,7 @@
 // 1. VERSIÓN DEL CACHÉ INCREMENTADA PARA FORZAR LA ACTUALIZACIÓN
 const CACHE_NAME = 'dashsy-cache-v1.1.9.2';
 
-// 2. MANTENEMOS TU LISTA DE ARCHIVOS ESENCIALES
+// 2. LISTA DE ARCHIVOS ESENCIALES
 const URLS_TO_CACHE = [
   './',
   './index.html',
@@ -11,7 +11,7 @@ const URLS_TO_CACHE = [
   './assets/favicon.ico'
 ];
 
-// 3. EVENTO DE INSTALACIÓN MEJORADO
+// 3. EVENTO DE INSTALACIÓN
 self.addEventListener('install', event => {
   console.log('Service Worker: Instalando nueva versión...');
   event.waitUntil(
@@ -20,11 +20,11 @@ self.addEventListener('install', event => {
         console.log('Service Worker: Archivos cacheados en la instalación.');
         return cache.addAll(URLS_TO_CACHE);
       })
-      .then(() => self.skipWaiting()) // <-- MEJORA: Activa el nuevo SW más rápido
+      .then(() => self.skipWaiting()) // <-- Activa el nuevo SW más rápido
   );
 });
 
-// 4. MANTENEMOS TU LÓGICA PARA LIMPIAR CACHÉS ANTIGUAS
+// 4. LÓGICA PARA LIMPIAR CACHÉS ANTIGUAS
 self.addEventListener('activate', event => {
   console.log('Service Worker: Activado y listo para controlar la app.');
   const cacheWhitelist = [CACHE_NAME];
@@ -38,30 +38,31 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    }).then(() => self.clients.claim()) // <-- MEJORA: Asegura el control inmediato
+    }).then(() => self.clients.claim()) // <-- Asegura el control inmediato
   );
 });
 
-// 5. REEMPLAZO CLAVE: LA NUEVA ESTRATEGIA DE CACHÉ
+// 5. ESTRATEGIA DE CACHÉ "STALE-WHILE-REVALIDATE" CORREGIDA
 self.addEventListener('fetch', event => {
     // Excluimos las peticiones a Firebase para que siempre vayan a la red.
     if (event.request.url.includes('firestore.googleapis.com')) {
         return;
     }
 
-    // Estrategia "Stale-While-Revalidate" CORREGIDA
     event.respondWith(
         caches.match(event.request)
             .then(cachedResponse => {
                 // Iniciamos la petición a la red para actualizar la caché en segundo plano.
                 const fetchPromise = fetch(event.request).then(
                     networkResponse => {
-                        // Cuando la red responde, abrimos la caché.
-                        caches.open(CACHE_NAME).then(cache => {
+                        // Se retorna la promesa de caches.open() para asegurar que la
+                        // cadena de promesas espere a que la caché se actualice.
+                        return caches.open(CACHE_NAME).then(cache => {
                             // Clonamos la respuesta: una para la caché, la original para el navegador.
                             cache.put(event.request, networkResponse.clone());
+                            // Una vez guardada en caché, retornamos la respuesta original.
+                            return networkResponse;
                         });
-                        return networkResponse;
                     }
                 );
 
@@ -72,11 +73,9 @@ self.addEventListener('fetch', event => {
     );
 });
 
-// 6. MANTENEMOS TU LÓGICA PARA EL BOTÓN DE "ACTUALIZAR"
+// 6. LÓGICA PARA EL BOTÓN DE "ACTUALIZAR"
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });
-
-
