@@ -1359,7 +1359,6 @@ function loadWallyOperations() {
 }
         
         // REEMPLAZA ESTA FUNCIÓN COMPLETA EN TU SCRIPT
-// REEMPLAZA ESTA FUNCIÓN COMPLETA EN TU SCRIPT
 function saveOperation() {
     if (!currentUserId) return;
     const saveBtn = document.getElementById('saveOperationBtn');
@@ -1408,26 +1407,11 @@ function saveOperation() {
     }
 
     const opId = isEditing ? operations[editingIndex].id : db.collection('users').doc(currentUserId).collection('operations').doc().id;
-    operationData.id = opId;
-
+    
+    // --- INICIO DE LA CORRECCIÓN ---
+    // Simplemente guardamos en la base de datos.
+    // El listener 'onSnapshot' se encargará de actualizar la UI automáticamente.
     db.collection('users').doc(currentUserId).collection('operations').doc(opId).set(operationData, { merge: true }).then(() => { 
-        // --- INICIO DE LA LÓGICA CORREGIDA ---
-        // Actualizamos el estado local inmediatamente para reflejar el cambio en la UI.
-        if (isEditing) {
-            // Buscamos la operación original por su ID y la actualizamos.
-            const originalOpIndex = operations.findIndex(op => op.id === opId);
-            if (originalOpIndex > -1) {
-                // Combinamos los datos viejos con los nuevos para no perder propiedades calculadas temporalmente
-                operations[originalOpIndex] = { ...operations[originalOpIndex], ...operationData };
-            }
-        } else {
-            // Si es una operación nueva, la añadimos al principio de la lista local.
-            operations.unshift(operationData);
-        }
-        // Forzamos una actualización completa de la UI con los datos ya actualizados.
-        updateSummary();
-        // --- FIN DE LA LÓGICA CORREGIDA ---
-
         closeModal(); 
         showToast('Operación guardada.', 'success'); 
         if (!isEditing) {
@@ -1441,6 +1425,7 @@ function saveOperation() {
     }).finally(() => {
         saveBtn.classList.remove('loading');
     });
+    // --- FIN DE LA CORRECCIÓN ---
 }
         
         function calculateAll() {
@@ -2578,8 +2563,7 @@ function renderOperations() {
             }
         }
         
-       // REEMPLAZA ESTA FUNCIÓN COMPLETA EN TU SCRIPT
-function saveWallyOperation() {
+ function saveWallyOperation() {
     if (!currentUserId) return;
     const saveBtn = document.getElementById('saveWallyBtn'); 
     saveBtn.classList.add('loading');
@@ -2593,12 +2577,8 @@ function saveWallyOperation() {
         operacion, 
         platform: document.getElementById('wallyPlatform').value,
         metodoPago: document.getElementById('wallyMetodoPago').value,
-        
-        // --- INICIO DE LA LÓGICA CORREGIDA ---
-        // Conservamos la fecha y timestamp originales al editar.
         fecha: isEditing ? wallyOperations[editingWallyIndex].fecha : currentWallyDate, 
         timestamp: isEditing ? wallyOperations[editingWallyIndex].timestamp : Date.now()
-        // --- FIN DE LA LÓGICA CORREGIDA ---
     };
     
     if (operacion === 'Compra') { 
@@ -2627,18 +2607,9 @@ function saveWallyOperation() {
 
     const opId = isEditing ? wallyOperations[editingWallyIndex].id : db.collection('users').doc(currentUserId).collection('wallyOperations').doc().id;
     
+    // --- INICIO DE LA CORRECCIÓN ---
+    // Solo guardamos en Firebase y dejamos que el listener 'onSnapshot' actualice.
     db.collection('users').doc(currentUserId).collection('wallyOperations').doc(opId).set(opData, { merge: true }).then(() => { 
-        // Actualizamos el estado local para reflejo inmediato en la UI
-        if (isEditing) {
-            const originalOpIndex = wallyOperations.findIndex(op => op.id === opId);
-            if (originalOpIndex > -1) {
-                wallyOperations[originalOpIndex] = { ...wallyOperations[originalOpIndex], ...opData };
-            }
-        } else {
-            wallyOperations.unshift(opData);
-        }
-        updateWallySummary();
-
         closeWallyModal(); 
         showToast('Op. USD guardada.', 'success');
         if (!isEditing) {
@@ -2652,7 +2623,9 @@ function saveWallyOperation() {
     }).finally(() => {
         saveBtn.classList.remove('loading');
     });
+    // --- FIN DE LA CORRECCIÓN ---
 }
+
         // REEMPLAZA tu función updateWallySummary con esta:
 function updateWallySummary() {
     if(!wallyOperations) return;
