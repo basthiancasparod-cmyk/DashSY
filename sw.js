@@ -1,5 +1,5 @@
 // 1. VERSIÓN DEL CACHÉ INCREMENTADA PARA FORZAR LA ACTUALIZACIÓN
-const CACHE_NAME = 'dashsy-cache-v1.1.9';
+const CACHE_NAME = 'dashsy-cache-v1.1.9.1';
 
 // 2. MANTENEMOS TU LISTA DE ARCHIVOS ESENCIALES
 const URLS_TO_CACHE = [
@@ -78,3 +78,4 @@ self.addEventListener('message', event => {
     self.skipWaiting();
   }
 });
+
