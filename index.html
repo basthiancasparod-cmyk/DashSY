@@ -2933,40 +2933,38 @@ function switchProfileTab(tabName) {
         }
 
         /**
-         * Obtiene las operaciones de la semana del calendario actual (Lunes a Domingo).
-         * @returns {Array} Un array con las operaciones de la semana.
-         */
-        function getWeeklyOperations() {
-            const today = new Date();
-            const dayOfWeek = today.getDay(); // Domingo = 0, Lunes = 1, ..., Sábado = 6
+ * Obtiene las operaciones de la semana del calendario actual (Lunes HASTA HOY).
+ * @returns {Array} Un array con las operaciones de la semana.
+ */
+function getWeeklyOperations() {
+    const today = new Date(); // <-- Usaremos 'today' como nuestra nueva fecha final
+    const dayOfWeek = today.getDay(); // Domingo = 0, Lunes = 1, ..., Sábado = 6
 
-            // Calculamos el lunes de esta semana
-            const monday = new Date();
-            // Restamos los días necesarios para llegar al lunes. Si hoy es domingo (0), restamos 6 días.
-            const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-            monday.setDate(today.getDate() - diff);
-            
-            // Calculamos el domingo de esta semana
-            const sunday = new Date(monday);
-            sunday.setDate(monday.getDate() + 6);
-            
-            // Función para dar formato a YYYY-MM-DD de forma segura con la zona horaria local
-            const formatDate = (d) => {
-                const year = d.getFullYear();
-                const month = String(d.getMonth() + 1).padStart(2, '0');
-                const day = String(d.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            };
+    // Calculamos el lunes de esta semana (esto no cambia)
+    const monday = new Date();
+    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    monday.setDate(today.getDate() - diff);
 
-            const startStr = formatDate(monday);
-            const endStr = formatDate(sunday);
-            
-            // Filtramos las operaciones que están dentro del rango de Lunes a Domingo
-            return operations.filter(op => op.fecha >= startStr && op.fecha <= endStr);
-        }
+    // ELIMINADO: Ya no necesitamos calcular el domingo.
 
-        /**
+    // Función para dar formato a YYYY-MM-DD
+    const formatDate = (d) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const startStr = formatDate(monday);
+    const endStr = formatDate(today); // <-- CAMBIO CLAVE: Usamos 'today' como fecha final
+
+    // El filtro ahora va desde el Lunes hasta Hoy.
+    return operations.filter(op => op.fecha >= startStr && op.fecha <= endStr);
+}
+
+       /**
          * Procesa un array de operaciones y devuelve un objeto con todas las métricas analizadas.
+         * ESTA VERSIÓN CORRIGE EL CÁLCULO FIFO PARA QUE SEA ACUMULATIVO.
          * @param {Array} ops - Las operaciones a analizar.
          * @returns {Object} Un objeto con todos los resultados del análisis.
          */
@@ -2975,11 +2973,8 @@ function switchProfileTab(tabName) {
             const paymentMethodCount = {};
             const userVolume = {};
             const hourlyOps = Array(24).fill(0).map(() => ({ count: 0, buyRates: [], sellRates: [] }));
-            let totalVolume = 0;
-            let totalProfitVes = 0;
-            let totalProfitUsdc = 0;
-
-            // Paso 1: Agrupar operaciones por día
+            
+            // Paso 1: Agrupar todas las operaciones por día
             const groupedByDay = ops.reduce((acc, op) => {
                 const date = op.fecha;
                 if (!acc[date]) acc[date] = [];
@@ -2987,12 +2982,24 @@ function switchProfileTab(tabName) {
                 return acc;
             }, {});
 
-            // Paso 2: Calcular ganancias FIFO para cada día individualmente
-            for (const date in groupedByDay) {
-                const opsOfTheDay = groupedByDay[date];
-                const [dailyProfitVes, dailyProfitUsdc] = calculateFIFOGainsForOps(opsOfTheDay);
-                const dailyVolume = opsOfTheDay.reduce((sum, op) => sum + (op.montoUsdc || 0), 0);
+            const sortedDates = Object.keys(groupedByDay).sort();
+            let cumulativeOps = [];
+            let lastDayCumulativeProfitVes = 0;
+            let lastDayCumulativeProfitUsdc = 0;
 
+            // Paso 2: Calcular ganancias de forma ACUMULATIVA día por día
+            sortedDates.forEach(date => {
+                const opsOfTheDay = groupedByDay[date];
+                cumulativeOps.push(...opsOfTheDay);
+
+                // Calculamos el FIFO para TODAS las operaciones hasta la fecha actual del bucle
+                const [cumulativeProfitVes, cumulativeProfitUsdc] = calculateFIFOGainsForOps(cumulativeOps);
+
+                // La ganancia del día es la diferencia entre el acumulado de hoy y el de ayer
+                const dailyProfitVes = cumulativeProfitVes - lastDayCumulativeProfitVes;
+                const dailyProfitUsdc = cumulativeProfitUsdc - lastDayCumulativeProfitUsdc;
+                const dailyVolume = opsOfTheDay.reduce((sum, op) => sum + (op.montoUsdc || 0), 0);
+                
                 dailyData[date] = {
                     volume: dailyVolume,
                     profitVes: dailyProfitVes,
@@ -3000,28 +3007,30 @@ function switchProfileTab(tabName) {
                     opCount: opsOfTheDay.length
                 };
 
-                // Acumular totales semanales
-                totalVolume += dailyVolume;
-                totalProfitVes += dailyProfitVes;
-                totalProfitUsdc += dailyProfitUsdc;
+                // Guardamos los acumulados para la siguiente iteración
+                lastDayCumulativeProfitVes = cumulativeProfitVes;
+                lastDayCumulativeProfitUsdc = cumulativeProfitUsdc;
+            });
 
-                // Analizar métodos de pago, usuarios y horas (como antes)
-                opsOfTheDay.forEach(op => {
-                    paymentMethodCount[op.metodoPago] = (paymentMethodCount[op.metodoPago] || 0) + 1;
-                    userVolume[op.usuario] = (userVolume[op.usuario] || 0) + op.montoUsdc;
-                    const hour = new Date(op.timestamp).getHours();
-                    hourlyOps[hour].count++;
-                    if (op.operacion === 'Compra') hourlyOps[hour].buyRates.push(op.tasa);
-                    if (op.operacion === 'Venta') hourlyOps[hour].sellRates.push(op.tasa);
-                });
-            }
+            // Post-procesamiento (sin cambios, ahora usa los datos diarios correctos)
+            let totalVolume = 0, totalProfitVes = 0, totalProfitUsdc = 0;
+            ops.forEach(op => {
+                totalVolume += op.montoUsdc || 0;
+                paymentMethodCount[op.metodoPago] = (paymentMethodCount[op.metodoPago] || 0) + 1;
+                userVolume[op.usuario] = (userVolume[op.usuario] || 0) + op.montoUsdc;
+                const hour = new Date(op.timestamp).getHours();
+                hourlyOps[hour].count++;
+                if (op.operacion === 'Compra') hourlyOps[hour].buyRates.push(op.tasa);
+                if (op.operacion === 'Venta') hourlyOps[hour].sellRates.push(op.tasa);
+            });
+            // El total de ganancias es el acumulado del último día
+            totalProfitVes = lastDayCumulativeProfitVes;
+            totalProfitUsdc = lastDayCumulativeProfitUsdc;
 
-            // Post-procesamiento con los datos ya calculados
             const dayWithMostVolume = Object.entries(dailyData).sort((a, b) => b[1].volume - a[1].volume)[0];
             const dayWithMostProfit = Object.entries(dailyData).sort((a, b) => b[1].profitVes - a[1].profitVes)[0];
             const mostUsedPaymentMethod = Object.entries(paymentMethodCount).sort((a, b) => b[1] - a[1])[0];
             const mostValuableUserByVolume = Object.entries(userVolume).sort((a, b) => b[1] - a[1])[0];
-            
             const hourlyBrecha = hourlyOps.map((hourData, hour) => {
                 if (hourData.buyRates.length === 0 || hourData.sellRates.length === 0) return { hour, brecha: -1 };
                 const avgBuy = hourData.buyRates.reduce((a, b) => a + b, 0) / hourData.buyRates.length;
@@ -3035,7 +3044,6 @@ function switchProfileTab(tabName) {
                 totalVolume,
                 totalProfitVes,
                 totalProfitUsdc,
-                avgProfitability: totalVolume > 0 ? (totalProfitVes / totalVolume) * 100 : 0, // Rentabilidad en % (VES / Volumen USDC)
                 avgRate: ops.reduce((sum, op) => sum + op.tasa, 0) / ops.length,
                 dailyData,
                 dayWithMostVolume: { date: dayWithMostVolume[0], value: dayWithMostVolume[1].volume },
