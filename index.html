@@ -3231,63 +3231,84 @@ function runMonthlyAnalysis() {
 }
 
 function analyzeMonthlyData(monthlyOps) {
-    // Agrupar por semana del mes
-    const weeklyData = {};
-    monthlyOps.forEach(op => {
-        const opDate = new Date(op.fecha + 'T00:00:00');
-        const weekOfMonth = Math.ceil(opDate.getDate() / 7);
-        if (!weeklyData[weekOfMonth]) {
-            weeklyData[weekOfMonth] = { ops: [], profitVes: 0, profitUsdc: 0, volume: 0 };
+            // Agrupar por semana y por día al mismo tiempo
+            const weeklyData = {};
+            const dailyData = {};
+            monthlyOps.forEach(op => {
+                const opDate = new Date(op.fecha + 'T00:00:00');
+                const weekOfMonth = Math.ceil(opDate.getDate() / 7);
+                if (!weeklyData[weekOfMonth]) {
+                    weeklyData[weekOfMonth] = { ops: [], profitVes: 0, profitUsdc: 0, volume: 0 };
+                }
+                weeklyData[weekOfMonth].ops.push(op);
+
+                if (!dailyData[op.fecha]) dailyData[op.fecha] = [];
+                dailyData[op.fecha].push(op);
+            });
+
+            // --- INICIO DE LA LÓGICA CORREGIDA ---
+
+            // 1. Cálculo acumulativo para el gráfico semanal
+            const sortedWeeks = Object.keys(weeklyData).sort((a,b) => a - b);
+            let cumulativeWeeklyOps = [];
+            let lastWeekCumulativeProfitVes = 0;
+            let lastWeekCumulativeProfitUsdc = 0;
+
+            sortedWeeks.forEach(week => {
+                const opsOfTheWeek = weeklyData[week].ops;
+                cumulativeWeeklyOps.push(...opsOfTheWeek);
+                
+                const [cumulativeProfitVes, cumulativeProfitUsdc] = calculateFIFOGainsForOps(cumulativeWeeklyOps);
+                
+                weeklyData[week].profitVes = cumulativeProfitVes - lastWeekCumulativeProfitVes;
+                weeklyData[week].profitUsdc = cumulativeProfitUsdc - lastWeekCumulativeProfitUsdc;
+                
+                lastWeekCumulativeProfitVes = cumulativeProfitVes;
+                lastWeekCumulativeProfitUsdc = cumulativeProfitUsdc;
+            });
+            
+            // 2. Cálculo acumulativo para encontrar el mejor día
+            const sortedDates = Object.keys(dailyData).sort();
+            let cumulativeDailyOps = [];
+            let lastDayCumulativeProfit = -Infinity;
+            let bestDay = { date: null, profitVes: -Infinity };
+            let positiveProfitDays = 0;
+
+            sortedDates.forEach(date => {
+                cumulativeDailyOps.push(...dailyData[date]);
+                const [totalGainsForPeriod] = calculateFIFOGainsForOps(cumulativeDailyOps);
+                const dailyProfit = totalGainsForPeriod - (lastDayCumulativeProfit === -Infinity ? 0 : lastDayCumulativeProfit);
+
+                if (dailyProfit > 0) positiveProfitDays++;
+                if (dailyProfit > bestDay.profitVes) {
+                    bestDay = { date, profitVes: dailyProfit };
+                }
+                lastDayCumulativeProfit = totalGainsForPeriod;
+            });
+
+            // --- FIN DE LA LÓGICA CORREGIDA ---
+
+            const bestWeek = Object.entries(weeklyData).sort((a, b) => b[1].profitVes - a[1].profitVes)[0];
+            const totalProfitVes = Object.values(weeklyData).reduce((sum, week) => sum + week.profitVes, 0);
+            const totalProfitUsdc = Object.values(weeklyData).reduce((sum, week) => sum + week.profitUsdc, 0);
+            const totalVolume = monthlyOps.reduce((sum, op) => sum + op.montoUsdc, 0);
+            const mostUsedPaymentMethod = Object.entries(monthlyOps.reduce((acc, op) => { acc[op.metodoPago] = (acc[op.metodoPago] || 0) + 1; return acc; }, {})).sort((a,b) => b[1]-a[1])[0];
+            const mostValuableUser = Object.entries(monthlyOps.reduce((acc, op) => { acc[op.usuario] = (acc[op.usuario] || 0) + op.montoUsdc; return acc; }, {})).sort((a,b) => b[1]-a[1])[0];
+
+            return {
+                totalProfitVes,
+                totalProfitUsdc,
+                totalVolume,
+                totalOps: monthlyOps.length,
+                daysInMonth: Object.keys(dailyData).length,
+                positiveProfitDays,
+                bestWeek: { week: bestWeek[0], data: bestWeek[1] },
+                bestDay,
+                mostUsedPaymentMethod,
+                mostValuableUser,
+                weeklyData
+            };
         }
-        weeklyData[weekOfMonth].ops.push(op);
-    });
-
-    // Calcular ganancias FIFO para cada semana
-    for (const week in weeklyData) {
-        const [profitVes, profitUsdc] = calculateFIFOGainsForOps(weeklyData[week].ops);
-        weeklyData[week].profitVes = profitVes;
-        weeklyData[week].profitUsdc = profitUsdc;
-        weeklyData[week].volume = weeklyData[week].ops.reduce((sum, op) => sum + op.montoUsdc, 0);
-    }
-
-    // Agrupar por día para encontrar el mejor día
-    const dailyData = {};
-    monthlyOps.forEach(op => {
-        if (!dailyData[op.fecha]) dailyData[op.fecha] = [];
-        dailyData[op.fecha].push(op);
-    });
-
-    let bestDay = { date: null, profitVes: -Infinity };
-    let positiveProfitDays = 0;
-    for (const date in dailyData) {
-        const [dailyProfitVes] = calculateFIFOGainsForOps(dailyData[date]);
-        if (dailyProfitVes > 0) positiveProfitDays++;
-        if (dailyProfitVes > bestDay.profitVes) {
-            bestDay = { date, profitVes: dailyProfitVes };
-        }
-    }
-
-    const bestWeek = Object.entries(weeklyData).sort((a, b) => b[1].profitVes - a[1].profitVes)[0];
-    const totalProfitVes = Object.values(weeklyData).reduce((sum, week) => sum + week.profitVes, 0);
-    const totalProfitUsdc = Object.values(weeklyData).reduce((sum, week) => sum + week.profitUsdc, 0);
-    const totalVolume = Object.values(weeklyData).reduce((sum, week) => sum + week.volume, 0);
-    const mostUsedPaymentMethod = Object.entries(monthlyOps.reduce((acc, op) => { acc[op.metodoPago] = (acc[op.metodoPago] || 0) + 1; return acc; }, {})).sort((a,b) => b[1]-a[1])[0];
-    const mostValuableUser = Object.entries(monthlyOps.reduce((acc, op) => { acc[op.usuario] = (acc[op.usuario] || 0) + op.montoUsdc; return acc; }, {})).sort((a,b) => b[1]-a[1])[0];
-
-    return {
-        totalProfitVes,
-        totalProfitUsdc,
-        totalVolume,
-        totalOps: monthlyOps.length,
-        daysInMonth: Object.keys(dailyData).length,
-        positiveProfitDays,
-        bestWeek: { week: bestWeek[0], data: bestWeek[1] },
-        bestDay,
-        mostUsedPaymentMethod,
-        mostValuableUser,
-        weeklyData
-    };
-}
 
 function renderMonthlyChart(weeklyData) {
     Chart.register(ChartDataLabels);
