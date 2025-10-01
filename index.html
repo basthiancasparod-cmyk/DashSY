@@ -9,6 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
         :root {
             --background: #0D1117;
@@ -710,6 +712,23 @@
                     <div class="card text-center"><p class="text-sm font-medium text-gray-400">Operaciones</p><p id="totalOps" class="text-xl font-bold mt-1">0</p></div>
                     <div class="card text-center clickable" onclick="openLotDetailsModal()"><p class="text-sm font-medium text-gray-400">Lotes Activos</p><p id="activeLotsSummary" class="text-xl font-bold mt-1">0</p></div>
                     <div class="card text-center clickable" onclick="openPendingDetailsModal()"><p class="text-sm font-medium text-gray-400">Pendientes</p><p id="pendingSummary" class="text-xl font-bold mt-1">0 USDC</p></div>
+                    <div class="card text-center clickable col-span-2" onclick="openWeeklyAnalysisModal()">
+                        <div class="flex items-center justify-center gap-2">
+                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-purple-400">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v18h16.5V3H3.75zm.75 4.5h15m-15 0a.375.375 0 01.375-.375h14.25c.207 0 .375.168.375.375v9.75c0 .207-.168.375-.375.375H4.125A.375.375 0 013.75 17.25V7.5z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-3-3v6" />
+                            </svg>
+                            <p class="text-base font-bold text-purple-400">Análisis Semanal</p>
+                        </div>
+                    </div>
+                        <div class="card text-center clickable col-span-2" onclick="openMonthlyAnalysisModal()">
+                            <div class="flex items-center justify-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-teal-400">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M9.75 12.75h4.5" />
+                                </svg>
+                                <p class="text-base font-bold text-teal-400">Análisis Mensual</p>
+                            </div>
+                        </div>
                 </div>
             </div>
             <div id="page-reports" class="page">
@@ -1139,6 +1158,57 @@
     </div>
 </div>
 
+<div id="weeklyAnalysisModal" class="modal">
+        <div class="modal-content !max-w-3xl">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="modal-title text-xl font-bold">📊 Análisis de la Semana</h2>
+                <button class="close-btn" onclick="closeWeeklyAnalysisModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-6 h-64 md:h-80">
+                    <canvas id="weeklyChart"></canvas>
+                </div>
+                <div id="weeklyAnalysisSummary" class="card p-4 bg-background space-y-3">
+                    <div class="text-center py-4">
+                        <div class="loader mx-auto"></div>
+                        <p class="mt-2 text-sm text-gray-400">Calculando análisis...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeWeeklyAnalysisModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="monthlyAnalysisModal" class="modal">
+    <div class="modal-content !max-w-3xl">
+        <div class="modal-header flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <h2 class="modal-title text-xl font-bold">🗓️ Análisis Mensual</h2>
+
+                <div class="filter-item !min-w-[200px]">
+                    <select id="monthSelector" onchange="runMonthlyAnalysis()"></select>
+                </div>
+            </div>
+            <button class="close-btn" onclick="closeMonthlyAnalysisModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="mb-6 h-64 md:h-80">
+                <canvas id="monthlyChart"></canvas>
+            </div>
+            <div id="monthlyAnalysisSummary" class="card p-4 bg-background space-y-3">
+                <div class="text-center py-4">
+                    <p class="mt-2 text-sm text-gray-400">Selecciona un mes para comenzar el análisis.</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeMonthlyAnalysisModal()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -1157,6 +1227,8 @@
         let initialLoadCounter = 0;
         let currentDayCapital = null;
         let currentProfileUserOps = { ves: [], usd: [] };
+        let weeklyChartInstance; // Guardará nuestro gráfico para poder destruirlo después
+        let monthlyChartInstance; // Guardará el gráfico mensual
         // ...
         // ...
 
@@ -1243,7 +1315,7 @@
         function logoutUser() { auth.signOut(); }
         function toggleAuthForms() { const l = document.getElementById('loginForm'), r = document.getElementById('registerForm'); authError.textContent = ''; l.style.display = l.style.display === 'none' ? 'block' : 'none'; r.style.display = r.style.display === 'none' ? 'block' : 'none'; }
 
-        function loadOperations() { if (!currentUserId) return; db.collection('users').doc(currentUserId).collection('operations').orderBy('timestamp', 'desc').onSnapshot(s => { operations = s.docs.map(d => ({ id: d.id, ...d.data() })); updateSummary(); checkInitialLoadComplete(); }, e => { console.error(e); checkInitialLoadComplete(); }); }
+        function loadOperations() { if (!currentUserId) return; db.collection('users').doc(currentUserId).collection('operations').orderBy('timestamp', 'desc').onSnapshot(s => { operations = s.docs.map(d => ({ id: d.id, ...d.data() })); updateSummary(); populateMonthSelector(); checkInitialLoadComplete(); }, e => { console.error(e); checkInitialLoadComplete(); }); }
         function loadWallyOperations() { if (!currentUserId) return; db.collection('users').doc(currentUserId).collection('wallyOperations').orderBy('timestamp', 'desc').onSnapshot(s => { wallyOperations = s.docs.map(d => ({ id: d.id, ...d.data() })); updateWallySummary(); checkInitialLoadComplete(); }, e => { console.error(e); checkInitialLoadComplete(); });}
         
         function saveOperation() {
@@ -2819,7 +2891,470 @@ function switchProfileTab(tabName) {
     }
 });
 
+// ===== INICIO DEL CÓDIGO A PEGAR (BLOQUE PRINCIPAL) =====
 
+        /**
+         * Cierra el modal de análisis semanal y destruye el gráfico para liberar memoria.
+         */
+        function closeWeeklyAnalysisModal() {
+            document.getElementById('weeklyAnalysisModal').classList.remove('show');
+            if (weeklyChartInstance) {
+                weeklyChartInstance.destroy();
+            }
+        }
+
+        /**
+         * Orquesta la apertura del modal, la carga de datos y la renderización del análisis.
+         */
+        function openWeeklyAnalysisModal() {
+            const modal = document.getElementById('weeklyAnalysisModal');
+            const summaryContainer = document.getElementById('weeklyAnalysisSummary');
+            modal.classList.add('show');
+
+            // Muestra un estado de carga mientras se procesan los datos
+            summaryContainer.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="loader mx-auto"></div>
+                    <p class="mt-2 text-sm text-gray-400">Analizando datos de la semana...</p>
+                </div>`;
+            
+            // Usamos un pequeño timeout para permitir que el navegador renderice el loader antes de empezar el cálculo pesado
+            setTimeout(() => {
+                const weeklyOps = getWeeklyOperations();
+                if (weeklyOps.length === 0) {
+                    summaryContainer.innerHTML = `<p class="text-center text-gray-400 py-4">No hay operaciones en los últimos 7 días para analizar.</p>`;
+                    if (weeklyChartInstance) weeklyChartInstance.destroy(); // Limpia gráfico si existía
+                    return;
+                }
+                const analysisResults = analyzeWeeklyData(weeklyOps);
+                renderWeeklyChart(analysisResults.dailyData);
+                renderWeeklySummary(analysisResults);
+            }, 50);
+        }
+
+        /**
+         * Obtiene las operaciones de la semana del calendario actual (Lunes a Domingo).
+         * @returns {Array} Un array con las operaciones de la semana.
+         */
+        function getWeeklyOperations() {
+            const today = new Date();
+            const dayOfWeek = today.getDay(); // Domingo = 0, Lunes = 1, ..., Sábado = 6
+
+            // Calculamos el lunes de esta semana
+            const monday = new Date();
+            // Restamos los días necesarios para llegar al lunes. Si hoy es domingo (0), restamos 6 días.
+            const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+            monday.setDate(today.getDate() - diff);
+            
+            // Calculamos el domingo de esta semana
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            
+            // Función para dar formato a YYYY-MM-DD de forma segura con la zona horaria local
+            const formatDate = (d) => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            const startStr = formatDate(monday);
+            const endStr = formatDate(sunday);
+            
+            // Filtramos las operaciones que están dentro del rango de Lunes a Domingo
+            return operations.filter(op => op.fecha >= startStr && op.fecha <= endStr);
+        }
+
+        /**
+         * Procesa un array de operaciones y devuelve un objeto con todas las métricas analizadas.
+         * @param {Array} ops - Las operaciones a analizar.
+         * @returns {Object} Un objeto con todos los resultados del análisis.
+         */
+        function analyzeWeeklyData(ops) {
+            const dailyData = {};
+            const paymentMethodCount = {};
+            const userVolume = {};
+            const hourlyOps = Array(24).fill(0).map(() => ({ count: 0, buyRates: [], sellRates: [] }));
+            let totalVolume = 0;
+            let totalProfitVes = 0;
+            let totalProfitUsdc = 0;
+
+            // Paso 1: Agrupar operaciones por día
+            const groupedByDay = ops.reduce((acc, op) => {
+                const date = op.fecha;
+                if (!acc[date]) acc[date] = [];
+                acc[date].push(op);
+                return acc;
+            }, {});
+
+            // Paso 2: Calcular ganancias FIFO para cada día individualmente
+            for (const date in groupedByDay) {
+                const opsOfTheDay = groupedByDay[date];
+                const [dailyProfitVes, dailyProfitUsdc] = calculateFIFOGainsForOps(opsOfTheDay);
+                const dailyVolume = opsOfTheDay.reduce((sum, op) => sum + (op.montoUsdc || 0), 0);
+
+                dailyData[date] = {
+                    volume: dailyVolume,
+                    profitVes: dailyProfitVes,
+                    profitUsdc: dailyProfitUsdc,
+                    opCount: opsOfTheDay.length
+                };
+
+                // Acumular totales semanales
+                totalVolume += dailyVolume;
+                totalProfitVes += dailyProfitVes;
+                totalProfitUsdc += dailyProfitUsdc;
+
+                // Analizar métodos de pago, usuarios y horas (como antes)
+                opsOfTheDay.forEach(op => {
+                    paymentMethodCount[op.metodoPago] = (paymentMethodCount[op.metodoPago] || 0) + 1;
+                    userVolume[op.usuario] = (userVolume[op.usuario] || 0) + op.montoUsdc;
+                    const hour = new Date(op.timestamp).getHours();
+                    hourlyOps[hour].count++;
+                    if (op.operacion === 'Compra') hourlyOps[hour].buyRates.push(op.tasa);
+                    if (op.operacion === 'Venta') hourlyOps[hour].sellRates.push(op.tasa);
+                });
+            }
+
+            // Post-procesamiento con los datos ya calculados
+            const dayWithMostVolume = Object.entries(dailyData).sort((a, b) => b[1].volume - a[1].volume)[0];
+            const dayWithMostProfit = Object.entries(dailyData).sort((a, b) => b[1].profitVes - a[1].profitVes)[0];
+            const mostUsedPaymentMethod = Object.entries(paymentMethodCount).sort((a, b) => b[1] - a[1])[0];
+            const mostValuableUserByVolume = Object.entries(userVolume).sort((a, b) => b[1] - a[1])[0];
+            
+            const hourlyBrecha = hourlyOps.map((hourData, hour) => {
+                if (hourData.buyRates.length === 0 || hourData.sellRates.length === 0) return { hour, brecha: -1 };
+                const avgBuy = hourData.buyRates.reduce((a, b) => a + b, 0) / hourData.buyRates.length;
+                const avgSell = hourData.sellRates.reduce((a, b) => a + b, 0) / hourData.sellRates.length;
+                const brecha = avgBuy > 0 ? ((avgSell - avgBuy) / avgBuy * 100) : 0;
+                return { hour, brecha };
+            }).filter(h => h.brecha !== -1);
+
+            return {
+                totalOps: ops.length,
+                totalVolume,
+                totalProfitVes,
+                totalProfitUsdc,
+                avgProfitability: totalVolume > 0 ? (totalProfitVes / totalVolume) * 100 : 0, // Rentabilidad en % (VES / Volumen USDC)
+                avgRate: ops.reduce((sum, op) => sum + op.tasa, 0) / ops.length,
+                dailyData,
+                dayWithMostVolume: { date: dayWithMostVolume[0], value: dayWithMostVolume[1].volume },
+                dayWithMostProfit: { date: dayWithMostProfit[0], valueVes: dayWithMostProfit[1].profitVes, valueUsdc: dayWithMostProfit[1].profitUsdc },
+                mostUsedPaymentMethod: { method: mostUsedPaymentMethod[0], count: mostUsedPaymentMethod[1] },
+                mostValuableUser: { user: mostValuableUserByVolume[0], volume: mostValuableUserByVolume[1] },
+                hottestHour: hourlyOps.map((h, i) => ({hour: i, count: h.count})).sort((a, b) => b.count - a.count)[0],
+                hourWithMinBrecha: hourlyBrecha.length > 0 ? hourlyBrecha.sort((a,b) => a.brecha - b.brecha)[0] : null,
+                hourWithMaxBrecha: hourlyBrecha.length > 0 ? hourlyBrecha.sort((a,b) => b.brecha - a.brecha)[0] : null,
+            };
+        }
+
+        /**
+         * Renderiza el gráfico semanal en el canvas del modal.
+         * @param {Object} dailyData - Los datos agrupados por día.
+         */
+        function renderWeeklyChart(dailyData) {
+            // Registrar el plugin de datalabels globalmente para todos los gráficos
+            Chart.register(ChartDataLabels);
+
+            const ctx = document.getElementById('weeklyChart').getContext('2d');
+            const sortedDates = Object.keys(dailyData).sort();
+            
+            const labels = sortedDates.map(date => new Date(date+'T00:00:00').toLocaleDateString('es-VE', { weekday: 'short', day: 'numeric'}));
+            const profitDataVes = sortedDates.map(date => dailyData[date].profitVes);
+            const profitDataUsdc = sortedDates.map(date => dailyData[date].profitUsdc);
+
+            if (weeklyChartInstance) {
+                weeklyChartInstance.destroy();
+            }
+
+            weeklyChartInstance = new Chart(ctx, {
+                type: 'bar', // CAMBIADO: a 'bar'
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Ganancia (VES)',
+                            data: profitDataVes,
+                            backgroundColor: 'rgba(52, 211, 153, 0.7)',
+                            borderColor: 'rgba(52, 211, 153, 1)',
+                            borderWidth: 1,
+                            // Asociamos los datos de USDC a este dataset para usarlos en las etiquetas
+                            datalabels: {
+                                labels: {
+                                    usdc: {
+                                        // Le decimos al plugin que use nuestro array de ganancias en USDC
+                                        formatter: (value, context) => {
+                                            const usdcValue = profitDataUsdc[context.dataIndex];
+                                            return `${usdcValue.toFixed(3)} USDC`;
+                                        },
+                                        color: '#FBBF24', // Color amarillo/naranja
+                                        anchor: 'end',    // Posición de la etiqueta (arriba de la barra)
+                                        align: 'end',     // Alineación de la etiqueta
+                                        offset: -5,       // Un pequeño espacio desde el borde
+                                        font: {
+                                            weight: 'bold',
+                                            size: 11,
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        // ELIMINADO: El dataset de USDC fue removido
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Ganancia (VES)' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false // La leyenda no es necesaria con un solo tipo de barra
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Renderiza el resumen de texto del análisis en el modal.
+         * @param {Object} results - El objeto completo con los resultados del análisis.
+         */
+        function renderWeeklySummary(results) {
+            const container = document.getElementById('weeklyAnalysisSummary');
+            const formatHour = h => `${h}:00 - ${h}:59`;
+            
+            container.innerHTML = `
+                <h3 class="text-base font-semibold text-center mb-2">Resumen General de la Semana</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-sm">
+                    <div class="info-card !p-2">
+                        <div class="info-card-title !text-xs">GANANCIA NETA</div>
+                        <div class="info-card-value !text-base text-green-400">${results.totalProfitVes.toFixed(2)} VES</div>
+                        <div class="info-card-details text-orange-400">${results.totalProfitUsdc.toFixed(4)} USDC</div>
+                    </div>
+                    <div class="info-card !p-2"><div class="info-card-title !text-xs">VOLUMEN TOTAL</div><div class="info-card-value !text-lg">${results.totalVolume.toFixed(2)} USDC</div></div>
+                    <div class="info-card !p-2"><div class="info-card-title !text-xs">RENTABILIDAD</div><div class="info-card-value !text-lg text-blue-400">${(results.totalProfitUsdc / results.totalVolume * 100).toFixed(2)}%</div></div>
+                    <div class="info-card !p-2"><div class="info-card-title !text-xs">OPERACIONES</div><div class="info-card-value !text-lg">${results.totalOps}</div></div>
+                </div>
+                <hr class="border-gray-700 !my-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <div><strong>Día de mayor volumen:</strong> <span class="float-right font-mono">${new Date(results.dayWithMostVolume.date+'T00:00:00').toLocaleDateString()} (${results.dayWithMostVolume.value.toFixed(2)} USDC)</span></div>
+                    <div><strong>Día de mayor ganancia:</strong> <span class="float-right font-mono text-green-400">${new Date(results.dayWithMostProfit.date+'T00:00:00').toLocaleDateString()} (${results.dayWithMostProfit.valueVes.toFixed(2)} VES)</span></div>
+                    <div><strong>Método de pago más usado:</strong> <span class="float-right font-mono">${results.mostUsedPaymentMethod.method} (${results.mostUsedPaymentMethod.count} veces)</span></div>
+                    <div><strong>Usuario más valioso (Vol.):</strong> <span class="float-right font-mono">${results.mostValuableUser.user} (${results.mostValuableUser.volume.toFixed(2)} USDC)</span></div>
+                    <div><strong>Hora de mayor actividad:</strong> <span class="float-right font-mono">${formatHour(results.hottestHour.hour)} (${results.hottestHour.count} ops)</span></div>
+                    <div><strong>Tasa promedio de la semana:</strong> <span class="float-right font-mono">${results.avgRate.toFixed(2)}</span></div>
+                    ${results.hourWithMinBrecha ? `<div><strong>Hora con menor brecha:</strong> <span class="float-right font-mono text-green-400">${formatHour(results.hourWithMinBrecha.hour)} (${results.hourWithMinBrecha.brecha.toFixed(2)}%)</span></div>` : ''}
+                    ${results.hourWithMaxBrecha ? `<div><strong>Hora con mayor brecha:</strong> <span class="float-right font-mono text-red-400">${formatHour(results.hourWithMaxBrecha.hour)} (${results.hourWithMaxBrecha.brecha.toFixed(2)}%)</span></div>` : ''}
+                </div>
+            `;
+        }
+
+        function closeMonthlyAnalysisModal() {
+    document.getElementById('monthlyAnalysisModal').classList.remove('show');
+    if (monthlyChartInstance) {
+        monthlyChartInstance.destroy();
+    }
+}
+
+function openMonthlyAnalysisModal() {
+    document.getElementById('monthlyAnalysisModal').classList.add('show');
+    // Si el selector ya tiene opciones, ejecuta el análisis. Si no, espera.
+    if (document.getElementById('monthSelector').options.length > 0) {
+        runMonthlyAnalysis();
+    }
+}
+
+function populateMonthSelector() {
+    const selector = document.getElementById('monthSelector');
+    if (!operations || operations.length === 0) return;
+
+    // Limpiamos opciones previas
+    selector.innerHTML = '';
+
+    const oldestOp = operations.sort((a, b) => a.timestamp - b.timestamp)[0];
+    const startDate = new Date(oldestOp.timestamp);
+    const currentDate = new Date();
+
+    let loopDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+
+    while (loopDate >= new Date(startDate.getFullYear(), startDate.getMonth(), 1)) {
+        const monthName = loopDate.toLocaleDateString('es-VE', { month: 'long', year: 'numeric' });
+        const monthValue = `${loopDate.getFullYear()}-${String(loopDate.getMonth() + 1).padStart(2, '0')}`;
+
+        const option = document.createElement('option');
+        option.value = monthValue;
+        option.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+        selector.appendChild(option);
+
+        // Retroceder un mes
+        loopDate.setMonth(loopDate.getMonth() - 1);
+    }
+}
+
+function runMonthlyAnalysis() {
+    const selector = document.getElementById('monthSelector');
+    const summaryContainer = document.getElementById('monthlyAnalysisSummary');
+    const selectedMonth = selector.value; // ej. "2025-10"
+
+    if (!selectedMonth) return;
+
+    summaryContainer.innerHTML = `
+        <div class="text-center py-4">
+            <div class="loader mx-auto"></div>
+            <p class="mt-2 text-sm text-gray-400">Analizando ${selector.options[selector.selectedIndex].text}...</p>
+        </div>`;
+
+    setTimeout(() => {
+        const monthlyOps = operations.filter(op => op.fecha.startsWith(selectedMonth));
+        if (monthlyOps.length === 0) {
+            summaryContainer.innerHTML = `<p class="text-center text-gray-400 py-4">No hay operaciones para el mes seleccionado.</p>`;
+            if (monthlyChartInstance) monthlyChartInstance.destroy();
+            return;
+        }
+        const analysisResults = analyzeMonthlyData(monthlyOps);
+        renderMonthlyChart(analysisResults.weeklyData);
+        renderMonthlySummary(analysisResults);
+    }, 50);
+}
+
+function analyzeMonthlyData(monthlyOps) {
+    // Agrupar por semana del mes
+    const weeklyData = {};
+    monthlyOps.forEach(op => {
+        const opDate = new Date(op.fecha + 'T00:00:00');
+        const weekOfMonth = Math.ceil(opDate.getDate() / 7);
+        if (!weeklyData[weekOfMonth]) {
+            weeklyData[weekOfMonth] = { ops: [], profitVes: 0, profitUsdc: 0, volume: 0 };
+        }
+        weeklyData[weekOfMonth].ops.push(op);
+    });
+
+    // Calcular ganancias FIFO para cada semana
+    for (const week in weeklyData) {
+        const [profitVes, profitUsdc] = calculateFIFOGainsForOps(weeklyData[week].ops);
+        weeklyData[week].profitVes = profitVes;
+        weeklyData[week].profitUsdc = profitUsdc;
+        weeklyData[week].volume = weeklyData[week].ops.reduce((sum, op) => sum + op.montoUsdc, 0);
+    }
+
+    // Agrupar por día para encontrar el mejor día
+    const dailyData = {};
+    monthlyOps.forEach(op => {
+        if (!dailyData[op.fecha]) dailyData[op.fecha] = [];
+        dailyData[op.fecha].push(op);
+    });
+
+    let bestDay = { date: null, profitVes: -Infinity };
+    let positiveProfitDays = 0;
+    for (const date in dailyData) {
+        const [dailyProfitVes] = calculateFIFOGainsForOps(dailyData[date]);
+        if (dailyProfitVes > 0) positiveProfitDays++;
+        if (dailyProfitVes > bestDay.profitVes) {
+            bestDay = { date, profitVes: dailyProfitVes };
+        }
+    }
+
+    const bestWeek = Object.entries(weeklyData).sort((a, b) => b[1].profitVes - a[1].profitVes)[0];
+    const totalProfitVes = Object.values(weeklyData).reduce((sum, week) => sum + week.profitVes, 0);
+    const totalProfitUsdc = Object.values(weeklyData).reduce((sum, week) => sum + week.profitUsdc, 0);
+    const totalVolume = Object.values(weeklyData).reduce((sum, week) => sum + week.volume, 0);
+    const mostUsedPaymentMethod = Object.entries(monthlyOps.reduce((acc, op) => { acc[op.metodoPago] = (acc[op.metodoPago] || 0) + 1; return acc; }, {})).sort((a,b) => b[1]-a[1])[0];
+    const mostValuableUser = Object.entries(monthlyOps.reduce((acc, op) => { acc[op.usuario] = (acc[op.usuario] || 0) + op.montoUsdc; return acc; }, {})).sort((a,b) => b[1]-a[1])[0];
+
+    return {
+        totalProfitVes,
+        totalProfitUsdc,
+        totalVolume,
+        totalOps: monthlyOps.length,
+        daysInMonth: Object.keys(dailyData).length,
+        positiveProfitDays,
+        bestWeek: { week: bestWeek[0], data: bestWeek[1] },
+        bestDay,
+        mostUsedPaymentMethod,
+        mostValuableUser,
+        weeklyData
+    };
+}
+
+function renderMonthlyChart(weeklyData) {
+    Chart.register(ChartDataLabels);
+    const ctx = document.getElementById('monthlyChart').getContext('2d');
+    const sortedWeeks = Object.keys(weeklyData).sort();
+
+    const labels = sortedWeeks.map(week => `Semana ${week}`);
+    const profitDataVes = sortedWeeks.map(week => weeklyData[week].profitVes);
+    const profitDataUsdc = sortedWeeks.map(week => weeklyData[week].profitUsdc);
+
+    if (monthlyChartInstance) {
+        monthlyChartInstance.destroy();
+    }
+
+    monthlyChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Ganancia (VES)',
+                data: profitDataVes,
+                backgroundColor: 'rgba(34, 211, 238, 0.7)', // Color teal
+                borderColor: 'rgba(34, 211, 238, 1)',
+                borderWidth: 1,
+                datalabels: {
+                    labels: {
+                        usdc: {
+                            formatter: (value, context) => `${profitDataUsdc[context.dataIndex].toFixed(3)} USDC`,
+                            color: '#FBBF24',
+                            anchor: 'end',
+                            align: 'end',
+                            offset: -5,
+                            font: { weight: 'bold', size: 11 }
+                        }
+                    }
+                }
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, title: { display: true, text: 'Ganancia (VES)' } } },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+function renderMonthlySummary(results) {
+    const container = document.getElementById('monthlyAnalysisSummary');
+    container.innerHTML = `
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-sm">
+            <div class="info-card !p-2">
+                <div class="info-card-title !text-xs">GANANCIA NETA</div>
+                <div class="info-card-value !text-base text-green-400">${results.totalProfitVes.toFixed(2)} VES</div>
+                <div class="info-card-details text-orange-400">${results.totalProfitUsdc.toFixed(4)} USDC</div>
+            </div>
+            <div class="info-card !p-2"><div class="info-card-title !text-xs">VOLUMEN TOTAL</div><div class="info-card-value !text-lg">${results.totalVolume.toFixed(2)} USDC</div></div>
+            <div class="info-card !p-2"><div class="info-card-title !text-xs">RENTABILIDAD</div><div class="info-card-value !text-lg text-blue-400">${(results.totalProfitUsdc / results.totalVolume * 100).toFixed(2)}%</div></div>
+            <div class="info-card !p-2">
+                <div class="info-card-title !text-xs">CONSISTENCIA</div>
+                <div class="info-card-value !text-lg text-purple-400">${results.positiveProfitDays} / ${results.daysInMonth}</div>
+                <div class="info-card-details">días con ganancia</div>
+            </div>
+        </div>
+        <hr class="border-gray-700 !my-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+            <div><strong>Mejor semana del mes:</strong> <span class="float-right font-mono text-teal-400">Semana ${results.bestWeek.week} (${results.bestWeek.data.profitVes.toFixed(2)} VES)</span></div>
+            <div><strong>Mejor día del mes:</strong> <span class="float-right font-mono text-teal-400">${new Date(results.bestDay.date+'T00:00:00').toLocaleDateString()} (${results.bestDay.profitVes.toFixed(2)} VES)</span></div>
+            <div><strong>Método de pago más usado:</strong> <span class="float-right font-mono">${results.mostUsedPaymentMethod[0]} (${results.mostUsedPaymentMethod[1]} veces)</span></div>
+            <div><strong>Usuario más valioso (Vol.):</strong> <span class="float-right font-mono">${results.mostValuableUser[0]} (${results.mostValuableUser[1].toFixed(2)} USDC)</span></div>
+        </div>
+    `;
+}
+
+
+        // ===== FIN DEL CÓDIGO A PEGAR (BLOQUE PRINCIPAL) =====
         window.showPage = showPage; window.loginUser = loginUser; window.registerUser = registerUser;
         window.toggleAuthForms = toggleAuthForms; window.logoutUser = logoutUser; window.openModal = openModal;
         window.closeModal = closeModal; window.saveOperation = saveOperation; window.editOperation = editOperation;
@@ -2852,7 +3387,12 @@ function switchProfileTab(tabName) {
         window.deleteManagedAccount = deleteManagedAccount;
         window.switchProfileTab = switchProfileTab;
         window.renderWallyTables = renderWallyTables;
-        
+        window.openWeeklyAnalysisModal = openWeeklyAnalysisModal;
+        window.closeWeeklyAnalysisModal = closeWeeklyAnalysisModal;
+        // ===== PEGA ESTAS LÍNEAS AQUÍ =====
+        window.openMonthlyAnalysisModal = openMonthlyAnalysisModal;
+        window.closeMonthlyAnalysisModal = closeMonthlyAnalysisModal;
+        window.runMonthlyAnalysis = runMonthlyAnalysis;
         // AÑADE ESTA LÍNEA AL FINAL
         window.enableAudio = enableAudio;
         
