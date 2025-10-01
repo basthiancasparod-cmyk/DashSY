@@ -1,4 +1,4 @@
-// 1. VERSIÓN DEL CACHÉ INCREMENTADA PARA FORZAR LA ACTUALIZACIÓN
+// 1. VERSIÓN DEL CACHÉ
 const CACHE_NAME = 'dashsy-cache-v1.1.9.2';
 
 // 2. LISTA DE ARCHIVOS ESENCIALES
@@ -13,20 +13,20 @@ const URLS_TO_CACHE = [
 
 // 3. EVENTO DE INSTALACIÓN
 self.addEventListener('install', event => {
-  console.log('Service Worker: Instalando nueva versión...');
+  console.log('Service Worker: Instalando...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Service Worker: Archivos cacheados en la instalación.');
+        console.log('Service Worker: Archivos cacheados.');
         return cache.addAll(URLS_TO_CACHE);
       })
-      .then(() => self.skipWaiting()) // <-- Activa el nuevo SW más rápido
+      .then(() => self.skipWaiting())
   );
 });
 
-// 4. LÓGICA PARA LIMPIAR CACHÉS ANTIGUAS
+// 4. EVENTO DE ACTIVACIÓN (LIMPIEZA DE CACHÉS ANTIGUAS)
 self.addEventListener('activate', event => {
-  console.log('Service Worker: Activado y listo para controlar la app.');
+  console.log('Service Worker: Activado.');
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -38,13 +38,19 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    }).then(() => self.clients.claim()) // <-- Asegura el control inmediato
+    }).then(() => self.clients.claim())
   );
 });
 
-// 5. ESTRATEGIA DE CACHÉ "STALE-WHILE-REVALIDATE" CORREGIDA
+// 5. EVENTO FETCH CORREGIDO PARA IGNORAR PETICIONES POST
 self.addEventListener('fetch', event => {
-    // Excluimos las peticiones a Firebase para que siempre vayan a la red.
+    // Ignoramos todas las peticiones que no sean GET. La caché solo soporta GET.
+    if (event.request.method !== 'GET') {
+        return;
+    }
+    
+    // Aunque la condición anterior ya podría cubrir esto, es bueno mantenerlo
+    // por si en el futuro Firebase usa GET para alguna API que no quieres cachear.
     if (event.request.url.includes('firestore.googleapis.com')) {
         return;
     }
@@ -52,28 +58,21 @@ self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(event.request)
             .then(cachedResponse => {
-                // Iniciamos la petición a la red para actualizar la caché en segundo plano.
                 const fetchPromise = fetch(event.request).then(
                     networkResponse => {
-                        // Se retorna la promesa de caches.open() para asegurar que la
-                        // cadena de promesas espere a que la caché se actualice.
                         return caches.open(CACHE_NAME).then(cache => {
-                            // Clonamos la respuesta: una para la caché, la original para el navegador.
                             cache.put(event.request, networkResponse.clone());
-                            // Una vez guardada en caché, retornamos la respuesta original.
                             return networkResponse;
                         });
                     }
                 );
-
-                // Devolvemos la respuesta de la caché inmediatamente si la tenemos,
-                // si no, esperamos a que la petición a la red termine.
                 return cachedResponse || fetchPromise;
             })
     );
 });
 
-// 6. LÓGICA PARA EL BOTÓN DE "ACTUALIZAR"
+
+// 6. EVENTO DE MENSAJE (PARA ACTUALIZACIÓN)
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
