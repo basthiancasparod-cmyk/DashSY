@@ -1,5 +1,5 @@
 // 1. VERSIÓN DEL CACHÉ INCREMENTADA PARA FORZAR LA ACTUALIZACIÓN
-const CACHE_NAME = 'dashsy-cache-v1.1.8';
+const CACHE_NAME = 'dashsy-cache-v1.1.9';
 
 // 2. MANTENEMOS TU LISTA DE ARCHIVOS ESENCIALES
 const URLS_TO_CACHE = [
@@ -44,31 +44,32 @@ self.addEventListener('activate', event => {
 
 // 5. REEMPLAZO CLAVE: LA NUEVA ESTRATEGIA DE CACHÉ
 self.addEventListener('fetch', event => {
-  // Excluimos las peticiones a Firebase para que siempre vayan a la red.
-  if (event.request.url.includes('firestore.googleapis.com')) {
-    return;
-  }
+    // Excluimos las peticiones a Firebase para que siempre vayan a la red.
+    if (event.request.url.includes('firestore.googleapis.com')) {
+        return;
+    }
 
-  // Estrategia "Stale-While-Revalidate"
-  event.respondWith(
-    caches.match(event.request)
-      .then(cachedResponse => {
-        // Hacemos la petición a la red en segundo plano
-        const fetchPromise = fetch(event.request).then(
-          networkResponse => {
-            // Si la petición es exitosa, actualizamos la caché
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(event.request, networkResponse.clone());
-            });
-            return networkResponse;
-          }
-        );
+    // Estrategia "Stale-While-Revalidate" CORREGIDA
+    event.respondWith(
+        caches.match(event.request)
+            .then(cachedResponse => {
+                // Iniciamos la petición a la red para actualizar la caché en segundo plano.
+                const fetchPromise = fetch(event.request).then(
+                    networkResponse => {
+                        // Cuando la red responde, abrimos la caché.
+                        caches.open(CACHE_NAME).then(cache => {
+                            // Clonamos la respuesta: una para la caché, la original para el navegador.
+                            cache.put(event.request, networkResponse.clone());
+                        });
+                        return networkResponse;
+                    }
+                );
 
-        // Devolvemos la respuesta de la caché inmediatamente si existe,
-        // si no, esperamos la respuesta de la red.
-        return cachedResponse || fetchPromise;
-      })
-  );
+                // Devolvemos la respuesta de la caché inmediatamente si la tenemos,
+                // si no, esperamos a que la petición a la red termine.
+                return cachedResponse || fetchPromise;
+            })
+    );
 });
 
 // 6. MANTENEMOS TU LÓGICA PARA EL BOTÓN DE "ACTUALIZAR"
