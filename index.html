@@ -1127,7 +1127,7 @@
 
     <div id="userProfileModal" class="modal">
     <div class="modal-content">
-        <div class="modal-header">
+        <div class="modal-header flex justify-between items-center">
             <h2 class="modal-title text-xl font-bold" id="profileUserName"></h2>
             <button class="close-btn" onclick="closeUserProfileModal()">&times;</button>
         </div>
@@ -1327,26 +1327,54 @@ let usdMonthlyChartInstance, usdMonthlyPaymentMethodChartInstance, usdMonthlyP2p
         function logoutUser() { auth.signOut(); }
         function toggleAuthForms() { const l = document.getElementById('loginForm'), r = document.getElementById('registerForm'); authError.textContent = ''; l.style.display = l.style.display === 'none' ? 'block' : 'none'; r.style.display = r.style.display === 'none' ? 'block' : 'none'; }
 
-        function loadOperations() { if (!currentUserId) return; db.collection('users').doc(currentUserId).collection('operations').orderBy('timestamp', 'desc').onSnapshot(s => { operations = s.docs.map(d => ({ id: d.id, ...d.data() })); updateSummary(); populateMonthSelector(); checkInitialLoadComplete(); }, e => { console.error(e); checkInitialLoadComplete(); }); }
-        function loadWallyOperations() { if (!currentUserId) return; db.collection('users').doc(currentUserId).collection('wallyOperations').orderBy('timestamp', 'desc').onSnapshot(s => { wallyOperations = s.docs.map(d => ({ id: d.id, ...d.data() })); updateWallySummary(); checkInitialLoadComplete(); }, e => { console.error(e); checkInitialLoadComplete(); });}
+        // REEMPLAZA ESTA FUNCIÓN
+// REEMPLAZA ESTA FUNCIÓN
+function loadOperations() {
+    if (!currentUserId) return;
+    db.collection('users').doc(currentUserId).collection('operations').orderBy('timestamp', 'desc').onSnapshot(s => {
+        operations = s.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        // --- LÍNEA AÑADIDA ---
+        if (currentProfileUserName) openUserProfileModal(currentProfileUserName);
+
+        updateSummary();
+        populateMonthSelector();
+        checkInitialLoadComplete();
+    }, e => { console.error(e); checkInitialLoadComplete(); });
+}
+
+        // REEMPLAZA ESTA FUNCIÓN
+
+function loadWallyOperations() {
+    if (!currentUserId) return;
+    db.collection('users').doc(currentUserId).collection('wallyOperations').orderBy('timestamp', 'desc').onSnapshot(s => {
+        wallyOperations = s.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        // --- LÍNEA AÑADIDA ---
+        if (currentProfileUserName) openUserProfileModal(currentProfileUserName);
+
+        updateWallySummary();
+        checkInitialLoadComplete();
+    }, e => { console.error(e); checkInitialLoadComplete(); });
+}
         
-        function saveOperation() {
+        // REEMPLAZA ESTA FUNCIÓN COMPLETA EN TU SCRIPT
+// REEMPLAZA ESTA FUNCIÓN COMPLETA EN TU SCRIPT
+function saveOperation() {
     if (!currentUserId) return;
     const saveBtn = document.getElementById('saveOperationBtn');
     saveBtn.classList.add('loading');
 
+    const isEditing = editingIndex > -1;
     const operacion = document.getElementById('operacion').value;
     const tasa = parseFloat(document.getElementById('tasa').value) || 0;
     const metodoPago = document.getElementById('metodoPago').value;
     const platformSelect = document.getElementById('p2pPlatformSelect');
     const platform = userConfig.p2pPlatforms.find(p => p.name === platformSelect.value);
     const commissionRate = platform ? platform.commission / 100 : 0;
-    
-    // La regla de oro: Siempre usamos el monto BRUTO (ej: 1.000) del input.
     const grossUsdc = parseFloat(document.getElementById('montoUsdc').value) || 0;
     
     const montoBs = grossUsdc * tasa;
-    
     let comisionVes = 0;
     if (operacion === 'Compra' && metodoPago === 'Pagomovil') {
         comisionVes = montoBs * 0.003;
@@ -1360,7 +1388,7 @@ let usdMonthlyChartInstance, usdMonthlyPaymentMethodChartInstance, usdMonthlyP2p
         p2pPlatform: platformSelect.value,
         tasa, 
         metodoPago, 
-        montoUsdc: grossUsdc, // Y guardamos ese monto BRUTO.
+        montoUsdc: grossUsdc,
         montoBs,
         comisionVes,
         total,
@@ -1368,9 +1396,9 @@ let usdMonthlyChartInstance, usdMonthlyPaymentMethodChartInstance, usdMonthlyP2p
         usdc: 0, 
         lote: '', 
         estatus: document.getElementById('estatus').value, 
-        fecha: currentDate, 
-        timestamp: Date.now(), 
-        adCommissionPercent: commissionRate * 100
+        adCommissionPercent: commissionRate * 100,
+        fecha: isEditing ? operations[editingIndex].fecha : currentDate,
+        timestamp: isEditing ? operations[editingIndex].timestamp : Date.now()
     };
 
     if (!operationData.usuario || !operationData.tasa || !grossUsdc) { 
@@ -1379,10 +1407,27 @@ let usdMonthlyChartInstance, usdMonthlyPaymentMethodChartInstance, usdMonthlyP2p
         return; 
     }
 
-    const isEditing = editingIndex > -1;
     const opId = isEditing ? operations[editingIndex].id : db.collection('users').doc(currentUserId).collection('operations').doc().id;
     operationData.id = opId;
+
     db.collection('users').doc(currentUserId).collection('operations').doc(opId).set(operationData, { merge: true }).then(() => { 
+        // --- INICIO DE LA LÓGICA CORREGIDA ---
+        // Actualizamos el estado local inmediatamente para reflejar el cambio en la UI.
+        if (isEditing) {
+            // Buscamos la operación original por su ID y la actualizamos.
+            const originalOpIndex = operations.findIndex(op => op.id === opId);
+            if (originalOpIndex > -1) {
+                // Combinamos los datos viejos con los nuevos para no perder propiedades calculadas temporalmente
+                operations[originalOpIndex] = { ...operations[originalOpIndex], ...operationData };
+            }
+        } else {
+            // Si es una operación nueva, la añadimos al principio de la lista local.
+            operations.unshift(operationData);
+        }
+        // Forzamos una actualización completa de la UI con los datos ya actualizados.
+        updateSummary();
+        // --- FIN DE LA LÓGICA CORREGIDA ---
+
         closeModal(); 
         showToast('Operación guardada.', 'success'); 
         if (!isEditing) {
@@ -1392,11 +1437,11 @@ let usdMonthlyChartInstance, usdMonthlyPaymentMethodChartInstance, usdMonthlyP2p
         }
     }).catch(e => {
         showToast('Error al guardar.', 'error');
+        console.error("Error al guardar operación:", e);
     }).finally(() => {
         saveBtn.classList.remove('loading');
     });
 }
-
         
         function calculateAll() {
     const tasa = parseFloat(document.getElementById('tasa').value) || 0;
@@ -2533,47 +2578,81 @@ function renderOperations() {
             }
         }
         
-        function saveWallyOperation() {
-            if (!currentUserId) return;
-            const saveBtn = document.getElementById('saveWallyBtn'); 
-            saveBtn.classList.add('loading');
+       // REEMPLAZA ESTA FUNCIÓN COMPLETA EN TU SCRIPT
+function saveWallyOperation() {
+    if (!currentUserId) return;
+    const saveBtn = document.getElementById('saveWallyBtn'); 
+    saveBtn.classList.add('loading');
 
-            const isEditing = editingWallyIndex > -1;
-            const operacion = document.getElementById('wallyOperacion').value;
-            let opData = { 
-                usuario: document.getElementById('wallyUsuario').value, 
-                referencia: document.getElementById('wallyReferencia').value, 
-                operacion, 
-                platform: document.getElementById('wallyPlatform').value,
-                metodoPago: document.getElementById('wallyMetodoPago').value,
-                fecha: currentWallyDate, 
-                timestamp: Date.now() 
-            };
-            if (operacion === 'Compra') { Object.assign(opData, { reciboUsdc: parseFloat(document.getElementById('reciboUsdc').value), tasaCompra: parseFloat(document.getElementById('tasaCompra').value), envioUsd: parseFloat(document.getElementById('envioUsd').value), gananciaUsdc: parseFloat(document.getElementById('gananciaUsdc').value), commissionAmount: parseFloat(document.getElementById('commissionUsdc').value) }); }
-            else { Object.assign(opData, { envioUsdc: parseFloat(document.getElementById('envioUsdcVenta').value), tasaVenta: parseFloat(document.getElementById('tasaVenta').value), reciboUsd: parseFloat(document.getElementById('reciboUsdCalculado').value), gananciaUsd: parseFloat(document.getElementById('gananciaUsd').value), commissionAmount: parseFloat(document.getElementById('commissionUsd').value) }); }
+    const isEditing = editingWallyIndex > -1;
+    const operacion = document.getElementById('wallyOperacion').value;
+    
+    let opData = { 
+        usuario: document.getElementById('wallyUsuario').value, 
+        referencia: document.getElementById('wallyReferencia').value, 
+        operacion, 
+        platform: document.getElementById('wallyPlatform').value,
+        metodoPago: document.getElementById('wallyMetodoPago').value,
+        
+        // --- INICIO DE LA LÓGICA CORREGIDA ---
+        // Conservamos la fecha y timestamp originales al editar.
+        fecha: isEditing ? wallyOperations[editingWallyIndex].fecha : currentWallyDate, 
+        timestamp: isEditing ? wallyOperations[editingWallyIndex].timestamp : Date.now()
+        // --- FIN DE LA LÓGICA CORREGIDA ---
+    };
+    
+    if (operacion === 'Compra') { 
+        Object.assign(opData, { 
+            reciboUsdc: parseFloat(document.getElementById('reciboUsdc').value) || 0, 
+            tasaCompra: parseFloat(document.getElementById('tasaCompra').value) || 0, 
+            envioUsd: parseFloat(document.getElementById('envioUsd').value) || 0, 
+            gananciaUsdc: parseFloat(document.getElementById('gananciaUsdc').value) || 0, 
+            commissionAmount: parseFloat(document.getElementById('commissionUsdc').value) || 0 
+        }); 
+    } else { 
+        Object.assign(opData, { 
+            envioUsdc: parseFloat(document.getElementById('envioUsdcVenta').value) || 0, 
+            tasaVenta: parseFloat(document.getElementById('tasaVenta').value) || 0, 
+            reciboUsd: parseFloat(document.getElementById('reciboUsdCalculado').value) || 0, 
+            gananciaUsd: parseFloat(document.getElementById('gananciaUsd').value) || 0, 
+            commissionAmount: parseFloat(document.getElementById('commissionUsd').value) || 0 
+        }); 
+    }
 
-            if (!opData.usuario || !opData.metodoPago) { 
-                showToast('Usuario y Método de Pago son requeridos.', 'error'); 
-                saveBtn.classList.remove('loading'); 
-                return; 
+    if (!opData.usuario || !opData.metodoPago) { 
+        showToast('Usuario y Método de Pago son requeridos.', 'error'); 
+        saveBtn.classList.remove('loading'); 
+        return; 
+    }
+
+    const opId = isEditing ? wallyOperations[editingWallyIndex].id : db.collection('users').doc(currentUserId).collection('wallyOperations').doc().id;
+    
+    db.collection('users').doc(currentUserId).collection('wallyOperations').doc(opId).set(opData, { merge: true }).then(() => { 
+        // Actualizamos el estado local para reflejo inmediato en la UI
+        if (isEditing) {
+            const originalOpIndex = wallyOperations.findIndex(op => op.id === opId);
+            if (originalOpIndex > -1) {
+                wallyOperations[originalOpIndex] = { ...wallyOperations[originalOpIndex], ...opData };
             }
-
-            const opId = isEditing ? wallyOperations[editingWallyIndex].id : db.collection('users').doc(currentUserId).collection('wallyOperations').doc().id;
-            db.collection('users').doc(currentUserId).collection('wallyOperations').doc(opId).set(opData, { merge: true }).then(() => { 
-                closeWallyModal(); 
-                showToast('Op. USD guardada.', 'success');
-                if (!isEditing) {
-                    lastSavedUser = opData.usuario;
-                    lastSavedOperationType = 'wally';
-                    openRatingModal(opData.usuario);
-                }
-            }).catch(e => {
-                showToast('Error.', 'error');
-            }).finally(() => {
-                saveBtn.classList.remove('loading');
-            });
+        } else {
+            wallyOperations.unshift(opData);
         }
+        updateWallySummary();
 
+        closeWallyModal(); 
+        showToast('Op. USD guardada.', 'success');
+        if (!isEditing) {
+            lastSavedUser = opData.usuario;
+            lastSavedOperationType = 'wally';
+            openRatingModal(opData.usuario);
+        }
+    }).catch(e => {
+        showToast('Error.', 'error');
+        console.error("Error al guardar op USD:", e);
+    }).finally(() => {
+        saveBtn.classList.remove('loading');
+    });
+}
         // REEMPLAZA tu función updateWallySummary con esta:
 function updateWallySummary() {
     if(!wallyOperations) return;
@@ -2597,6 +2676,7 @@ function updateWallySummary() {
 }
 
         // REEMPLAZA tu función renderWallyTables con esta:
+// REEMPLAZA ESTA FUNCIÓN COMPLETA EN TU SCRIPT
 function renderWallyTables() {
     const searchTerm = document.getElementById('searchWallyOperations').value.toLowerCase();
     const filterOperacion = document.getElementById('filterWallyOperacion').value;
@@ -2630,9 +2710,11 @@ function renderWallyTables() {
         comprasEmptyState.style.display = 'none';
         compras.forEach((op, index) => {
             const globalIndex = wallyOperations.indexOf(op);
-            // --- CORRECCIÓN AQUÍ --- (Se quitaron 'C' y '$')
-            const tableRowHtml = `<tr><td class="text-left">${op.usuario}<br><span class="text-xs text-gray-400">${op.platform}</span></td><td>${(op.reciboUsdc||0).toFixed(2)}</td><td>${(op.tasaCompra||0).toFixed(4)}</td><td>${(op.envioUsd||0).toFixed(2)}</td><td class="font-semibold text-green-400">${(op.gananciaUsdc||0).toFixed(4)}</td><td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button><button class="text-red-400 p-1" onclick="deleteWallyOperation(${globalIndex})">🗑️</button></td></tr>`;
-            const cardHtml = `<div class="operation-card compra"><div class="card-header"><div class="user-info">${op.usuario}</div></div><div class="card-grid"><div class="grid-item"><span class="label">Recibo Cripto</span><span class="value">${(op.reciboUsdc||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Envío USD</span><span class="value">${(op.envioUsd||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasaCompra||0).toFixed(4)}</span></div><div class="grid-item"><span class="label">Ganancia Cripto</span><span class="value profit-green">${(op.gananciaUsdc||0).toFixed(4)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="openWallyModal(${globalIndex})">✏️</button><button class="action-btn delete" onclick="deleteWallyOperation(${globalIndex})">🗑️</button></div></div></div>`;
+            // --- INICIO DE LA CORRECCIÓN ---
+            const relationIndicator = `${op.metodoPago} ➡️ ${op.platform || ''}`;
+            const tableRowHtml = `<tr><td class="text-left"><div class="font-semibold flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}</div><div class="text-xs text-gray-400">${relationIndicator}</div></td><td>${(op.reciboUsdc||0).toFixed(2)}</td><td>${(op.tasaCompra||0).toFixed(4)}</td><td>${(op.envioUsd||0).toFixed(2)}</td><td class="font-semibold text-green-400">${(op.gananciaUsdc||0).toFixed(4)}</td><td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button><button class="text-red-400 p-1" onclick="deleteWallyOperation(${globalIndex})">🗑️</button></td></tr>`;
+            const cardHtml = `<div class="operation-card compra"><div class="card-header"><div class="user-info flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}<div class="payment-method ml-auto">${relationIndicator}</div></div></div><div class="card-grid"><div class="grid-item"><span class="label">Recibo Cripto</span><span class="value">${(op.reciboUsdc||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Envío USD</span><span class="value">${(op.envioUsd||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasaCompra||0).toFixed(4)}</span></div><div class="grid-item"><span class="label">Ganancia Cripto</span><span class="value profit-green">${(op.gananciaUsdc||0).toFixed(4)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="openWallyModal(${globalIndex})">✏️</button><button class="action-btn delete" onclick="deleteWallyOperation(${globalIndex})">🗑️</button></div></div></div>`;
+            // --- FIN DE LA CORRECCIÓN ---
             compraTableBody.innerHTML += tableRowHtml;
             compraListContainer.innerHTML += cardHtml;
         });
@@ -2646,9 +2728,11 @@ function renderWallyTables() {
         ventasEmptyState.style.display = 'none';
         ventas.forEach((op, index) => {
             const globalIndex = wallyOperations.indexOf(op);
-            // --- CORRECCIÓN AQUÍ --- (Se quitaron 'C' y '$')
-            const tableRowHtml = `<tr><td class="text-left">${op.usuario}<br><span class="text-xs text-gray-400">${op.platform}</span></td><td>${(op.envioUsdc||0).toFixed(2)}</td><td>${(op.tasaVenta||0).toFixed(4)}</td><td>${(op.reciboUsd||0).toFixed(2)}</td><td class="font-semibold text-green-400">${(op.gananciaUsd||0).toFixed(4)}</td><td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button><button class="text-red-400 p-1" onclick="deleteWallyOperation(${globalIndex})">🗑️</button></td></tr>`;
-            const cardHtml = `<div class="operation-card venta"><div class="card-header"><div class="user-info">${op.usuario}</div></div><div class="card-grid"><div class="grid-item"><span class="label">Envío Cripto</span><span class="value">${(op.envioUsdc||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Recibo USD</span><span class="value">${(op.reciboUsd||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasaVenta||0).toFixed(4)}</span></div><div class="grid-item"><span class="label">Ganancia USD</span><span class="value profit-green">${(op.gananciaUsd||0).toFixed(4)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="openWallyModal(${globalIndex})">✏️</button><button class="action-btn delete" onclick="deleteWallyOperation(${globalIndex})">🗑️</button></div></div></div>`;
+            // --- INICIO DE LA CORRECCIÓN ---
+            const relationIndicator = `${op.metodoPago} ⬅️ ${op.platform || ''}`;
+            const tableRowHtml = `<tr><td class="text-left"><div class="font-semibold flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}</div><div class="text-xs text-gray-400">${relationIndicator}</div></td><td>${(op.envioUsdc||0).toFixed(2)}</td><td>${(op.tasaVenta||0).toFixed(4)}</td><td>${(op.reciboUsd||0).toFixed(2)}</td><td class="font-semibold text-green-400">${(op.gananciaUsd||0).toFixed(4)}</td><td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button><button class="text-red-400 p-1" onclick="deleteWallyOperation(${globalIndex})">🗑️</button></td></tr>`;
+            const cardHtml = `<div class="operation-card venta"><div class="card-header"><div class="user-info flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}<div class="payment-method ml-auto">${relationIndicator}</div></div></div><div class="card-grid"><div class="grid-item"><span class="label">Envío Cripto</span><span class="value">${(op.envioUsdc||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Recibo USD</span><span class="value">${(op.reciboUsd||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasaVenta||0).toFixed(4)}</span></div><div class="grid-item"><span class="label">Ganancia USD</span><span class="value profit-green">${(op.gananciaUsd||0).toFixed(4)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="openWallyModal(${globalIndex})">✏️</button><button class="action-btn delete" onclick="deleteWallyOperation(${globalIndex})">🗑️</button></div></div></div>`;
+            // --- FIN DE LA CORRECCIÓN ---
             ventaTableBody.innerHTML += tableRowHtml;
             ventaListContainer.innerHTML += cardHtml;
         });
@@ -2718,7 +2802,26 @@ function renderWallyTables() {
         
         let currentRatingUser = '';
         let selectedRatings = { transaction: 0, speed: 0 };
-        function loadUserRatings() { if (!currentUserId) return; db.collection('users').doc(currentUserId).collection('ratings').onSnapshot(snapshot => { userRatings = {}; snapshot.forEach(doc => { userRatings[doc.id] = doc.data().ratings; }); renderRatingsPage(); checkInitialLoadComplete(); }, e => { console.error(e); checkInitialLoadComplete(); });}
+
+// REEMPLAZA ESTA FUNCIÓN
+function loadUserRatings() {
+    if (!currentUserId) return;
+    db.collection('users').doc(currentUserId).collection('ratings').onSnapshot(snapshot => {
+        userRatings = {};
+        snapshot.forEach(doc => { userRatings[doc.id] = doc.data().ratings; });
+
+        if (typeof renderOperations === 'function') renderOperations();
+        if (typeof renderWallyTables === 'function') renderWallyTables();
+
+        // --- LÍNEA AÑADIDA ---
+        if (currentProfileUserName) openUserProfileModal(currentProfileUserName);
+
+        renderRatingsPage();
+        checkInitialLoadComplete();
+    }, e => { console.error("Error al cargar calificaciones:", e); checkInitialLoadComplete(); });
+}
+
+
         function calculateAverageRating(userName) {
             if (!userRatings[userName] || userRatings[userName].length === 0) return 0;
             let totalSum = 0, count = 0;
@@ -2797,7 +2900,20 @@ function renderWallyTables() {
 }
         
         let currentProfileUserName = '';
-        function loadUserProfiles() { if (!currentUserId) return; db.collection('users').doc(currentUserId).collection('userProfiles').onSnapshot(snapshot => { userProfiles = {}; snapshot.forEach(doc => { userProfiles[doc.id] = doc.data(); }); checkInitialLoadComplete(); }, e => { console.error(e); checkInitialLoadComplete(); });}
+// REEMPLAZA ESTA FUNCIÓN
+function loadUserProfiles() {
+    if (!currentUserId) return;
+    db.collection('users').doc(currentUserId).collection('userProfiles').onSnapshot(snapshot => {
+        userProfiles = {};
+        snapshot.forEach(doc => { userProfiles[doc.id] = doc.data(); });
+
+        // --- LÍNEA AÑADIDA ---
+        if (currentProfileUserName) openUserProfileModal(currentProfileUserName);
+
+        checkInitialLoadComplete();
+    }, e => { console.error(e); checkInitialLoadComplete(); });
+}
+
         function openUserProfileModal(userName) {
     currentProfileUserName = userName;
     document.getElementById('profileUserName').textContent = userName;
@@ -3581,36 +3697,33 @@ function analyzeUsdData(ops, groupBy = 'day') {
     };
 }
 
+// REEMPLAZA ESTA FUNCIÓN COMPLETA EN TU SCRIPT
 function generateUsdAnalysisHTML(results, period) {
-    // IDs para los gráficos de ganancias por período (semanal/mensual)
     const chartId = period === 'weekly' ? 'usdWeeklyChart' : 'usdMonthlyChart';
-    // IDs para los gráficos de desglose (Método de Pago / Plataforma)
     const paymentMethodChartId = period === 'weekly' ? 'usdWeeklyPaymentMethodChart' : 'usdMonthlyPaymentMethodChart';
     const p2pPlatformChartId = period === 'weekly' ? 'usdWeeklyP2pPlatformChart' : 'usdMonthlyP2pPlatformChart';
 
     return `
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-            <div class="xl:col-span-2 h-72 md:h-80">
+        <div class="space-y-6">
+            <div class="h-80 w-full">
                 <p class="text-center font-semibold text-sm text-gray-400 mb-2">Ganancias por ${period === 'weekly' ? 'Día' : 'Semana'}</p>
                 <canvas id="${chartId}"></canvas>
             </div>
 
             <hr class="border-gray-700 !my-6">
 
-            <div class="space-y-6">
-                <div class="h-60">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10 items-center">
+                <div class="h-64">
                     <p class="text-center font-semibold text-sm text-gray-400 mb-2">Ganancias por Plataforma P2P</p>
                     <canvas id="${p2pPlatformChartId}"></canvas>
                 </div>
-                <hr class="border-gray-700">
-                <div class="h-60">
+                <div class="h-72">
                      <p class="text-center font-semibold text-sm text-gray-400 mb-2">Ganancias por Método de Pago</p>
                     <canvas id="${paymentMethodChartId}"></canvas>
                 </div>
             </div>
         </div>
-        
-        <hr class="border-gray-700 !my-6">
+        <hr class="border-gray-700 !my-8">
 
         <div class="card p-4 bg-background space-y-3">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center text-sm">
