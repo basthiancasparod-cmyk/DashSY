@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         :root {
             --background: #0D1117;
@@ -1240,7 +1241,7 @@
         let weeklyChartInstance; // Guardará nuestro gráfico para poder destruirlo después
         let monthlyChartInstance; // Guardará el gráfico mensual
         let usdWeeklyChartInstance, usdWeeklyPaymentMethodChartInstance, usdWeeklyP2pPlatformChartInstance;
-let usdMonthlyChartInstance, usdMonthlyPaymentMethodChartInstance, usdMonthlyP2pPlatformChartInstance;
+        let usdMonthlyChartInstance, usdMonthlyPaymentMethodChartInstance, usdMonthlyP2pPlatformChartInstance;
         let currentUsdAnalysisTab = 'weekly'; // 'weekly' o 'monthly'
         let confirmAction = null;
         // ...
@@ -1888,52 +1889,130 @@ function updateSummary() {
             return avg > 0 ? `<span class="text-xs text-yellow-400 font-bold ml-2">${avg.toFixed(1)} ★</span>` : '';
         }
 
-       // REEMPLAZA ESTA FUNCIÓN COMPLETA EN TU SCRIPT
-function renderOperations() {
-    const tableBody = document.getElementById('operationsTable');
-    const listContainer = document.getElementById('operationsList');
-    const emptyState = document.getElementById('reports-empty-state');
-    const desktopTableContainer = document.querySelector('#page-reports .table-container');
-    const mobileListContainer = document.querySelector('#page-reports .operations-list-container');
+        // PASO 2: FUNCIÓN MODIFICADA
+        function renderOperations() {
+            const tableBody = document.getElementById('operationsTable');
+            const listContainer = document.getElementById('operationsList');
+            const emptyState = document.getElementById('reports-empty-state');
+            const desktopTableContainer = document.querySelector('#page-reports .table-container');
+            const mobileListContainer = document.querySelector('#page-reports .operations-list-container');
 
-    const searchTerm = document.getElementById('searchOperations').value.toLowerCase();
-    const filterOperacion = document.getElementById('filterOperacion').value;
-    const filterMetodo = document.getElementById('filterMetodoPago').value;
-    const filteredOps = operations.filter(op => (op.fecha === currentDate) && (op.usuario.toLowerCase().includes(searchTerm) || (op.referencia && op.referencia.toLowerCase().includes(searchTerm))) && (filterOperacion === '' || op.operacion === filterOperacion) && (filterMetodo === '' || op.metodoPago === filterMetodo));
+            const searchTerm = document.getElementById('searchOperations').value.toLowerCase();
+            const filterOperacion = document.getElementById('filterOperacion').value;
+            const filterMetodo = document.getElementById('filterMetodoPago').value;
+            const filteredOps = operations.filter(op => (op.fecha === currentDate) && (op.usuario.toLowerCase().includes(searchTerm) || (op.referencia && op.referencia.toLowerCase().includes(searchTerm))) && (filterOperacion === '' || op.operacion === filterOperacion) && (filterMetodo === '' || op.metodoPago === filterMetodo));
 
-    filteredOps.sort((a, b) => b.timestamp - a.timestamp);
+            filteredOps.sort((a, b) => b.timestamp - a.timestamp);
 
-    if (filteredOps.length === 0) {
-        emptyState.style.display = 'block';
-        desktopTableContainer.style.display = 'none';
-        mobileListContainer.style.display = 'none';
-        return; 
-    } else {
-        emptyState.style.display = 'none';
-        desktopTableContainer.style.display = ''; 
-        mobileListContainer.style.display = '';
-    }
+            if (filteredOps.length === 0) {
+                emptyState.style.display = 'block';
+                desktopTableContainer.style.display = 'none';
+                mobileListContainer.style.display = 'none';
+                return; 
+            } else {
+                emptyState.style.display = 'none';
+                desktopTableContainer.style.display = ''; 
+                mobileListContainer.style.display = '';
+            }
 
-    tableBody.innerHTML = '';
-    listContainer.innerHTML = '';
-    filteredOps.forEach(op => {
-        // CAMBIO: Ya no necesitamos el 'globalIndex'. Usaremos 'op.id' directamente.
-        let cryptoValueToDisplay = op.montoUsdc; 
-        if (op.operacion === 'Venta' && op.adCommissionPercent > 0) {
-            cryptoValueToDisplay = op.montoUsdc * (1 + (op.adCommissionPercent / 100));
+            tableBody.innerHTML = '';
+            listContainer.innerHTML = '';
+            filteredOps.forEach(op => {
+                let cryptoValueToDisplay = op.montoUsdc; 
+                if (op.operacion === 'Venta' && op.adCommissionPercent > 0) {
+                    cryptoValueToDisplay = op.montoUsdc * (1 + (op.adCommissionPercent / 100));
+                }
+
+                const relationIndicator = op.operacion === 'Compra' ? `${op.metodoPago} ➡️ ${op.p2pPlatform || ''}` : `${op.metodoPago} ⬅️ ${op.p2pPlatform || ''}`;
+                const commissionIndicator = op.adCommissionPercent > 0 ? `<span class="text-xs ${op.operacion === 'Venta' ? 'text-green-400' : 'text-red-400'}">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
+                const mobileCommissionIndicator = op.adCommissionPercent > 0 ? `<span class="commission">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
+                
+                // SE AÑADE data-id="${op.id}" a la fila y a la tarjeta
+                const tableRowHtml = `<tr data-id="${op.id}" class="hover:bg-[var(--surface)] cursor-grab"><td class="text-left"><div class="font-semibold flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}</div><div class="text-xs text-gray-400">${relationIndicator}</div></td><td>${op.referencia || ''}</td><td>${op.operacion.substring(0,1)}</td><td>${(op.tasa || 0).toFixed(2)}</td><td><div class="flex flex-col items-center">${(cryptoValueToDisplay || 0).toFixed(3)} ${commissionIndicator}</div></td><td>${(op.montoBs || 0).toFixed(2)}</td><td class="font-semibold ${op.ves >= 0 ? 'text-green-400':'text-red-400'}">${(op.ves || 0).toFixed(2)}</td><td class="font-semibold ${op.usdc >= 0 ? 'text-green-400':'text-red-400'}">${(op.usdc || 0).toFixed(4)}</td><td>${op.lote || ''}</td><td><span class="px-2 py-1 text-xs font-semibold rounded-full ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></td><td><button class="text-blue-400 p-1" onclick="editOperation('${op.id}')">✏️</button><button class="text-red-400 p-1" onclick="deleteOperation('${op.id}')">🗑️</button></td></tr>`;
+                const cardHtml = `<div data-id="${op.id}" class="operation-card ${op.operacion.toLowerCase()} cursor-grab"><div class="card-header"><div class="user-info flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}<div class="payment-method ml-auto">${relationIndicator}</div></div><span class="status-badge ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></div><div class="card-grid"><div class="grid-item"><span class="label">Monto USDC</span><span class="value">${(cryptoValueToDisplay || 0).toFixed(3)} ${mobileCommissionIndicator}</span></div><div class="grid-item"><span class="label">Monto BS</span><span class="value">${(op.montoBs || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasa || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Ganancia VES</span><span class="value ${(op.ves || 0) >= 0 ? 'profit-green' : 'profit-red'}">${(op.ves || 0).toFixed(2)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}<br>LOTE: ${op.lote || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="editOperation('${op.id}')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button><button class="action-btn delete" onclick="deleteOperation('${op.id}')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.033-2.134H8.033c-1.12 0-2.033.954-2.033 2.134v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button></div></div></div>`;
+                tableBody.innerHTML += tableRowHtml;
+                listContainer.innerHTML += cardHtml;
+            });
+            
+            // SE INICIALIZA SORTABLEJS EN LOS ELEMENTOS
+            if (tableBody.children.length > 0) {
+                new Sortable(tableBody, {
+                    animation: 150,
+                    onEnd: handleDragEnd
+                });
+            }
+            if (listContainer.children.length > 0) {
+                 new Sortable(listContainer, {
+                    animation: 150,
+                    onEnd: handleDragEnd
+                });
+            }
         }
-
-        const relationIndicator = op.operacion === 'Compra' ? `${op.metodoPago} ➡️ ${op.p2pPlatform || ''}` : `${op.metodoPago} ⬅️ ${op.p2pPlatform || ''}`;
-        const commissionIndicator = op.adCommissionPercent > 0 ? `<span class="text-xs ${op.operacion === 'Venta' ? 'text-green-400' : 'text-red-400'}">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
-        const mobileCommissionIndicator = op.adCommissionPercent > 0 ? `<span class="commission">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
         
-        // CAMBIO CLAVE: Pasamos op.id como un string a las funciones onclick.
-        const tableRowHtml = `<tr class="hover:bg-[var(--surface)]"><td class="text-left"><div class="font-semibold flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}</div><div class="text-xs text-gray-400">${relationIndicator}</div></td><td>${op.referencia || ''}</td><td>${op.operacion.substring(0,1)}</td><td>${(op.tasa || 0).toFixed(2)}</td><td><div class="flex flex-col items-center">${(cryptoValueToDisplay || 0).toFixed(3)} ${commissionIndicator}</div></td><td>${(op.montoBs || 0).toFixed(2)}</td><td class="font-semibold ${op.ves >= 0 ? 'text-green-400':'text-red-400'}">${(op.ves || 0).toFixed(2)}</td><td class="font-semibold ${op.usdc >= 0 ? 'text-green-400':'text-red-400'}">${(op.usdc || 0).toFixed(4)}</td><td>${op.lote || ''}</td><td><span class="px-2 py-1 text-xs font-semibold rounded-full ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></td><td><button class="text-blue-400 p-1" onclick="editOperation('${op.id}')">✏️</button><button class="text-red-400 p-1" onclick="deleteOperation('${op.id}')">🗑️</button></td></tr>`;
-        const cardHtml = `<div class="operation-card ${op.operacion.toLowerCase()}"><div class="card-header"><div class="user-info flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}<div class="payment-method ml-auto">${relationIndicator}</div></div><span class="status-badge ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></div><div class="card-grid"><div class="grid-item"><span class="label">Monto USDC</span><span class="value">${(cryptoValueToDisplay || 0).toFixed(3)} ${mobileCommissionIndicator}</span></div><div class="grid-item"><span class="label">Monto BS</span><span class="value">${(op.montoBs || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasa || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Ganancia VES</span><span class="value ${(op.ves || 0) >= 0 ? 'profit-green' : 'profit-red'}">${(op.ves || 0).toFixed(2)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}<br>LOTE: ${op.lote || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="editOperation('${op.id}')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button><button class="action-btn delete" onclick="deleteOperation('${op.id}')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.033-2.134H8.033c-1.12 0-2.033.954-2.033 2.134v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button></div></div></div>`;
-        tableBody.innerHTML += tableRowHtml;
-        listContainer.innerHTML += cardHtml;
-    });
-}
+        // PASO 3: FUNCIÓN NUEVA
+        /**
+         * Maneja el evento de finalización de arrastre para actualizar el timestamp en Firebase.
+         * @param {Event} evt - El evento proporcionado por SortableJS.
+         */
+        function handleDragEnd(evt) {
+            const { newIndex, item } = evt;
+
+            // Obtenemos el ID de la operación que se movió
+            const operationId = item.dataset.id;
+            if (!operationId) {
+                showToast('Error: No se pudo identificar la operación.', 'error');
+                return;
+            }
+
+            // Volvemos a filtrar y ordenar las operaciones exactamente como están en la UI ahora mismo
+            const searchTerm = document.getElementById('searchOperations').value.toLowerCase();
+            const filterOperacion = document.getElementById('filterOperacion').value;
+            const filterMetodo = document.getElementById('filterMetodoPago').value;
+            const currentSortedOps = operations
+                .filter(op => 
+                    op.fecha === currentDate && 
+                    (op.usuario.toLowerCase().includes(searchTerm) || (op.referencia && op.referencia.toLowerCase().includes(searchTerm))) &&
+                    (filterOperacion === '' || op.operacion === filterOperacion) &&
+                    (filterMetodo === '' || op.metodoPago === filterMetodo)
+                )
+                .sort((a, b) => b.timestamp - a.timestamp);
+
+            // Creamos un array mutable con el nuevo orden visual
+            const reorderedOps = Array.from(currentSortedOps);
+            const [movedItem] = reorderedOps.splice(evt.oldIndex, 1);
+            reorderedOps.splice(newIndex, 0, movedItem);
+
+            // Ahora, con el array `reorderedOps` que refleja el nuevo orden, encontramos los vecinos
+            const prevOp = reorderedOps[newIndex - 1];
+            const nextOp = reorderedOps[newIndex + 1];
+
+            let newTimestamp;
+
+            if (prevOp && nextOp) {
+                // Caso normal: movido entre dos elementos
+                newTimestamp = Math.floor((prevOp.timestamp + nextOp.timestamp) / 2);
+            } else if (prevOp) {
+                // Caso: movido al final de la lista (visualmente arriba, cronológicamente el más antiguo)
+                newTimestamp = prevOp.timestamp - 60000; // Restamos 1 minuto (en milisegundos)
+            } else if (nextOp) {
+                // Caso: movido al principio de la lista (visualmente abajo, cronológicamente el más nuevo)
+                newTimestamp = nextOp.timestamp + 60000; // Sumamos 1 minuto
+            } else {
+                // No debería ocurrir en una lista con más de un elemento
+                return;
+            }
+
+            // Finalmente, actualizamos el documento en Firebase
+            db.collection('users').doc(currentUserId).collection('operations').doc(operationId)
+              .update({ timestamp: newTimestamp })
+              .then(() => {
+                  showToast('Orden actualizado. Recalculando...', 'info');
+              })
+              .catch(err => {
+                  showToast('Error al actualizar el orden.', 'error');
+                  console.error(err);
+              });
+        }
         
         function openModal() { document.getElementById('operationModal').classList.add('show'); if(editingIndex === -1) clearForm();}
         function closeModal() { document.getElementById('operationModal').classList.remove('show'); editingIndex = -1; }
@@ -2562,7 +2641,7 @@ function renderOperations() {
                 const envio = r * t;
                 const grossGain = r - envio;
                 const commissionAmount = r * (commissionRate / 100);
-                const netGain = grossGain - commissionAmount;
+	const netGain = grossGain - commissionAmount;
 
                 document.getElementById('envioUsd').value = envio.toFixed(2);
                 document.getElementById('commissionUsdc').value = commissionAmount.toFixed(4);
@@ -2663,10 +2742,8 @@ function updateWallySummary() {
             
     renderWallyTables();
     updateSummary();
-    // Se eliminó la llamada a updateSummary() que estaba aquí para evitar bucles.
 }
 
-        // REEMPLAZA tu función renderWallyTables con esta:
 // REEMPLAZA ESTA FUNCIÓN COMPLETA EN TU SCRIPT
 function renderWallyTables() {
     const searchTerm = document.getElementById('searchWallyOperations').value.toLowerCase();
@@ -2699,13 +2776,11 @@ function renderWallyTables() {
     } else {
         comprasCardContainer.style.display = 'block';
         comprasEmptyState.style.display = 'none';
-        compras.forEach((op, index) => {
-            const globalIndex = wallyOperations.indexOf(op);
-            // --- INICIO DE LA CORRECCIÓN ---
+        compras.forEach((op) => {
+            const globalIndex = wallyOperations.findIndex(wOp => wOp.id === op.id);
             const relationIndicator = `${op.metodoPago} ➡️ ${op.platform || ''}`;
-            const tableRowHtml = `<tr><td class="text-left"><div class="font-semibold flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}</div><div class="text-xs text-gray-400">${relationIndicator}</div></td><td>${(op.reciboUsdc||0).toFixed(2)}</td><td>${(op.tasaCompra||0).toFixed(4)}</td><td>${(op.envioUsd||0).toFixed(2)}</td><td class="font-semibold text-green-400">${(op.gananciaUsdc||0).toFixed(4)}</td><td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button><button class="text-red-400 p-1" onclick="deleteWallyOperation(${globalIndex})">🗑️</button></td></tr>`;
-            const cardHtml = `<div class="operation-card compra"><div class="card-header"><div class="user-info flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}<div class="payment-method ml-auto">${relationIndicator}</div></div></div><div class="card-grid"><div class="grid-item"><span class="label">Recibo Cripto</span><span class="value">${(op.reciboUsdc||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Envío USD</span><span class="value">${(op.envioUsd||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasaCompra||0).toFixed(4)}</span></div><div class="grid-item"><span class="label">Ganancia Cripto</span><span class="value profit-green">${(op.gananciaUsdc||0).toFixed(4)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="openWallyModal(${globalIndex})">✏️</button><button class="action-btn delete" onclick="deleteWallyOperation(${globalIndex})">🗑️</button></div></div></div>`;
-            // --- FIN DE LA CORRECCIÓN ---
+            const tableRowHtml = `<tr><td class="text-left"><div class="font-semibold flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}</div><div class="text-xs text-gray-400">${relationIndicator}</div></td><td>${(op.reciboUsdc||0).toFixed(2)}</td><td>${(op.tasaCompra||0).toFixed(4)}</td><td>${(op.envioUsd||0).toFixed(2)}</td><td class="font-semibold text-green-400">${(op.gananciaUsdc||0).toFixed(4)}</td><td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button><button class="text-red-400 p-1" onclick="deleteWallyOperation('${op.id}')">🗑️</button></td></tr>`;
+            const cardHtml = `<div class="operation-card compra"><div class="card-header"><div class="user-info flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}<div class="payment-method ml-auto">${relationIndicator}</div></div></div><div class="card-grid"><div class="grid-item"><span class="label">Recibo Cripto</span><span class="value">${(op.reciboUsdc||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Envío USD</span><span class="value">${(op.envioUsd||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasaCompra||0).toFixed(4)}</span></div><div class="grid-item"><span class="label">Ganancia Cripto</span><span class="value profit-green">${(op.gananciaUsdc||0).toFixed(4)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="openWallyModal(${globalIndex})">✏️</button><button class="action-btn delete" onclick="deleteWallyOperation('${op.id}')">🗑️</button></div></div></div>`;
             compraTableBody.innerHTML += tableRowHtml;
             compraListContainer.innerHTML += cardHtml;
         });
@@ -2717,13 +2792,11 @@ function renderWallyTables() {
     } else {
         ventasCardContainer.style.display = 'block';
         ventasEmptyState.style.display = 'none';
-        ventas.forEach((op, index) => {
-            const globalIndex = wallyOperations.indexOf(op);
-            // --- INICIO DE LA CORRECCIÓN ---
+        ventas.forEach((op) => {
+            const globalIndex = wallyOperations.findIndex(wOp => wOp.id === op.id);
             const relationIndicator = `${op.metodoPago} ⬅️ ${op.platform || ''}`;
-            const tableRowHtml = `<tr><td class="text-left"><div class="font-semibold flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}</div><div class="text-xs text-gray-400">${relationIndicator}</div></td><td>${(op.envioUsdc||0).toFixed(2)}</td><td>${(op.tasaVenta||0).toFixed(4)}</td><td>${(op.reciboUsd||0).toFixed(2)}</td><td class="font-semibold text-green-400">${(op.gananciaUsd||0).toFixed(4)}</td><td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button><button class="text-red-400 p-1" onclick="deleteWallyOperation(${globalIndex})">🗑️</button></td></tr>`;
-            const cardHtml = `<div class="operation-card venta"><div class="card-header"><div class="user-info flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}<div class="payment-method ml-auto">${relationIndicator}</div></div></div><div class="card-grid"><div class="grid-item"><span class="label">Envío Cripto</span><span class="value">${(op.envioUsdc||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Recibo USD</span><span class="value">${(op.reciboUsd||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasaVenta||0).toFixed(4)}</span></div><div class="grid-item"><span class="label">Ganancia USD</span><span class="value profit-green">${(op.gananciaUsd||0).toFixed(4)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="openWallyModal(${globalIndex})">✏️</button><button class="action-btn delete" onclick="deleteWallyOperation(${globalIndex})">🗑️</button></div></div></div>`;
-            // --- FIN DE LA CORRECCIÓN ---
+            const tableRowHtml = `<tr><td class="text-left"><div class="font-semibold flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}</div><div class="text-xs text-gray-400">${relationIndicator}</div></td><td>${(op.envioUsdc||0).toFixed(2)}</td><td>${(op.tasaVenta||0).toFixed(4)}</td><td>${(op.reciboUsd||0).toFixed(2)}</td><td class="font-semibold text-green-400">${(op.gananciaUsd||0).toFixed(4)}</td><td><button class="text-blue-400 p-1" onclick="openWallyModal(${globalIndex})">✏️</button><button class="text-red-400 p-1" onclick="deleteWallyOperation('${op.id}')">🗑️</button></td></tr>`;
+            const cardHtml = `<div class="operation-card venta"><div class="card-header"><div class="user-info flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}<div class="payment-method ml-auto">${relationIndicator}</div></div></div><div class="card-grid"><div class="grid-item"><span class="label">Envío Cripto</span><span class="value">${(op.envioUsdc||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Recibo USD</span><span class="value">${(op.reciboUsd||0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasaVenta||0).toFixed(4)}</span></div><div class="grid-item"><span class="label">Ganancia USD</span><span class="value profit-green">${(op.gananciaUsd||0).toFixed(4)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="openWallyModal(${globalIndex})">✏️</button><button class="action-btn delete" onclick="deleteWallyOperation('${op.id}')">🗑️</button></div></div></div>`;
             ventaTableBody.innerHTML += tableRowHtml;
             ventaListContainer.innerHTML += cardHtml;
         });
@@ -2939,10 +3012,6 @@ function loadUserProfiles() {
  * Cambia la pestaña activa en el modal de perfil de usuario y muestra la tabla correspondiente.
  * @param {'ves' | 'usd'} tabName - El tipo de operaciones a mostrar.
  */
-/**
- * Cambia la pestaña activa en el modal de perfil de usuario y muestra la tabla correspondiente.
- * @param {'ves' | 'usd'} tabName - El tipo de operaciones a mostrar.
- */
 function switchProfileTab(tabName) {
     // Actualiza el estado visual de los botones de las pestañas
     document.querySelectorAll('.profile-tab').forEach(tab => {
@@ -2965,7 +3034,6 @@ function switchProfileTab(tabName) {
                 <tbody class="text-xs">${opsToShow.map(op => `<tr><td>${op.fecha}</td><td>${op.operacion.substring(0,1)}</td><td>${op.montoUsdc.toFixed(2)}</td><td>${op.tasa.toFixed(2)}</td></tr>`).join('')}</tbody>
                 </table></div>`;
     } else { // tabName === 'usd'
-        // --- CORRECCIÓN AQUÍ: Se quitaron las 'C' y '$' sobrantes ---
         tableHtml = `
             <div class="table-container max-h-48">
                 <table class="w-full min-w-[300px]"><thead class="text-xs"><tr><th>Fecha</th><th>Op</th><th>Monto</th><th>Ganancia</th></tr></thead>
@@ -3067,10 +3135,7 @@ function getWeeklyOperations() {
     const monday = new Date();
     const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     monday.setDate(today.getDate() - diff);
-
-    // ELIMINADO: Ya no necesitamos calcular el domingo.
-
-    // Función para dar formato a YYYY-MM-DD
+    
     const formatDate = (d) => {
         const year = d.getFullYear();
         const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -3081,7 +3146,6 @@ function getWeeklyOperations() {
     const startStr = formatDate(monday);
     const endStr = formatDate(today); // <-- CAMBIO CLAVE: Usamos 'today' como fecha final
 
-    // El filtro ahora va desde el Lunes hasta Hoy.
     return operations.filter(op => op.fecha >= startStr && op.fecha <= endStr);
 }
 
@@ -3097,7 +3161,6 @@ function getWeeklyOperations() {
             const userVolume = {};
             const hourlyOps = Array(24).fill(0).map(() => ({ count: 0, buyRates: [], sellRates: [] }));
             
-            // Paso 1: Agrupar todas las operaciones por día
             const groupedByDay = ops.reduce((acc, op) => {
                 const date = op.fecha;
                 if (!acc[date]) acc[date] = [];
@@ -3110,15 +3173,12 @@ function getWeeklyOperations() {
             let lastDayCumulativeProfitVes = 0;
             let lastDayCumulativeProfitUsdc = 0;
 
-            // Paso 2: Calcular ganancias de forma ACUMULATIVA día por día
             sortedDates.forEach(date => {
                 const opsOfTheDay = groupedByDay[date];
                 cumulativeOps.push(...opsOfTheDay);
 
-                // Calculamos el FIFO para TODAS las operaciones hasta la fecha actual del bucle
                 const [cumulativeProfitVes, cumulativeProfitUsdc] = calculateFIFOGainsForOps(cumulativeOps);
 
-                // La ganancia del día es la diferencia entre el acumulado de hoy y el de ayer
                 const dailyProfitVes = cumulativeProfitVes - lastDayCumulativeProfitVes;
                 const dailyProfitUsdc = cumulativeProfitUsdc - lastDayCumulativeProfitUsdc;
                 const dailyVolume = opsOfTheDay.reduce((sum, op) => sum + (op.montoUsdc || 0), 0);
@@ -3129,13 +3189,11 @@ function getWeeklyOperations() {
                     profitUsdc: dailyProfitUsdc,
                     opCount: opsOfTheDay.length
                 };
-
-                // Guardamos los acumulados para la siguiente iteración
+                
                 lastDayCumulativeProfitVes = cumulativeProfitVes;
                 lastDayCumulativeProfitUsdc = cumulativeProfitUsdc;
             });
 
-            // Post-procesamiento (sin cambios, ahora usa los datos diarios correctos)
             let totalVolume = 0, totalProfitVes = 0, totalProfitUsdc = 0;
             ops.forEach(op => {
                 totalVolume += op.montoUsdc || 0;
@@ -3146,7 +3204,6 @@ function getWeeklyOperations() {
                 if (op.operacion === 'Compra') hourlyOps[hour].buyRates.push(op.tasa);
                 if (op.operacion === 'Venta') hourlyOps[hour].sellRates.push(op.tasa);
             });
-            // El total de ganancias es el acumulado del último día
             totalProfitVes = lastDayCumulativeProfitVes;
             totalProfitUsdc = lastDayCumulativeProfitUsdc;
 
@@ -3167,12 +3224,12 @@ function getWeeklyOperations() {
                 totalVolume,
                 totalProfitVes,
                 totalProfitUsdc,
-                avgRate: ops.reduce((sum, op) => sum + op.tasa, 0) / ops.length,
+                avgRate: ops.length > 0 ? ops.reduce((sum, op) => sum + op.tasa, 0) / ops.length : 0,
                 dailyData,
-                dayWithMostVolume: { date: dayWithMostVolume[0], value: dayWithMostVolume[1].volume },
-                dayWithMostProfit: { date: dayWithMostProfit[0], valueVes: dayWithMostProfit[1].profitVes, valueUsdc: dayWithMostProfit[1].profitUsdc },
-                mostUsedPaymentMethod: { method: mostUsedPaymentMethod[0], count: mostUsedPaymentMethod[1] },
-                mostValuableUser: { user: mostValuableUserByVolume[0], volume: mostValuableUserByVolume[1] },
+                dayWithMostVolume: dayWithMostVolume ? { date: dayWithMostVolume[0], value: dayWithMostVolume[1].volume } : { date: 'N/A', value: 0 },
+                dayWithMostProfit: dayWithMostProfit ? { date: dayWithMostProfit[0], valueVes: dayWithMostProfit[1].profitVes, valueUsdc: dayWithMostProfit[1].profitUsdc } : { date: 'N/A', valueVes: 0, valueUsdc: 0 },
+                mostUsedPaymentMethod: mostUsedPaymentMethod ? { method: mostUsedPaymentMethod[0], count: mostUsedPaymentMethod[1] } : { method: 'N/A', count: 0 },
+                mostValuableUser: mostValuableUserByVolume ? { user: mostValuableUserByVolume[0], volume: mostValuableUserByVolume[1] } : { user: 'N/A', volume: 0 },
                 hottestHour: hourlyOps.map((h, i) => ({hour: i, count: h.count})).sort((a, b) => b.count - a.count)[0],
                 hourWithMinBrecha: hourlyBrecha.length > 0 ? hourlyBrecha.sort((a,b) => a.brecha - b.brecha)[0] : null,
                 hourWithMaxBrecha: hourlyBrecha.length > 0 ? hourlyBrecha.sort((a,b) => b.brecha - a.brecha)[0] : null,
@@ -3184,7 +3241,6 @@ function getWeeklyOperations() {
          * @param {Object} dailyData - Los datos agrupados por día.
          */
         function renderWeeklyChart(dailyData) {
-            // Registrar el plugin de datalabels globalmente para todos los gráficos
             Chart.register(ChartDataLabels);
 
             const ctx = document.getElementById('weeklyChart').getContext('2d');
@@ -3199,7 +3255,7 @@ function getWeeklyOperations() {
             }
 
             weeklyChartInstance = new Chart(ctx, {
-                type: 'bar', // CAMBIADO: a 'bar'
+                type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [
@@ -3209,19 +3265,17 @@ function getWeeklyOperations() {
                             backgroundColor: 'rgba(52, 211, 153, 0.7)',
                             borderColor: 'rgba(52, 211, 153, 1)',
                             borderWidth: 1,
-                            // Asociamos los datos de USDC a este dataset para usarlos en las etiquetas
                             datalabels: {
                                 labels: {
                                     usdc: {
-                                        // Le decimos al plugin que use nuestro array de ganancias en USDC
                                         formatter: (value, context) => {
                                             const usdcValue = profitDataUsdc[context.dataIndex];
                                             return `${usdcValue.toFixed(3)} USDC`;
                                         },
-                                        color: '#FBBF24', // Color amarillo/naranja
-                                        anchor: 'end',    // Posición de la etiqueta (arriba de la barra)
-                                        align: 'end',     // Alineación de la etiqueta
-                                        offset: -5,       // Un pequeño espacio desde el borde
+                                        color: '#FBBF24',
+                                        anchor: 'end',
+                                        align: 'end',
+                                        offset: -5,
                                         font: {
                                             weight: 'bold',
                                             size: 11,
@@ -3230,7 +3284,6 @@ function getWeeklyOperations() {
                                 }
                             }
                         }
-                        // ELIMINADO: El dataset de USDC fue removido
                     ]
                 },
                 options: {
@@ -3244,7 +3297,7 @@ function getWeeklyOperations() {
                     },
                     plugins: {
                         legend: {
-                            display: false // La leyenda no es necesaria con un solo tipo de barra
+                            display: false
                         }
                     }
                 }
@@ -3268,7 +3321,7 @@ function getWeeklyOperations() {
                         <div class="info-card-details text-orange-400">${results.totalProfitUsdc.toFixed(4)} USDC</div>
                     </div>
                     <div class="info-card !p-2"><div class="info-card-title !text-xs">VOLUMEN TOTAL</div><div class="info-card-value !text-lg">${results.totalVolume.toFixed(2)} USDC</div></div>
-                    <div class="info-card !p-2"><div class="info-card-title !text-xs">RENTABILIDAD</div><div class="info-card-value !text-lg text-blue-400">${(results.totalProfitUsdc / results.totalVolume * 100).toFixed(2)}%</div></div>
+                    <div class="info-card !p-2"><div class="info-card-title !text-xs">RENTABILIDAD</div><div class="info-card-value !text-lg text-blue-400">${(results.totalVolume > 0 ? (results.totalProfitUsdc / results.totalVolume * 100) : 0).toFixed(2)}%</div></div>
                     <div class="info-card !p-2"><div class="info-card-title !text-xs">OPERACIONES</div><div class="info-card-value !text-lg">${results.totalOps}</div></div>
                 </div>
                 <hr class="border-gray-700 !my-4">
@@ -3294,7 +3347,6 @@ function getWeeklyOperations() {
 
 function openMonthlyAnalysisModal() {
     document.getElementById('monthlyAnalysisModal').classList.add('show');
-    // Si el selector ya tiene opciones, ejecuta el análisis. Si no, espera.
     if (document.getElementById('monthSelector').options.length > 0) {
         runMonthlyAnalysis();
     }
@@ -3304,10 +3356,9 @@ function populateMonthSelector() {
     const selector = document.getElementById('monthSelector');
     if (!operations || operations.length === 0) return;
 
-    // Limpiamos opciones previas
     selector.innerHTML = '';
 
-    const oldestOp = operations.sort((a, b) => a.timestamp - b.timestamp)[0];
+    const oldestOp = operations.reduce((oldest, op) => op.timestamp < oldest.timestamp ? op : oldest, operations[0]);
     const startDate = new Date(oldestOp.timestamp);
     const currentDate = new Date();
 
@@ -3322,7 +3373,6 @@ function populateMonthSelector() {
         option.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
         selector.appendChild(option);
 
-        // Retroceder un mes
         loopDate.setMonth(loopDate.getMonth() - 1);
     }
 }
@@ -3330,7 +3380,7 @@ function populateMonthSelector() {
 function runMonthlyAnalysis() {
     const selector = document.getElementById('monthSelector');
     const summaryContainer = document.getElementById('monthlyAnalysisSummary');
-    const selectedMonth = selector.value; // ej. "2025-10"
+    const selectedMonth = selector.value;
 
     if (!selectedMonth) return;
 
@@ -3354,7 +3404,6 @@ function runMonthlyAnalysis() {
 }
 
 function analyzeMonthlyData(monthlyOps) {
-            // Agrupar por semana y por día al mismo tiempo
             const weeklyData = {};
             const dailyData = {};
             monthlyOps.forEach(op => {
@@ -3369,9 +3418,6 @@ function analyzeMonthlyData(monthlyOps) {
                 dailyData[op.fecha].push(op);
             });
 
-            // --- INICIO DE LA LÓGICA CORREGIDA ---
-
-            // 1. Cálculo acumulativo para el gráfico semanal
             const sortedWeeks = Object.keys(weeklyData).sort((a,b) => a - b);
             let cumulativeWeeklyOps = [];
             let lastWeekCumulativeProfitVes = 0;
@@ -3390,7 +3436,6 @@ function analyzeMonthlyData(monthlyOps) {
                 lastWeekCumulativeProfitUsdc = cumulativeProfitUsdc;
             });
             
-            // 2. Cálculo acumulativo para encontrar el mejor día
             const sortedDates = Object.keys(dailyData).sort();
             let cumulativeDailyOps = [];
             let lastDayCumulativeProfit = -Infinity;
@@ -3409,8 +3454,6 @@ function analyzeMonthlyData(monthlyOps) {
                 lastDayCumulativeProfit = totalGainsForPeriod;
             });
 
-            // --- FIN DE LA LÓGICA CORREGIDA ---
-
             const bestWeek = Object.entries(weeklyData).sort((a, b) => b[1].profitVes - a[1].profitVes)[0];
             const totalProfitVes = Object.values(weeklyData).reduce((sum, week) => sum + week.profitVes, 0);
             const totalProfitUsdc = Object.values(weeklyData).reduce((sum, week) => sum + week.profitUsdc, 0);
@@ -3425,10 +3468,10 @@ function analyzeMonthlyData(monthlyOps) {
                 totalOps: monthlyOps.length,
                 daysInMonth: Object.keys(dailyData).length,
                 positiveProfitDays,
-                bestWeek: { week: bestWeek[0], data: bestWeek[1] },
+                bestWeek: bestWeek ? { week: bestWeek[0], data: bestWeek[1] } : { week: 'N/A', data: { profitVes: 0 } },
                 bestDay,
-                mostUsedPaymentMethod,
-                mostValuableUser,
+                mostUsedPaymentMethod: mostUsedPaymentMethod || ['N/A', 0],
+                mostValuableUser: mostValuableUser || ['N/A', 0],
                 weeklyData
             };
         }
@@ -3488,7 +3531,7 @@ function renderMonthlySummary(results) {
                 <div class="info-card-details text-orange-400">${results.totalProfitUsdc.toFixed(4)} USDC</div>
             </div>
             <div class="info-card !p-2"><div class="info-card-title !text-xs">VOLUMEN TOTAL</div><div class="info-card-value !text-lg">${results.totalVolume.toFixed(2)} USDC</div></div>
-            <div class="info-card !p-2"><div class="info-card-title !text-xs">RENTABILIDAD</div><div class="info-card-value !text-lg text-blue-400">${(results.totalProfitUsdc / results.totalVolume * 100).toFixed(2)}%</div></div>
+            <div class="info-card !p-2"><div class="info-card-title !text-xs">RENTABILIDAD</div><div class="info-card-value !text-lg text-blue-400">${(results.totalVolume > 0 ? (results.totalProfitUsdc / results.totalVolume * 100) : 0).toFixed(2)}%</div></div>
             <div class="info-card !p-2">
                 <div class="info-card-title !text-xs">CONSISTENCIA</div>
                 <div class="info-card-value !text-lg text-purple-400">${results.positiveProfitDays} / ${results.daysInMonth}</div>
@@ -3505,20 +3548,14 @@ function renderMonthlySummary(results) {
     `;
 }
 
-
-// ===================================================================
-// == INICIO: BLOQUE DE CÓDIGO PARA EL NUEVO MODAL DE ANÁLISIS USD   ==
-// ===================================================================
-
 function openUsdAnalysisModal() {
     document.getElementById('usdAnalysisModal').classList.add('show');
     populateUsdMonthSelector();
-    switchUsdAnalysisTab('weekly'); // Inicia en la pestaña semanal por defecto
+    switchUsdAnalysisTab('weekly');
 }
 
 function closeUsdAnalysisModal() {
     document.getElementById('usdAnalysisModal').classList.remove('show');
-    // Destruir todos los gráficos para liberar memoria
     if (usdWeeklyChartInstance) usdWeeklyChartInstance.destroy();
     if (usdWeeklyPaymentMethodChartInstance) usdWeeklyPaymentMethodChartInstance.destroy();
     if (usdWeeklyP2pPlatformChartInstance) usdWeeklyP2pPlatformChartInstance.destroy();
@@ -3552,8 +3589,6 @@ function populateUsdMonthSelector() {
     });
 }
 
-// REEMPLAZA ESTA FUNCIÓN COMPLETA
-// REEMPLAZA ESTA FUNCIÓN COMPLETA
 function renderUsdAnalysis() {
     const contentContainer = document.getElementById('usdAnalysisContent');
     contentContainer.innerHTML = `<div class="text-center py-8"><div class="loader mx-auto"></div><p class="mt-2 text-sm text-gray-400">Calculando análisis...</p></div>`;
@@ -3594,19 +3629,16 @@ function renderUsdAnalysis() {
 
         if (currentUsdAnalysisTab === 'weekly') {
             renderUsdChart(analysisResults.groupedData, 'usdWeeklyChart', 'usdWeeklyChartInstance');
-            // --- LLAMADAS A LOS NUEVOS GRÁFICOS ---
             renderUsdP2pPlatformChart(analysisResults.gainsByP2pPlatform, 'usdWeeklyP2pPlatformChart', 'usdWeeklyP2pPlatformChartInstance');
             renderUsdPaymentMethodChart(analysisResults.gainsByPaymentMethod, 'usdWeeklyPaymentMethodChart', 'usdWeeklyPaymentMethodChartInstance');
         } else {
             renderUsdChart(analysisResults.groupedData, 'usdMonthlyChart', 'usdMonthlyChartInstance');
-            // --- LLAMADAS A LOS NUEVOS GRÁFICOS ---
             renderUsdP2pPlatformChart(analysisResults.gainsByP2pPlatform, 'usdMonthlyP2pPlatformChart', 'usdMonthlyP2pPlatformChartInstance');
             renderUsdPaymentMethodChart(analysisResults.gainsByPaymentMethod, 'usdMonthlyPaymentMethodChart', 'usdMonthlyPaymentMethodChartInstance');
         }
     }, 50);
 }
 
-// REEMPLAZA ESTA FUNCIÓN COMPLETA EN TU SCRIPT
 function analyzeUsdData(ops, groupBy = 'day') {
     const groupedData = {};
     const gainsByPaymentMethod = {};
@@ -3614,13 +3646,9 @@ function analyzeUsdData(ops, groupBy = 'day') {
     let totalProfitUsd = 0, totalProfitUsdc = 0, totalCryptoVolume = 0, totalFiatVolume = 0;
     let compraOps = 0, ventaOps = 0;
 
-    // --- INICIO DE LA LÓGICA CORREGIDA ---
-    // Obtenemos la lista de nombres de las plataformas P2P reales desde la configuración.
-    // Asumimos que estas son las que manejan intercambios, no solo transferencias USD.
     const p2pPlatformNames = userConfig.p2pPlatforms
         .filter(p => p.type === 'CRIPTO' || p.type === 'VES')
         .map(p => p.name);
-    // --- FIN DE LA LÓGICA CORREGIDA ---
 
     ops.forEach(op => {
         const opDate = new Date(op.fecha + 'T12:00:00');
@@ -3637,7 +3665,6 @@ function analyzeUsdData(ops, groupBy = 'day') {
         groupedData[key].profitUsd += op.gananciaUsd || 0;
         groupedData[key].profitUsdc += op.gananciaUsdc || 0;
 
-        // 1. Agrupar por Método de Pago (sin cambios, esto es correcto)
         const paymentMethod = op.metodoPago || 'No especificado';
         if (!gainsByPaymentMethod[paymentMethod]) {
             gainsByPaymentMethod[paymentMethod] = { profitUsd: 0, profitUsdc: 0 };
@@ -3645,8 +3672,6 @@ function analyzeUsdData(ops, groupBy = 'day') {
         gainsByPaymentMethod[paymentMethod].profitUsd += op.gananciaUsd || 0;
         gainsByPaymentMethod[paymentMethod].profitUsdc += op.gananciaUsdc || 0;
 
-        // --- INICIO DE LA LÓGICA CORREGIDA ---
-        // 2. Agrupar por Plataforma P2P, pero SOLO si la plataforma está en nuestra lista filtrada.
         if (op.platform && p2pPlatformNames.includes(op.platform)) {
             const p2pPlatform = op.platform;
             if (!gainsByP2pPlatform[p2pPlatform]) {
@@ -3655,7 +3680,6 @@ function analyzeUsdData(ops, groupBy = 'day') {
             gainsByP2pPlatform[p2pPlatform].profitUsd += op.gananciaUsd || 0;
             gainsByP2pPlatform[p2pPlatform].profitUsdc += op.gananciaUsdc || 0;
         }
-        // --- FIN DE LA LÓGICA CORREGIDA ---
 
         totalProfitUsd += op.gananciaUsd || 0;
         totalProfitUsdc += op.gananciaUsdc || 0;
@@ -3684,11 +3708,10 @@ function analyzeUsdData(ops, groupBy = 'day') {
         groupedData,
         gainsByPaymentMethod,
         gainsByP2pPlatform,
-        topUser: { name: topUser ? topUser[0] : 'N/A', volume: topUser ? topUser[1] : 0 }
+        topUser: topUser ? { name: topUser[0], volume: topUser[1] } : { name: 'N/A', volume: 0 }
     };
 }
 
-// REEMPLAZA ESTA FUNCIÓN COMPLETA EN TU SCRIPT
 function generateUsdAnalysisHTML(results, period) {
     const chartId = period === 'weekly' ? 'usdWeeklyChart' : 'usdMonthlyChart';
     const paymentMethodChartId = period === 'weekly' ? 'usdWeeklyPaymentMethodChart' : 'usdMonthlyPaymentMethodChart';
@@ -3700,9 +3723,7 @@ function generateUsdAnalysisHTML(results, period) {
                 <p class="text-center font-semibold text-sm text-gray-400 mb-2">Ganancias por ${period === 'weekly' ? 'Día' : 'Semana'}</p>
                 <canvas id="${chartId}"></canvas>
             </div>
-
             <hr class="border-gray-700 !my-6">
-
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10 items-center">
                 <div class="h-64">
                     <p class="text-center font-semibold text-sm text-gray-400 mb-2">Ganancias por Plataforma P2P</p>
@@ -3715,7 +3736,6 @@ function generateUsdAnalysisHTML(results, period) {
             </div>
         </div>
         <hr class="border-gray-700 !my-8">
-
         <div class="card p-4 bg-background space-y-3">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center text-sm">
                 <div class="info-card !p-2"><div class="info-card-title !text-xs">GANANCIA NETA USD</div><div class="info-card-value !text-base text-green-400">${results.totalProfitUsd.toFixed(2)} USD</div></div>
@@ -3731,7 +3751,6 @@ function generateUsdAnalysisHTML(results, period) {
         </div>`;
 }
 
-// REEMPLAZA ESTA FUNCIÓN COMPLETA
 function renderUsdChart(data, canvasId, instanceVarName) {
     const ctx = document.getElementById(canvasId)?.getContext('2d');
     if (!ctx) return;
@@ -3739,16 +3758,12 @@ function renderUsdChart(data, canvasId, instanceVarName) {
     
     const labelsRaw = Object.keys(data).sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
     
-    // --- INICIO DE LÓGICA DE ETIQUETAS INTELIGENTE ---
     const labels = labelsRaw.map(key => {
-        // Si la clave es un número (ej: '1', '2'), es una semana.
         if (!isNaN(key)) {
             return `Semana ${key}`;
         }
-        // Si no, es una fecha.
         return new Date(key + 'T12:00:00').toLocaleDateString('es-VE', {day:'2-digit', month:'short'});
     });
-    // --- FIN DE LÓGICA DE ETIQUETAS ---
 
     const profitUsd = labelsRaw.map(key => data[key].profitUsd);
     const profitUsdc = labelsRaw.map(key => data[key].profitUsdc);
@@ -3758,8 +3773,8 @@ function renderUsdChart(data, canvasId, instanceVarName) {
         data: {
             labels: labels,
             datasets: [
-                { label: 'Ganancia USD', data: profitUsd, backgroundColor: 'rgba(52, 211, 153, 0.7)', yAxisID: 'y' },
-                { label: 'Ganancia USDC', data: profitUsdc, backgroundColor: 'rgba(251, 191, 36, 0.7)', yAxisID: 'y1' }
+                { label: 'Ganancia USD', data: profitUsd, backgroundColor: 'rgba(192, 132, 252, 0.7)', yAxisID: 'y' },
+                { label: 'Ganancia USDC', data: profitUsdc, backgroundColor: 'rgba(251, 146, 60, 0.7)', yAxisID: 'y1' }
             ]
         },
         options: {
@@ -3772,15 +3787,12 @@ function renderUsdChart(data, canvasId, instanceVarName) {
     });
 }
 
-// AÑADE ESTAS DOS NUEVAS FUNCIONES A TU SCRIPT
-
 function renderUsdP2pPlatformChart(data, canvasId, instanceVarName) {
     const ctx = document.getElementById(canvasId)?.getContext('2d');
     if (!ctx) return;
     if (window[instanceVarName]) window[instanceVarName].destroy();
 
-    // Filtramos data para solo incluir plataformas con ganancias y que no sean "No especificada"
-    const labels = Object.keys(data).filter(key => key !== 'No especificada' && (data[key].profitUsd + data[key].profitUsdc) > 0);
+    const labels = Object.keys(data).filter(key => key !== 'No especificado' && (data[key].profitUsd + data[key].profitUsdc) > 0);
     const chartData = labels.map(p => (data[p].profitUsd || 0) + (data[p].profitUsdc || 0));
 
     if (labels.length === 0) {
@@ -3797,7 +3809,7 @@ function renderUsdP2pPlatformChart(data, canvasId, instanceVarName) {
             labels,
             datasets: [{
                 data: chartData,
-                backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(239, 68, 68, 0.8)', 'rgba(245, 158, 11, 0.8)'],
+                backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(239, 68, 68, 0.8)', 'rgba(245, 158, 11, 0.8)', 'rgba(34, 197, 94, 0.8)'],
                 borderColor: 'var(--surface)', borderWidth: 3
             }]
         },
@@ -3834,7 +3846,7 @@ function renderUsdPaymentMethodChart(data, canvasId, instanceVarName) {
             }]
         },
         options: {
-            indexAxis: 'y', // Gráfico de barras horizontal
+            indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
@@ -3846,50 +3858,17 @@ function renderUsdPaymentMethodChart(data, canvasId, instanceVarName) {
     });
 }
 
-function renderUsdPlatformChart(gainsByPlatform, canvasId, instanceVarName) {
-    const ctx = document.getElementById(canvasId)?.getContext('2d');
-    if (!ctx) return;
-    if (window[instanceVarName]) window[instanceVarName].destroy();
-
-    const labels = Object.keys(gainsByPlatform);
-    const data = labels.map(p => (gainsByPlatform[p].profitUsd || 0) + (gainsByPlatform[p].profitUsdc || 0));
-    
-    window[instanceVarName] = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels,
-            datasets: [{
-                data,
-                backgroundColor: ['rgba(59, 130, 246, 0.7)', 'rgba(249, 115, 22, 0.7)', 'rgba(239, 68, 68, 0.7)', 'rgba(16, 185, 129, 0.7)'],
-                borderColor: 'var(--surface)', borderWidth: 2
-            }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
-    });
-}
-
-/**
- * Abre el modal de confirmación.
- * @param {string} message - El mensaje que se mostrará en el modal.
- * @param {Function} onConfirmCallback - La función que se ejecutará si el usuario confirma.
- */
 function openConfirmModal(message, onConfirmCallback) {
     document.getElementById('confirmDeleteMessage').textContent = message;
     confirmAction = onConfirmCallback;
     document.getElementById('confirmDeleteModal').classList.add('show');
 }
 
-/**
- * Cierra el modal de confirmación y limpia la acción.
- */
 function closeConfirmModal() {
     document.getElementById('confirmDeleteModal').classList.remove('show');
     confirmAction = null;
 }
 
-/**
- * Ejecuta la acción que fue guardada y cierra el modal.
- */
 function executeConfirmAction() {
     if (typeof confirmAction === 'function') {
         confirmAction();
@@ -3897,11 +3876,6 @@ function executeConfirmAction() {
     closeConfirmModal();
 }
 
-// ===================================================================
-// == FIN: BLOQUE DE CÓDIGO PARA EL NUEVO MODAL DE ANÁLISIS USD     ==
-// ===================================================================
-
-        // ===== FIN DEL CÓDIGO A PEGAR (BLOQUE PRINCIPAL) =====
         window.showPage = showPage; window.loginUser = loginUser; window.registerUser = registerUser;
         window.toggleAuthForms = toggleAuthForms; window.logoutUser = logoutUser; window.openModal = openModal;
         window.closeModal = closeModal; window.saveOperation = saveOperation; window.editOperation = editOperation;
@@ -3929,14 +3903,12 @@ function executeConfirmAction() {
         window.openInitialCapitalModal = openInitialCapitalModal;
         window.closeInitialCapitalModal = closeInitialCapitalModal;
         window.saveInitialCapital = saveInitialCapital;
-        // ... (el resto de las funciones window)
         window.addManagedAccount = addManagedAccount; 
         window.deleteManagedAccount = deleteManagedAccount;
         window.switchProfileTab = switchProfileTab;
         window.renderWallyTables = renderWallyTables;
         window.openWeeklyAnalysisModal = openWeeklyAnalysisModal;
         window.closeWeeklyAnalysisModal = closeWeeklyAnalysisModal;
-        // ===== PEGA ESTAS LÍNEAS AQUÍ =====
         window.openMonthlyAnalysisModal = openMonthlyAnalysisModal;
         window.closeMonthlyAnalysisModal = closeMonthlyAnalysisModal;
         window.runMonthlyAnalysis = runMonthlyAnalysis;
@@ -3944,11 +3916,10 @@ function executeConfirmAction() {
         window.closeUsdAnalysisModal = closeUsdAnalysisModal;
         window.switchUsdAnalysisTab = switchUsdAnalysisTab;
         window.renderUsdAnalysis = renderUsdAnalysis;
-
         window.closeConfirmModal = closeConfirmModal;
         window.executeConfirmAction = executeConfirmAction;
-        // AÑADE ESTA LÍNEA AL FINAL
         window.enableAudio = enableAudio;
+        window.handleDragEnd = handleDragEnd;
         
     </script>
 
@@ -4012,4 +3983,4 @@ function executeConfirmAction() {
     </div>
 </div>
 </body>
-</html>
+</html>	
