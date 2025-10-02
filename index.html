@@ -1101,7 +1101,7 @@
 
     <div id="ratingModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header flex justify-between items-center">
                 <h2 class="modal-title text-xl font-bold">Calificar Transacción</h2>
                 <button class="close-btn" onclick="closeRatingModal()">&times;</button>
             </div>
@@ -1244,6 +1244,7 @@
         let usdMonthlyChartInstance, usdMonthlyPaymentMethodChartInstance, usdMonthlyP2pPlatformChartInstance;
         let currentUsdAnalysisTab = 'weekly'; // 'weekly' o 'monthly'
         let confirmAction = null;
+        let moveAction = null;
         // ...
 
         // AÑADE ESTAS DOS LÍNEAS
@@ -1927,23 +1928,28 @@ function updateSummary() {
                 const commissionIndicator = op.adCommissionPercent > 0 ? `<span class="text-xs ${op.operacion === 'Venta' ? 'text-green-400' : 'text-red-400'}">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
                 const mobileCommissionIndicator = op.adCommissionPercent > 0 ? `<span class="commission">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
                 
-                // SE AÑADE data-id="${op.id}" a la fila y a la tarjeta
+                // Se añade data-id="${op.id}" y cursor-grab a la fila y a la tarjeta
                 const tableRowHtml = `<tr data-id="${op.id}" class="hover:bg-[var(--surface)] cursor-grab"><td class="text-left"><div class="font-semibold flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}</div><div class="text-xs text-gray-400">${relationIndicator}</div></td><td>${op.referencia || ''}</td><td>${op.operacion.substring(0,1)}</td><td>${(op.tasa || 0).toFixed(2)}</td><td><div class="flex flex-col items-center">${(cryptoValueToDisplay || 0).toFixed(3)} ${commissionIndicator}</div></td><td>${(op.montoBs || 0).toFixed(2)}</td><td class="font-semibold ${op.ves >= 0 ? 'text-green-400':'text-red-400'}">${(op.ves || 0).toFixed(2)}</td><td class="font-semibold ${op.usdc >= 0 ? 'text-green-400':'text-red-400'}">${(op.usdc || 0).toFixed(4)}</td><td>${op.lote || ''}</td><td><span class="px-2 py-1 text-xs font-semibold rounded-full ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></td><td><button class="text-blue-400 p-1" onclick="editOperation('${op.id}')">✏️</button><button class="text-red-400 p-1" onclick="deleteOperation('${op.id}')">🗑️</button></td></tr>`;
                 const cardHtml = `<div data-id="${op.id}" class="operation-card ${op.operacion.toLowerCase()} cursor-grab"><div class="card-header"><div class="user-info flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}<div class="payment-method ml-auto">${relationIndicator}</div></div><span class="status-badge ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></div><div class="card-grid"><div class="grid-item"><span class="label">Monto USDC</span><span class="value">${(cryptoValueToDisplay || 0).toFixed(3)} ${mobileCommissionIndicator}</span></div><div class="grid-item"><span class="label">Monto BS</span><span class="value">${(op.montoBs || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasa || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Ganancia VES</span><span class="value ${(op.ves || 0) >= 0 ? 'profit-green' : 'profit-red'}">${(op.ves || 0).toFixed(2)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}<br>LOTE: ${op.lote || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="editOperation('${op.id}')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button><button class="action-btn delete" onclick="deleteOperation('${op.id}')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.033-2.134H8.033c-1.12 0-2.033.954-2.033 2.134v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button></div></div></div>`;
+                
                 tableBody.innerHTML += tableRowHtml;
                 listContainer.innerHTML += cardHtml;
             });
             
-            // SE INICIALIZA SORTABLEJS EN LOS ELEMENTOS
+            // Se inicializa SortableJS en ambos elementos con el retraso para móviles
             if (tableBody.children.length > 0) {
                 new Sortable(tableBody, {
                     animation: 150,
+                    delay: 300, // Retraso de 300ms antes de iniciar el arrastre
+                    delayOnTouchOnly: true, // Aplicar el retraso solo en dispositivos táctiles
                     onEnd: handleDragEnd
                 });
             }
             if (listContainer.children.length > 0) {
-                 new Sortable(listContainer, {
+                new Sortable(listContainer, {
                     animation: 150,
+                    delay: 300, // Mismo retraso para la vista móvil
+                    delayOnTouchOnly: true, // Mismo comportamiento
                     onEnd: handleDragEnd
                 });
             }
@@ -1955,64 +1961,73 @@ function updateSummary() {
          * @param {Event} evt - El evento proporcionado por SortableJS.
          */
         function handleDragEnd(evt) {
-            const { newIndex, item } = evt;
+    const { newIndex, oldIndex, item } = evt;
 
-            // Obtenemos el ID de la operación que se movió
-            const operationId = item.dataset.id;
-            if (!operationId) {
-                showToast('Error: No se pudo identificar la operación.', 'error');
-                return;
-            }
+    // Si no se movió de lugar, no hacemos nada
+    if (oldIndex === newIndex) {
+        return;
+    }
 
-            // Volvemos a filtrar y ordenar las operaciones exactamente como están en la UI ahora mismo
-            const searchTerm = document.getElementById('searchOperations').value.toLowerCase();
-            const filterOperacion = document.getElementById('filterOperacion').value;
-            const filterMetodo = document.getElementById('filterMetodoPago').value;
-            const currentSortedOps = operations
-                .filter(op => 
-                    op.fecha === currentDate && 
-                    (op.usuario.toLowerCase().includes(searchTerm) || (op.referencia && op.referencia.toLowerCase().includes(searchTerm))) &&
-                    (filterOperacion === '' || op.operacion === filterOperacion) &&
-                    (filterMetodo === '' || op.metodoPago === filterMetodo)
-                )
-                .sort((a, b) => b.timestamp - a.timestamp);
+    const operationId = item.dataset.id;
+    if (!operationId) {
+        return;
+    }
 
-            // Creamos un array mutable con el nuevo orden visual
-            const reorderedOps = Array.from(currentSortedOps);
-            const [movedItem] = reorderedOps.splice(evt.oldIndex, 1);
-            reorderedOps.splice(newIndex, 0, movedItem);
+    // Filtra y ordena las operaciones exactamente como están en la UI antes del movimiento
+    const searchTerm = document.getElementById('searchOperations').value.toLowerCase();
+    const filterOperacion = document.getElementById('filterOperacion').value;
+    const filterMetodo = document.getElementById('filterMetodoPago').value;
+    const currentSortedOps = operations
+        .filter(op => 
+            op.fecha === currentDate && 
+            (op.usuario.toLowerCase().includes(searchTerm) || (op.referencia && op.referencia.toLowerCase().includes(searchTerm))) &&
+            (filterOperacion === '' || op.operacion === filterOperacion) &&
+            (filterMetodo === '' || op.metodoPago === filterMetodo)
+        )
+        .sort((a, b) => b.timestamp - a.timestamp);
 
-            // Ahora, con el array `reorderedOps` que refleja el nuevo orden, encontramos los vecinos
-            const prevOp = reorderedOps[newIndex - 1];
-            const nextOp = reorderedOps[newIndex + 1];
+    // Simula el nuevo orden para encontrar los vecinos correctos
+    const reorderedOps = Array.from(currentSortedOps);
+    const [movedItem] = reorderedOps.splice(oldIndex, 1);
+    reorderedOps.splice(newIndex, 0, movedItem);
 
-            let newTimestamp;
+    const prevOp = reorderedOps[newIndex - 1];
+    const nextOp = reorderedOps[newIndex + 1];
+    let newTimestamp;
 
-            if (prevOp && nextOp) {
-                // Caso normal: movido entre dos elementos
-                newTimestamp = Math.floor((prevOp.timestamp + nextOp.timestamp) / 2);
-            } else if (prevOp) {
-                // Caso: movido al final de la lista (visualmente arriba, cronológicamente el más antiguo)
-                newTimestamp = prevOp.timestamp - 60000; // Restamos 1 minuto (en milisegundos)
-            } else if (nextOp) {
-                // Caso: movido al principio de la lista (visualmente abajo, cronológicamente el más nuevo)
-                newTimestamp = nextOp.timestamp + 60000; // Sumamos 1 minuto
-            } else {
-                // No debería ocurrir en una lista con más de un elemento
-                return;
-            }
+    if (prevOp && nextOp) {
+        // Movido entre dos elementos
+        newTimestamp = Math.floor((prevOp.timestamp + nextOp.timestamp) / 2);
+    } else if (prevOp) {
+        // Movido al final de la lista (visualmente arriba)
+        newTimestamp = prevOp.timestamp - 60000; // Resta 1 minuto
+    } else if (nextOp) {
+        // Movido al principio de la lista (visualmente abajo)
+        newTimestamp = nextOp.timestamp + 60000; // Suma 1 minuto
+    } else {
+        return; // No se puede reordenar
+    }
 
-            // Finalmente, actualizamos el documento en Firebase
-            db.collection('users').doc(currentUserId).collection('operations').doc(operationId)
-              .update({ timestamp: newTimestamp })
-              .then(() => {
-                  showToast('Orden actualizado. Recalculando...', 'info');
-              })
-              .catch(err => {
-                  showToast('Error al actualizar el orden.', 'error');
-                  console.error(err);
-              });
-        }
+    // Define la función que se ejecutará si el usuario confirma
+    const confirmCallback = () => {
+        db.collection('users').doc(currentUserId).collection('operations').doc(operationId)
+          .update({ timestamp: newTimestamp })
+          .then(() => {
+              showToast('Orden actualizado. Recalculando...', 'success');
+          })
+          .catch(err => {
+              showToast('Error al actualizar el orden.', 'error');
+              console.error(err);
+              renderOperations(); // Revierte si hay un error en Firebase
+          });
+    };
+
+    // Abre el modal de confirmación en lugar de ejecutar la acción directamente
+    openConfirmMoveModal(
+        '¿Estás seguro de que quieres cambiar el orden de esta operación? Esto recalculará todas las ganancias del día.',
+        confirmCallback
+    );
+}
         
         function openModal() { document.getElementById('operationModal').classList.add('show'); if(editingIndex === -1) clearForm();}
         function closeModal() { document.getElementById('operationModal').classList.remove('show'); editingIndex = -1; }
@@ -3876,6 +3891,39 @@ function executeConfirmAction() {
     closeConfirmModal();
 }
 
+/**
+* Abre el modal de confirmación de movimiento.
+ * @param {string} message - El mensaje a mostrar.
+ * @param {Function} onConfirmCallback - La función a ejecutar si se confirma.
+ */
+function openConfirmMoveModal(message, onConfirmCallback) {
+    document.getElementById('confirmMoveMessage').textContent = message;
+    moveAction = onConfirmCallback;
+    document.getElementById('confirmMoveModal').classList.add('show');
+}
+
+/**
+ * Cierra el modal y revierte el cambio visual si el usuario cancela.
+ */
+function cancelMoveAction() {
+    document.getElementById('confirmMoveModal').classList.remove('show');
+    moveAction = null;
+    // ¡Crucial! Vuelve a renderizar la lista para deshacer el cambio visual que hizo SortableJS.
+    showToast('Movimiento cancelado.', 'info');
+    renderOperations(); 
+}
+
+/**
+ * Ejecuta la acción de mover guardada y cierra el modal.
+ */
+function executeMoveAction() {
+    if (typeof moveAction === 'function') {
+        moveAction();
+    }
+    document.getElementById('confirmMoveModal').classList.remove('show');
+    moveAction = null;
+}
+
         window.showPage = showPage; window.loginUser = loginUser; window.registerUser = registerUser;
         window.toggleAuthForms = toggleAuthForms; window.logoutUser = logoutUser; window.openModal = openModal;
         window.closeModal = closeModal; window.saveOperation = saveOperation; window.editOperation = editOperation;
@@ -3920,6 +3968,8 @@ function executeConfirmAction() {
         window.executeConfirmAction = executeConfirmAction;
         window.enableAudio = enableAudio;
         window.handleDragEnd = handleDragEnd;
+        window.cancelMoveAction = cancelMoveAction;
+        window.executeMoveAction = executeMoveAction;
         
     </script>
 
@@ -3962,25 +4012,46 @@ function executeConfirmAction() {
         </div>
     </div>
     <div id="confirmDeleteModal" class="modal">
-    <div class="modal-content !max-w-sm">
-        <div class="modal-header">
-            <h2 class="modal-title text-xl font-bold text-red-400">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 inline-block -mt-1 mr-2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" />
-                </svg>
-                Confirmar Eliminación
-            </h2>
-        </div>
-        <div class="modal-body">
-            <p id="confirmDeleteMessage" class="text-center text-base leading-relaxed">¿Estás seguro?</p>
-        </div>
-        <div class="modal-buttons">
-            <button class="btn btn-secondary" onclick="closeConfirmModal()">Cancelar</button>
-            <button id="confirmDeleteBtn" class="btn bg-red-600 hover:bg-red-700 text-white" onclick="executeConfirmAction()">
-                Sí, Eliminar
-            </button>
+        <div class="modal-content !max-w-sm">
+            <div class="modal-header">
+                <h2 class="modal-title text-xl font-bold text-red-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 inline-block -mt-1 mr-2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" />
+                    </svg>
+                    Confirmar Eliminación
+                </h2>
+            </div>
+            <div class="modal-body">
+                <p id="confirmDeleteMessage" class="text-center text-base leading-relaxed">¿Estás seguro?</p>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeConfirmModal()">Cancelar</button>
+                <button id="confirmDeleteBtn" class="btn bg-red-600 hover:bg-red-700 text-white" onclick="executeConfirmAction()">
+                    Sí, Eliminar
+                </button>
+            </div>
         </div>
     </div>
-</div>
+    <div id="confirmMoveModal" class="modal">
+        <div class="modal-content !max-w-sm">
+            <div class="modal-header">
+                <h2 class="modal-title text-xl font-bold text-yellow-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 inline-block -mt-1 mr-2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+                    </svg>
+                    Confirmar Movimiento
+                </h2>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMoveMessage" class="text-center text-base leading-relaxed">¿Estás seguro?</p>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="cancelMoveAction()">Cancelar</button>
+                <button class="btn bg-yellow-600 hover:bg-yellow-700 text-white" onclick="executeMoveAction()">
+                    Sí, Mover
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>	
