@@ -1,5 +1,5 @@
 // 1. VERSIÓN DEL CACHÉ
-const CACHE_NAME = 'dashsy-cache-v1.1.9.4';
+const CACHE_NAME = 'dashsy-cache-v1.1.9.5';
 
 // 2. LISTA DE ARCHIVOS ESENCIALES
 const URLS_TO_CACHE = [
@@ -78,5 +78,6 @@ self.addEventListener('message', event => {
     self.skipWaiting();
   }
 });
+
 
 
