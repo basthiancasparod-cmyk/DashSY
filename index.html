@@ -591,26 +591,32 @@
     border-top-color: white;
 }
 
-/* --- ESTILOS PARA EL ARRASTRE DE ELEMENTOS --- */
+/* --- ESTILOS DEFINITIVOS PARA ARRASTRAR Y SOLTAR --- */
 
-/* Estilo para el elemento que está siendo arrastrado (el que se "ilumina") */
+/* 1. Estilo para el elemento ORIGINAL que se queda en la lista. Se atenúa para indicar su origen. */
 .sortable-chosen {
-    background-color: #2a3038 !important; /* Un fondo ligeramente más claro para destacarlo */
-    box-shadow: 0 0 15px 5px rgba(88, 166, 255, 0.3); /* Un brillo azul alrededor */
-    transform: scale(1.02); /* Lo hace un poco más grande para que "flote" */
-    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out; /* Animación suave */
+    opacity: 0.4 !important;
 }
 
-/* Estilo para el espacio vacío que deja el elemento mientras se arrastra */
-.sortable-ghost {
-    opacity: 0.4;
-    border: 2px dashed var(--primary);
-    background: var(--surface);
-}
-
-/* Estilo para el elemento clonado que sigue al cursor (Fallback) */
+/* 2. Estilo para el CLON que arrastras. Este es el que se ilumina. */
 .sortable-fallback {
-    opacity: 1 !important; /* Asegura que el clon sea totalmente visible */
+    opacity: 1 !important;
+    background: var(--surface);
+    cursor: grabbing !important;
+    border-radius: 12px; /* Re-aplicamos el borde redondeado al clon */
+    
+    /* Efecto de "iluminación" y profundidad con una sombra de caja múltiple */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), /* Sombra oscura para dar efecto de "levantado" */
+                0 0 0 2px var(--primary);      /* Borde/Glow azul de 2px alrededor */
+
+    z-index: 9999 !important; /* CRUCIAL: Mantiene el clon por encima de todo */
+}
+
+/* 3. Estilo para el espacio vacío donde se puede soltar el elemento. */
+.sortable-ghost {
+    opacity: 0.2;
+    background: var(--primary); /* Fondo azul para indicar claramente el destino */
+    border: 2px dashed var(--primary);
 }
 
     </style>
@@ -684,7 +690,7 @@
     </div>
 
     <div class="app-container" style="display: none;">
-        <main class="main-content">
+        <main class="main-content" id="scroll-container">
             <div id="page-operate" class="page">
                 <div class="flex justify-between items-center mb-6">
                     <div class="flex items-center gap-3">
@@ -1265,6 +1271,8 @@
         let currentUsdAnalysisTab = 'weekly'; // 'weekly' o 'monthly'
         let confirmAction = null;
         let moveAction = null;
+        let sortableTableInstance = null;
+        let sortableListInstance = null;
         // ...
 
         // AÑADE ESTAS DOS LÍNEAS
@@ -1911,12 +1919,23 @@ function updateSummary() {
         }
 
         // PASO 2: FUNCIÓN MODIFICADA
-        function renderOperations() {
+function renderOperations() {
+    // ---- INICIO DE LA CORRECCIÓN CLAVE ----
+    // 1. Destruimos las instancias anteriores de SortableJS si existen
+    if (sortableTableInstance) {
+        sortableTableInstance.destroy();
+    }
+    if (sortableListInstance) {
+        sortableListInstance.destroy();
+    }
+    // ---- FIN DE LA CORRECCIÓN CLAVE ----
+
     const tableBody = document.getElementById('operationsTable');
     const listContainer = document.getElementById('operationsList');
     const emptyState = document.getElementById('reports-empty-state');
     const desktopTableContainer = document.querySelector('#page-reports .table-container');
     const mobileListContainer = document.querySelector('#page-reports .operations-list-container');
+    const scrollContainer = document.getElementById('scroll-container'); 
 
     const searchTerm = document.getElementById('searchOperations').value.toLowerCase();
     const filterOperacion = document.getElementById('filterOperacion').value;
@@ -1929,50 +1948,43 @@ function updateSummary() {
         emptyState.style.display = 'block';
         desktopTableContainer.style.display = 'none';
         mobileListContainer.style.display = 'none';
-        return; 
+        return;
     } else {
         emptyState.style.display = 'none';
-        desktopTableContainer.style.display = ''; 
+        desktopTableContainer.style.display = '';
         mobileListContainer.style.display = '';
     }
 
     tableBody.innerHTML = '';
     listContainer.innerHTML = '';
     filteredOps.forEach(op => {
-        let cryptoValueToDisplay = op.montoUsdc; 
+        let cryptoValueToDisplay = op.montoUsdc;
         if (op.operacion === 'Venta' && op.adCommissionPercent > 0) {
             cryptoValueToDisplay = op.montoUsdc * (1 + (op.adCommissionPercent / 100));
         }
-
         const relationIndicator = op.operacion === 'Compra' ? `${op.metodoPago} ➡️ ${op.p2pPlatform || ''}` : `${op.metodoPago} ⬅️ ${op.p2pPlatform || ''}`;
         const commissionIndicator = op.adCommissionPercent > 0 ? `<span class="text-xs ${op.operacion === 'Venta' ? 'text-green-400' : 'text-red-400'}">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
         const mobileCommissionIndicator = op.adCommissionPercent > 0 ? `<span class="commission">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
-        
         const tableRowHtml = `<tr data-id="${op.id}" class="hover:bg-[var(--surface)] cursor-grab"><td class="text-left"><div class="font-semibold flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}</div><div class="text-xs text-gray-400">${relationIndicator}</div></td><td>${op.referencia || ''}</td><td>${op.operacion.substring(0,1)}</td><td>${(op.tasa || 0).toFixed(2)}</td><td><div class="flex flex-col items-center">${(cryptoValueToDisplay || 0).toFixed(3)} ${commissionIndicator}</div></td><td>${(op.montoBs || 0).toFixed(2)}</td><td class="font-semibold ${op.ves >= 0 ? 'text-green-400':'text-red-400'}">${(op.ves || 0).toFixed(2)}</td><td class="font-semibold ${op.usdc >= 0 ? 'text-green-400':'text-red-400'}">${(op.usdc || 0).toFixed(4)}</td><td>${op.lote || ''}</td><td><span class="px-2 py-1 text-xs font-semibold rounded-full ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></td><td><button class="text-blue-400 p-1" onclick="editOperation('${op.id}')">✏️</button><button class="text-red-400 p-1" onclick="deleteOperation('${op.id}')">🗑️</button></td></tr>`;
         const cardHtml = `<div data-id="${op.id}" class="operation-card ${op.operacion.toLowerCase()} cursor-grab"><div class="card-header"><div class="user-info flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}<div class="payment-method ml-auto">${relationIndicator}</div></div><span class="status-badge ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></div><div class="card-grid"><div class="grid-item"><span class="label">Monto USDC</span><span class="value">${(cryptoValueToDisplay || 0).toFixed(3)} ${mobileCommissionIndicator}</span></div><div class="grid-item"><span class="label">Monto BS</span><span class="value">${(op.montoBs || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasa || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Ganancia VES</span><span class="value ${(op.ves || 0) >= 0 ? 'profit-green' : 'profit-red'}">${(op.ves || 0).toFixed(2)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}<br>LOTE: ${op.lote || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="editOperation('${op.id}')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button><button class="action-btn delete" onclick="deleteOperation('${op.id}')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.033-2.134H8.033c-1.12 0-2.033.954-2.033 2.134v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button></div></div></div>`;
-        
         tableBody.innerHTML += tableRowHtml;
         listContainer.innerHTML += cardHtml;
     });
     
-    // Se inicializa SortableJS en ambos elementos con las opciones para móvil
+    const sortableOptions = {
+        animation: 150, delay: 300, delayOnTouchOnly: true,
+        forceFallback: true, fallbackOnBody: true,
+        scroll: scrollContainer, bubbleScroll: true,
+        onEnd: handleDragEnd
+    };
+
     if (tableBody.children.length > 0) {
-        new Sortable(tableBody, {
-            animation: 150,
-            delay: 300,
-            delayOnTouchOnly: true,
-            forceFallback: true, // <-- AÑADIR: La solución clave
-            onEnd: handleDragEnd
-        });
+        // 2. Guardamos la nueva instancia en nuestra variable global
+        sortableTableInstance = new Sortable(tableBody, sortableOptions);
     }
     if (listContainer.children.length > 0) {
-        new Sortable(listContainer, {
-            animation: 150,
-            delay: 300,
-            delayOnTouchOnly: true,
-            forceFallback: true, // <-- AÑADIR: La solución clave
-            onEnd: handleDragEnd
-        });
+        // 3. Hacemos lo mismo para la vista móvil
+        sortableListInstance = new Sortable(listContainer, sortableOptions);
     }
 }
         
@@ -1982,73 +1994,74 @@ function updateSummary() {
          * @param {Event} evt - El evento proporcionado por SortableJS.
          */
         function handleDragEnd(evt) {
-    const { newIndex, oldIndex, item } = evt;
+            const { newIndex, oldIndex, item } = evt;
 
-    // Si no se movió de lugar, no hacemos nada
-    if (oldIndex === newIndex) {
-        return;
-    }
+            if (oldIndex === newIndex) {
+                return;
+            }
 
-    const operationId = item.dataset.id;
-    if (!operationId) {
-        return;
-    }
+            const operationId = item.dataset.id;
+            if (!operationId) {
+                renderOperations();
+                return;
+            }
 
-    // Filtra y ordena las operaciones exactamente como están en la UI antes del movimiento
-    const searchTerm = document.getElementById('searchOperations').value.toLowerCase();
-    const filterOperacion = document.getElementById('filterOperacion').value;
-    const filterMetodo = document.getElementById('filterMetodoPago').value;
-    const currentSortedOps = operations
-        .filter(op => 
-            op.fecha === currentDate && 
-            (op.usuario.toLowerCase().includes(searchTerm) || (op.referencia && op.referencia.toLowerCase().includes(searchTerm))) &&
-            (filterOperacion === '' || op.operacion === filterOperacion) &&
-            (filterMetodo === '' || op.metodoPago === filterMetodo)
-        )
-        .sort((a, b) => b.timestamp - a.timestamp);
+            const searchTerm = document.getElementById('searchOperations').value.toLowerCase();
+            const filterOperacion = document.getElementById('filterOperacion').value;
+            const filterMetodo = document.getElementById('filterMetodoPago').value;
+            const currentSortedOps = operations
+                .filter(op => 
+                    op.fecha === currentDate && 
+                    (op.usuario.toLowerCase().includes(searchTerm) || (op.referencia && op.referencia.toLowerCase().includes(searchTerm))) &&
+                    (filterOperacion === '' || op.operacion === filterOperacion) &&
+                    (filterMetodo === '' || op.metodoPago === filterMetodo)
+                )
+                .sort((a, b) => b.timestamp - a.timestamp);
 
-    // Simula el nuevo orden para encontrar los vecinos correctos
-    const reorderedOps = Array.from(currentSortedOps);
-    const [movedItem] = reorderedOps.splice(oldIndex, 1);
-    reorderedOps.splice(newIndex, 0, movedItem);
+            if (currentSortedOps.length < 1) {
+                renderOperations();
+                return;
+            }
 
-    const prevOp = reorderedOps[newIndex - 1];
-    const nextOp = reorderedOps[newIndex + 1];
-    let newTimestamp;
+            let newTimestamp;
 
-    if (prevOp && nextOp) {
-        // Movido entre dos elementos
-        newTimestamp = Math.floor((prevOp.timestamp + nextOp.timestamp) / 2);
-    } else if (prevOp) {
-        // Movido al final de la lista (visualmente arriba)
-        newTimestamp = prevOp.timestamp - 60000; // Resta 1 minuto
-    } else if (nextOp) {
-        // Movido al principio de la lista (visualmente abajo)
-        newTimestamp = nextOp.timestamp + 60000; // Suma 1 minuto
-    } else {
-        return; // No se puede reordenar
-    }
+            if (newIndex === 0) {
+                newTimestamp = (currentSortedOps[0]?.timestamp || Date.now()) + 30000;
+            } else if (newIndex >= currentSortedOps.length) {
+                newTimestamp = (currentSortedOps[currentSortedOps.length - 1]?.timestamp || Date.now()) - 30000;
+            } else {
+                const neighborBefore = currentSortedOps[newIndex - 1];
+                const neighborAfter = currentSortedOps[newIndex];
+                if (!neighborBefore || !neighborAfter) {
+                    renderOperations();
+                    return;
+                }
+                newTimestamp = Math.floor((neighborBefore.timestamp + neighborAfter.timestamp) / 2);
+            }
+            
+            if (!newTimestamp) {
+                renderOperations();
+                return;
+            }
 
-    // Define la función que se ejecutará si el usuario confirma
-    const confirmCallback = () => {
-        db.collection('users').doc(currentUserId).collection('operations').doc(operationId)
-          .update({ timestamp: newTimestamp })
-          .then(() => {
-              showToast('Orden actualizado. Recalculando...', 'success');
-          })
-          .catch(err => {
-              showToast('Error al actualizar el orden.', 'error');
-              console.error(err);
-              renderOperations(); // Revierte si hay un error en Firebase
-          });
-    };
+            const confirmCallback = () => {
+                db.collection('users').doc(currentUserId).collection('operations').doc(operationId)
+                .update({ timestamp: newTimestamp })
+                .then(() => {
+                    showToast('Orden actualizado. Recalculando...', 'success');
+                })
+                .catch(err => {
+                    showToast('Error al actualizar el orden.', 'error');
+                    console.error(err);
+                    renderOperations(); 
+                });
+            };
 
-    // Abre el modal de confirmación en lugar de ejecutar la acción directamente
-    openConfirmMoveModal(
-        '¿Estás seguro de que quieres cambiar el orden de esta operación? Esto recalculará todas las ganancias del día.',
-        confirmCallback
-    );
-}
+            openConfirmMoveModal(
+                '¿Estás seguro de que quieres cambiar el orden de esta operación? Esto recalculará todas las ganancias del día.',
+                confirmCallback
+            );
+        }
         
         function openModal() { document.getElementById('operationModal').classList.add('show'); if(editingIndex === -1) clearForm();}
         function closeModal() { document.getElementById('operationModal').classList.remove('show'); editingIndex = -1; }
