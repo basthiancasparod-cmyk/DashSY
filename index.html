@@ -709,8 +709,8 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div class="card text-center clickable" onclick="openGainsSummaryModal()">
                         <p class="text-sm font-medium text-gray-400 mb-2">GANANCIA DEL DÍA</p>
-                        <div id="ganancias" class="text-4xl font-extrabold text-green-400">0.00 <span class="text-2xl font-semibold">VES</span></div>
-                        <div id="ganancias_usdc" class="text-lg font-semibold text-gray-300 mt-1">0.00 <span class="font-medium">USDC</span></div>
+                        <div id="ganancias_usdc" class="text-4xl font-extrabold text-green-400">0.00 <span class="text-2xl font-semibold">USDC</span></div>
+                        <div id="ganancias" class="text-lg font-semibold text-gray-300 mt-1">0.00 <span class="font-medium">VES</span></div>
                     </div>
                     <div class="card text-center flex flex-col justify-center clickable" onclick="openWallyGainsSummaryModal()">
                         <p class="text-sm font-medium text-gray-400 mb-2">GANANCIAS CRIPTO/USD</p>
@@ -800,7 +800,7 @@
                     <div class="card p-0">
                         <table>
                             <thead>
-                                <tr><th>USUARIO/MÉTODO</th><th>REF</th><th>OP</th><th>TASA</th><th>CRIPTO</th><th>BS</th><th>GAN. VES</th><th>GAN. CRIPTO</th><th>LOTE</th><th>ESTATUS</th><th>ACC</th></tr>
+                                <tr><th>USUARIO/MÉTODO</th><th>REF</th><th>OP</th><th>TASA</th><th>CRIPTO</th><th>BS</th><th>GAN. VES / USD</th><th>GAN. CRIPTO</th><th>LOTE</th><th>ESTATUS</th><th>ACC</th></tr>
                             </thead>
                             <tbody id="operationsTable"></tbody>
                         </table>
@@ -981,24 +981,24 @@
                         <h3 class="text-base font-semibold mb-3">Metas de Ganancias Diarias</h3>
                         <div class="card p-4 bg-background space-y-4">
                             <div class="grid grid-cols-[1fr_auto] items-center gap-4">
-                                <label for="goalVes" class="font-medium text-sm">VES:</label>
+                                <label for="goalVes" class="font-medium text-sm">OP. PRINCIPAL (CRIPTO):</label>
                                 <input type="number" id="goalVes" step="0.01" placeholder="Ej: 1000.00" class="form-field-grid">
                             </div>
                             <div class="grid grid-cols-[1fr_auto] items-center gap-4">
-                                <label for="goalCrypto" class="font-medium text-sm">CRIPTO (USDC):</label>
+                                <label for="goalCrypto" class="font-medium text-sm">OP. WALLET (CRIPTO):</label>
                                 <input type="number" id="goalCrypto" step="0.01" placeholder="Ej: 50.00" class="form-field-grid">
                             </div>
                             <div class="grid grid-cols-[1fr_auto] items-center gap-4">
-                                <label for="goalUsd" class="font-medium text-sm">USD:</label>
+                                <label for="goalUsd" class="font-medium text-sm">OP. WALLET (USD):</label>
                                 <input type="number" id="goalUsd" step="0.01" placeholder="Ej: 50.00" class="form-field-grid">
                             </div>
                             <hr class="border-gray-700 !my-5">
                             <div>
                                 <label class="font-medium text-sm mb-3 block text-center">Mostrar en Dashboard:</label>
                                 <div id="dashboardGoalToggles" class="flex justify-center gap-3">
-                                    <button data-goal="ves" class="goal-toggle-btn">VES</button>
-                                    <button data-goal="crypto" class="goal-toggle-btn">CRIPTO</button>
-                                    <button data-goal="usd" class="goal-toggle-btn">USD</button>
+                                    <button data-goal="ves" class="goal-toggle-btn">CRIPTO</button>
+                                    <button data-goal="crypto" class="goal-toggle-btn">CRIPTO WALLET</button>
+                                    <button data-goal="usd" class="goal-toggle-btn">USD WALLET</button>
                                 </div>
                             </div>
                         </div>
@@ -1846,72 +1846,89 @@ function updateSummary() {
     
     const [wallyGainsUsdcForDate, wallyGainsUsdForDate] = calculateWallyGainsForPeriod(wallyOperations.filter(op => op.fecha === currentDate));
 
-    document.getElementById('ganancias').innerHTML = `${gananciasVes.toFixed(2)} <span class="text-2xl font-semibold">VES</span>`;
-    document.getElementById('ganancias_usdc').innerHTML = `${gananciasUsdc.toFixed(4)} <span class="font-medium">USDC</span>`;
+    // VES ahora va en el contenedor pequeño, usamos una fuente normal
+document.getElementById('ganancias').innerHTML = `${gananciasVes.toFixed(2)} <span class="font-medium">VES</span>`;
+
+// USDC ahora va en el contenedor grande, usamos texto 2xl para que resalte
+document.getElementById('ganancias_usdc').innerHTML = `${gananciasUsdc.toFixed(4)} <span class="text-2xl font-semibold">USDC</span>`;
     document.getElementById('wallyDashboardGainsUsdc').innerHTML = `${wallyGainsUsdcForDate.toFixed(2)} <span class="text-xl font-semibold">USDC</span>`;
     document.getElementById('wallyDashboardGainsUsd').innerHTML = `${wallyGainsUsdForDate.toFixed(2)} <span class="text-xl font-semibold">USD</span>`;
 
-    renderDailyGoals(gananciasVes, wallyGainsUsdcForDate, wallyGainsUsdForDate);
+    // Pasamos 4 datos: 1. Ganancia VES (por si acaso), 2. Ganancia USDC (La nueva protagonista), 3. Wally Cripto, 4. Wally USD
+    renderDailyGoals(gananciasVes, gananciasUsdc, wallyGainsUsdcForDate, wallyGainsUsdForDate);
 }
 
-        function renderDailyGoals(currentVes, currentCrypto, currentUsd) {
-            const container = document.getElementById('dailyGoalsContainer');
-            container.innerHTML = ''; 
+        function renderDailyGoals(currentVes, currentUsdcFromVes, currentCrypto, currentUsd) {
+    const container = document.getElementById('dailyGoalsContainer');
+    container.innerHTML = ''; 
 
-            const goalsToShow = userConfig.dashboardGoals || defaultDashboardGoals;
-            const profitGoals = userConfig.profitGoals || defaultProfitGoals;
-            
-            let visibleGoalsCount = 0;
+    // Obtenemos la configuración
+    const goalsToShow = userConfig.dashboardGoals || defaultDashboardGoals;
+    const profitGoals = userConfig.profitGoals || defaultProfitGoals;
+    
+    let visibleGoalsCount = 0;
 
-            if (goalsToShow.ves) {
-                visibleGoalsCount++;
-                const goal = profitGoals.ves || 0;
-                const percentage = Math.min(goal > 0 ? (currentVes / goal) * 100 : 0, 100);
-                container.innerHTML += `
-                    <div>
-                        <div class="flex justify-between items-center text-sm mb-2">
-                            <span class="font-medium text-gray-400">Meta Diaria (VES)</span>
-                            <span class="font-semibold">${currentVes.toFixed(2)} / ${goal.toFixed(2)} VES</span>
-                        </div>
-                        <div class="w-full bg-gray-700 rounded-full h-2">
-                            <div class="bg-blue-500 h-2 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
-                        </div>
-                    </div>`;
-            }
-            if (goalsToShow.crypto) {
-                visibleGoalsCount++;
-                 const goal = profitGoals.crypto || 0;
-                const percentage = Math.min(goal > 0 ? (currentCrypto / goal) * 100 : 0, 100);
-                container.innerHTML += `
-                    <div>
-                        <div class="flex justify-between items-center text-sm mb-2">
-                            <span class="font-medium text-gray-400">Meta Diaria (CRIPTO)</span>
-                            <span class="font-semibold">${currentCrypto.toFixed(2)} / ${goal.toFixed(2)} USDC</span>
-                        </div>
-                        <div class="w-full bg-gray-700 rounded-full h-2">
-                            <div class="bg-orange-400 h-2 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
-                        </div>
-                    </div>`;
-            }
-            if (goalsToShow.usd) {
-                visibleGoalsCount++;
-                const goal = profitGoals.usd || 0;
-                const percentage = Math.min(goal > 0 ? (currentUsd / goal) * 100 : 0, 100);
-                 container.innerHTML += `
-                    <div>
-                        <div class="flex justify-between items-center text-sm mb-2">
-                            <span class="font-medium text-gray-400">Meta Diaria (USD)</span>
-                            <span class="font-semibold">${currentUsd.toFixed(2)} / ${goal.toFixed(2)} USD</span>
-                        </div>
-                        <div class="w-full bg-gray-700 rounded-full h-2">
-                            <div class="bg-purple-400 h-2 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
-                        </div>
-                    </div>`;
-            }
-            if (visibleGoalsCount === 0) {
-                 container.innerHTML = `<p class="text-center text-sm text-gray-500">No hay metas seleccionadas para mostrar. Ve a ⚙️ Ajustes para configurarlas.</p>`;
-            }
-        }
+    // --- PRIMERA BARRA: META OPERATIVA (ANTES VES, AHORA USDC) ---
+    if (goalsToShow.ves) { // Usamos el switch "ves" de la config, pero mostramos Dólares
+        visibleGoalsCount++;
+        
+        // 1. Obtenemos la meta que escribiste en Ajustes (ahora tratada como USD)
+        const goal = profitGoals.ves || 0; 
+
+        // 2. Calculamos el porcentaje usando TU GANANCIA EN USDC (no en Bs)
+        const percentage = Math.min(goal > 0 ? (currentUsdcFromVes / goal) * 100 : 0, 100);
+        
+        container.innerHTML += `
+            <div>
+                <div class="flex justify-between items-center text-sm mb-2">
+                    <span class="font-medium text-gray-400">META OP PRINCIPAL (CRIPTO)</span>
+                    <span class="font-semibold">${currentUsdcFromVes.toFixed(2)} / ${goal.toFixed(2)} USDC</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2">
+                    <div class="bg-blue-500 h-2 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                </div>
+            </div>`;
+    }
+
+    // --- SEGUNDA BARRA: META WALLY (CRIPTO) ---
+    if (goalsToShow.crypto) {
+        visibleGoalsCount++;
+        const goal = profitGoals.crypto || 0;
+        const percentage = Math.min(goal > 0 ? (currentCrypto / goal) * 100 : 0, 100);
+        container.innerHTML += `
+            <div>
+                <div class="flex justify-between items-center text-sm mb-2">
+                    <span class="font-medium text-gray-400">META OP WALLET (CRIPTO)</span>
+                    <span class="font-semibold">${currentCrypto.toFixed(2)} / ${goal.toFixed(2)} USDC</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2">
+                    <div class="bg-orange-400 h-2 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                </div>
+            </div>`;
+    }
+
+    // --- TERCERA BARRA: META WALLY (USD FIAT) ---
+    if (goalsToShow.usd) {
+        visibleGoalsCount++;
+        const goal = profitGoals.usd || 0;
+        const percentage = Math.min(goal > 0 ? (currentUsd / goal) * 100 : 0, 100);
+            container.innerHTML += `
+            <div>
+                <div class="flex justify-between items-center text-sm mb-2">
+                    <span class="font-medium text-gray-400">META OP WALLET (USD)</span>
+                    <span class="font-semibold">${currentUsd.toFixed(2)} / ${goal.toFixed(2)} USD</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2">
+                    <div class="bg-purple-400 h-2 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                </div>
+            </div>`;
+    }
+
+    // --- MENSAJE SI NO HAY METAS ACTIVAS ---
+    if (visibleGoalsCount === 0) {
+            container.innerHTML = `<p class="text-center text-sm text-gray-500">No hay metas seleccionadas. Ve a Ajustes para activar alguna.</p>`;
+    }
+}
 
         function getRatingIndicator(userName) {
             const avg = calculateAverageRating(userName);
@@ -1965,8 +1982,19 @@ function renderOperations() {
         const relationIndicator = op.operacion === 'Compra' ? `${op.metodoPago} ➡️ ${op.p2pPlatform || ''}` : `${op.metodoPago} ⬅️ ${op.p2pPlatform || ''}`;
         const commissionIndicator = op.adCommissionPercent > 0 ? `<span class="text-xs ${op.operacion === 'Venta' ? 'text-green-400' : 'text-red-400'}">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
         const mobileCommissionIndicator = op.adCommissionPercent > 0 ? `<span class="commission">(${op.operacion === 'Venta' ? '+' : '-'}${op.adCommissionPercent}%)</span>` : '';
-        const tableRowHtml = `<tr data-id="${op.id}" class="hover:bg-[var(--surface)] cursor-grab"><td class="text-left"><div class="font-semibold flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}</div><div class="text-xs text-gray-400">${relationIndicator}</div></td><td>${op.referencia || ''}</td><td>${op.operacion.substring(0,1)}</td><td>${(op.tasa || 0).toFixed(2)}</td><td><div class="flex flex-col items-center">${(cryptoValueToDisplay || 0).toFixed(3)} ${commissionIndicator}</div></td><td>${(op.montoBs || 0).toFixed(2)}</td><td class="font-semibold ${op.ves >= 0 ? 'text-green-400':'text-red-400'}">${(op.ves || 0).toFixed(2)}</td><td class="font-semibold ${op.usdc >= 0 ? 'text-green-400':'text-red-400'}">${(op.usdc || 0).toFixed(4)}</td><td>${op.lote || ''}</td><td><span class="px-2 py-1 text-xs font-semibold rounded-full ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></td><td><button class="text-blue-400 p-1" onclick="editOperation('${op.id}')">✏️</button><button class="text-red-400 p-1" onclick="deleteOperation('${op.id}')">🗑️</button></td></tr>`;
-        const cardHtml = `<div data-id="${op.id}" class="operation-card ${op.operacion.toLowerCase()} cursor-grab"><div class="card-header"><div class="user-info flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}<div class="payment-method ml-auto">${relationIndicator}</div></div><span class="status-badge ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></div><div class="card-grid"><div class="grid-item"><span class="label">Monto USDC</span><span class="value">${(cryptoValueToDisplay || 0).toFixed(3)} ${mobileCommissionIndicator}</span></div><div class="grid-item"><span class="label">Monto BS</span><span class="value">${(op.montoBs || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasa || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Ganancia VES</span><span class="value ${(op.ves || 0) >= 0 ? 'profit-green' : 'profit-red'}">${(op.ves || 0).toFixed(2)}</span></div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}<br>LOTE: ${op.lote || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="editOperation('${op.id}')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button><button class="action-btn delete" onclick="deleteOperation('${op.id}')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.033-2.134H8.033c-1.12 0-2.033.954-2.033 2.134v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button></div></div></div>`;
+        const tableRowHtml = `<tr data-id="${op.id}" class="hover:bg-[var(--surface)] cursor-grab"><td class="text-left"><div class="font-semibold flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}</div><div class="text-xs text-gray-400">${relationIndicator}</div></td><td>${op.referencia || ''}</td><td>${op.operacion.substring(0,1)}</td><td>${(op.tasa || 0).toFixed(2)}</td><td><div class="flex flex-col items-center">${(cryptoValueToDisplay || 0).toFixed(3)} ${commissionIndicator}</div></td><td>${(op.montoBs || 0).toFixed(2)}</td><td>
+    <span class="${op.ves >= 0 ? 'text-green-400' : 'text-red-400'} font-semibold">${(op.ves || 0).toFixed(2)} Bs</span>
+    <span class="text-gray-500 mx-1">/</span>
+    <span class="${op.usdc >= 0 ? 'text-green-400' : 'text-red-400'} font-semibold">${(op.usdc || 0).toFixed(2)} $</span>
+</td><td class="font-semibold ${op.usdc >= 0 ? 'text-green-400':'text-red-400'}">${(op.usdc || 0).toFixed(4)}</td><td>${op.lote || ''}</td><td><span class="px-2 py-1 text-xs font-semibold rounded-full ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></td><td><button class="text-blue-400 p-1" onclick="editOperation('${op.id}')">✏️</button><button class="text-red-400 p-1" onclick="deleteOperation('${op.id}')">🗑️</button></td></tr>`;
+        const cardHtml = `<div data-id="${op.id}" class="operation-card ${op.operacion.toLowerCase()} cursor-grab"><div class="card-header"><div class="user-info flex items-center">${op.usuario} ${getRatingIndicator(op.usuario)}<div class="payment-method ml-auto">${relationIndicator}</div></div><span class="status-badge ${op.estatus === 'Completado' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${op.estatus}</span></div><div class="card-grid"><div class="grid-item"><span class="label">Monto USDC</span><span class="value">${(cryptoValueToDisplay || 0).toFixed(3)} ${mobileCommissionIndicator}</span></div><div class="grid-item"><span class="label">Monto BS</span><span class="value">${(op.montoBs || 0).toFixed(2)}</span></div><div class="grid-item"><span class="label">Tasa</span><span class="value">${(op.tasa || 0).toFixed(2)}</span></div><div class="grid-item">
+    <span class="label">Ganancia VES / USD</span>
+    <div class="value">
+        <span class="${op.ves >= 0 ? 'profit-green' : 'profit-red'}">${(op.ves || 0).toFixed(2)}</span>
+        <span class="text-gray-500"> / </span>
+        <span class="${op.usdc >= 0 ? 'profit-green' : 'profit-red'}">${(op.usdc || 0).toFixed(2)}</span>
+    </div>
+</div></div><div class="card-footer"><div class="ref-info">REF: ${op.referencia || 'N/A'}<br>LOTE: ${op.lote || 'N/A'}</div><div class="actions"><button class="action-btn edit" onclick="editOperation('${op.id}')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg></button><button class="action-btn delete" onclick="deleteOperation('${op.id}')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.033-2.134H8.033c-1.12 0-2.033.954-2.033 2.134v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button></div></div></div>`;
         tableBody.innerHTML += tableRowHtml;
         listContainer.innerHTML += cardHtml;
     });
