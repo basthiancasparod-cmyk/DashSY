@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DashSY - Dashboard de Operaciones</title>
+    <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+
+<link rel="manifest" href="manifest.json">
+<script>
+    // --- NUEVO SISTEMA DE REGISTRO Y ACTUALIZACIÓN DEL SERVICE WORKER ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            let newWorker;
+            
+            navigator.serviceWorker.register('./sw.js').then(reg => {
+                // 1. Escucha por una nueva versión del SW que se está instalando
+                reg.addEventListener('updatefound', () => {
+                    console.log('Nueva versión del Service Worker encontrada. Instalando...');
+                    newWorker = reg.installing;
+                    
+                    // 2. Cuando el nuevo SW se instala, mostramos la notificación
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                           // Muestra el banner de actualización
+                           const notification = document.getElementById('update-notification');
+                           notification.classList.add('show');
+
+                           // 3. AHORA que el banner es visible, le damos la funcionalidad al botón
+                           const reloadButton = document.getElementById('update-reload-button');
+                           reloadButton.addEventListener('click', () => {
+                               // Añadimos feedback visual inmediato
+                               reloadButton.classList.add('loading'); // Activa el spinner
+                               const textSpan = reloadButton.querySelector('.btn-text');
+                               if(textSpan) textSpan.textContent = 'Actualizando...'; // Cambia el texto
+
+                               // Esto le dice al nuevo Service Worker que se active
+                               newWorker.postMessage({ type: 'SKIP_WAITING' });
+                           });
+                        }
+                    });
+                });
+            });
+            
+            // 4. Cuando el nuevo SW toma el control, recargamos la página
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
+            });
+        });
+    }
+</script>
+
+</head>
+<body class="overscroll-none">
+
+    
+        <div id="update-notification" class="update-banner">
+            <span>Hay una nueva versión disponible.</span>
+                <button id="update-reload-button" class="update-button btn">
+            <span class="btn-text">Actualizar</span>
+                <div class="btn-spinner"></div>
+            </button>
+        </div>
+
+    <div id="loading-overlay" class="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[9999]" style="display: flex;">
+        <div class="loader"></div>
+    </div>
+
+    <div id="authSection" class="h-screen w-screen flex items-center justify-center p-4">
+        <div class="auth-container w-full max-w-sm p-8">
+            <div id="loginForm"><h2 class="text-2xl font-bold text-center mb-6">Iniciar Sesión</h2><div class="form-group mb-4 text-left"><label class="text-sm font-medium mb-1 block">Correo Electrónico:</label><input type="email" id="loginEmail" placeholder="tu@correo.com" class="w-full"></div><div class="form-group mb-6 text-left"><label class="text-sm font-medium mb-1 block">Contraseña:</label><input type="password" id="loginPassword" placeholder="••••••••" class="w-full"></div><button class="btn-primary w-full py-3 rounded-xl font-semibold" onclick="loginUser()">Entrar</button><p class="text-center mt-6 text-sm text-blue-400 cursor-pointer" onclick="toggleAuthForms()">¿No tienes cuenta? Regístrate</p></div>
+            <div id="registerForm" style="display: none;"><h2 class="text-2xl font-bold text-center mb-6">Crear Cuenta</h2><div class="form-group mb-4 text-left"><label class="text-sm font-medium mb-1 block">Correo Electrónico:</label><input type="email" id="registerEmail" placeholder="tu@correo.com" class="w-full"></div><div class="form-group mb-6 text-left"><label class="text-sm font-medium mb-1 block">Contraseña:</label><input type="password" id="registerPassword" placeholder="Mínimo 6 caracteres" class="w-full"></div><button class="btn-primary w-full py-3 rounded-xl font-semibold" onclick="registerUser()">Registrarse</button><p class="text-center mt-6 text-sm text-blue-400 cursor-pointer" onclick="toggleAuthForms()">¿Ya tienes cuenta? Inicia Sesión</p></div>
+            <p id="authError" class="text-red-500 mt-4 text-sm"></p>
+        </div>
+    </div>
+
+    <div class="app-container" style="display: none;">
+        <main class="main-content" id="scroll-container">
+            <div id="page-operate" class="page">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                           <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd" />
+                        </svg>
+                        <h1 id="userEmail" class="text-2xl font-bold">Cargando...</h1>
+                    </div>
+                    <label for="selectedDate" class="flex items-center gap-2 cursor-pointer">
+                         <svg onclick="document.getElementById('selectedDate').showPicker()" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-400 cursor-pointer" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <input type="date" id="selectedDate" class="bg-transparent border-none font-semibold text-blue-400 focus:ring-0 p-0">
+                    </label>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="card text-center clickable" onclick="openGainsSummaryModal()">
+                        <p class="text-sm font-medium text-gray-400 mb-2">GANANCIA DEL DÍA</p>
+                        <div id="ganancias_usdc" class="text-4xl font-extrabold text-green-400">0.00 <span class="text-2xl font-semibold">USDC</span></div>
+                        <div id="ganancias" class="text-lg font-semibold text-gray-300 mt-1">0.00 <span class="font-medium">VES</span></div>
+                    </div>
+                    <div class="card text-center flex flex-col justify-center clickable" onclick="openWallyGainsSummaryModal()">
+                        <p class="text-sm font-medium text-gray-400 mb-2">GANANCIAS CRIPTO/USD</p>
+                        <div class="flex justify-center items-baseline gap-x-4">
+                            <div id="wallyDashboardGainsUsdc" class="text-3xl font-bold text-orange-400">0.00 <span class="text-xl font-semibold">USDC</span></div>
+                            <div id="wallyDashboardGainsUsd" class="text-3xl font-bold text-purple-400">0.00 <span class="text-xl font-semibold">USD</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="dailyGoalsContainer" class="card mb-6 space-y-4">
+                </div>
+                <div class="card p-4 mb-6">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-semibold text-base">Capital Inicial del Día</h3>
+                        <button class="btn btn-secondary !py-2 !px-4 !text-sm !font-semibold" onclick="openInitialCapitalModal()">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 inline-block -mt-1 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 17.25v-.228a4.5 4.5 0 00-.12-1.03l-2.268-9.64a3.375 3.375 0 00-3.285-2.602H7.923a3.375 3.375 0 00-3.285 2.602l-2.268 9.64a4.5 4.5 0 00-.12 1.03v.228m19.5 0a3 3 0 01-3 3H5.25a3 3 0 01-3-3m19.5 0a3 3 0 00-3-3H5.25a3 3 0 00-3 3m16.5 0h.008v.008h-.008v-.008zm-3 0h.008v.008h-.008v-.008z" /></svg>
+                            <span>Registrar / Editar</span>
+                        </button>
+                    </div>
+                    <div id="initialCapitalSummary" class="mt-4 text-sm">
+                        <p class="text-gray-500">Cargando capital...</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="card text-center"><p class="text-sm font-medium text-gray-400">Prom. Compra</p><p id="promCompra" class="text-xl font-bold mt-1">0.00</p></div>
+                    <div class="card text-center"><p class="text-sm font-medium text-gray-400">Prom. Venta</p><p id="promVenta" class="text-xl font-bold mt-1">0.00</p></div>
+                    <div class="card text-center clickable" onclick="openBankBreachModal()"><p class="text-sm font-medium text-gray-400">Brecha</p><p id="brecha" class="text-xl font-bold mt-1">0%</p></div>
+                    <div class="card text-center"><p class="text-sm font-medium text-gray-400">Operaciones</p><p id="totalOps" class="text-xl font-bold mt-1">0</p></div>
+                    <div class="card text-center clickable" onclick="openLotDetailsModal()"><p class="text-sm font-medium text-gray-400">Lotes Activos</p><p id="activeLotsSummary" class="text-xl font-bold mt-1">0</p></div>
+                    <div class="card text-center clickable" onclick="openPendingDetailsModal()"><p class="text-sm font-medium text-gray-400">Pendientes</p><p id="pendingSummary" class="text-xl font-bold mt-1">0 USDC</p></div>
+                    <div class="card text-center clickable col-span-2" onclick="openWeeklyAnalysisModal()">
+                        <div class="flex items-center justify-center gap-2">
+                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-purple-400">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v18h16.5V3H3.75zm.75 4.5h15m-15 0a.375.375 0 01.375-.375h14.25c.207 0 .375.168.375.375v9.75c0 .207-.168.375-.375.375H4.125A.375.375 0 013.75 17.25V7.5z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-3-3v6" />
+                            </svg>
+                            <p class="text-base font-bold text-purple-400">Análisis Semanal VES</p>
+                        </div>
+                    </div>
+                        <div class="card text-center clickable col-span-2" onclick="openMonthlyAnalysisModal()">
+                            <div class="flex items-center justify-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-teal-400">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M9.75 12.75h4.5" />
+                                </svg>
+                                <p class="text-base font-bold text-teal-400">Análisis Mensual VES</p>
+                            </div>
+                        </div>
+                </div>
+                <div class="card text-center clickable col-span-2" onclick="openUsdAnalysisModal()">
+                    <div class="flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-sky-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V6.375c0-.621.504-1.125 1.125-1.125h.375m18 0h-4.5m-4.5 0h-4.5m0 0h-4.5m0 0l-1.5 1.5m1.5-1.5l1.5 1.5m0 0l1.5-1.5m1.5 1.5l1.5-1.5m-3-3l1.5-1.5m1.5 1.5l1.5-1.5m-4.5 9l1.5-1.5m-1.5 1.5l1.5 1.5m0 0l-1.5 1.5m1.5-1.5l1.5 1.5M9 12l1.5 1.5m-1.5-1.5L9 12m0 0l-1.5-1.5m1.5 1.5L9 12m-3 3l1.5-1.5m-1.5 1.5L6 15m0 0l-1.5-1.5m1.5 1.5L6 15m6-3l1.5 1.5m-1.5-1.5L15 12m0 0l-1.5-1.5m1.5 1.5L15 12m0 0l-1.5 1.5m-1.5-1.5l-1.5-1.5" />
+                        </svg>
+                        <p class="text-base font-bold text-sky-400">Análisis USD</p>
+                    </div>
+                </div>
+            </div>
+            <div id="page-reports" class="page">
+                    <h1 class="text-2xl font-bold mb-4">Operaciones VES</h1>
+                    <div class="filter-controls">
+                        <div class="filter-item search-bar">
+                            <label for="searchOperations">Buscar</label>
+                            <input type="text" id="searchOperations" placeholder="Por usuario o referencia..." onkeyup="renderOperations()">
+                        </div>
+                        <div class="filter-item">
+                            <label for="filterOperacion">Operación</label>
+                            <select id="filterOperacion" onchange="renderOperations()">
+                                <option value="">Todas</option>
+                                <option value="Compra">Compra</option>
+                                <option value="Venta">Venta</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label for="filterMetodoPago">Método</label>
+                            <select id="filterMetodoPago" onchange="renderOperations()"></select>
+                        </div>
+                    </div>
+
+                    <div id="reports-empty-state" class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                        </svg>
+                        <p>No se encontraron operaciones</p>
+                        <span>Prueba cambiando la fecha o ajustando los filtros de búsqueda.</span>
+                    </div>
+                     <div class="table-container">
+                    <div class="card p-0">
+                        <table>
+                            <thead>
+                                <tr><th>USUARIO/MÉTODO</th><th>REF</th><th>OP</th><th>TASA</th><th>CRIPTO</th><th>BS</th><th>GAN. VES / USD</th><th>GAN. CRIPTO</th><th>LOTE</th><th>ESTATUS</th><th>ACC</th></tr>
+                            </thead>
+                            <tbody id="operationsTable"></tbody>
+                        </table>
+                    </div>
+                 </div>
+
+                 <div class="operations-list-container">
+                    <div id="operationsList" class="operations-list"></div>
+                </div>
+            </div>
+            <div id="page-wally" class="page">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold">Operaciones USD</h1>
+                    <label for="wallySelectedDate" class="flex items-center gap-2 cursor-pointer">
+                         <svg onclick="document.getElementById('wallySelectedDate').showPicker()" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-400 cursor-pointer" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <input type="date" id="wallySelectedDate" class="bg-transparent border-none font-semibold text-blue-400 focus:ring-0 p-0">
+                    </label>
+                </div>
+                <div class="card text-center mb-6">
+    <p class="text-sm font-medium text-gray-400 mb-2">GANANCIAS DEL DÍA (USD)</p>
+    <div id="wallyGanancias" class="text-3xl font-extrabold">
+        <span class="text-orange-400">0.00</span> <span class="text-xl font-semibold">USDC</span> / 
+        <span class="text-purple-400">0.00</span> <span class="text-xl font-semibold">USD</span>
+    </div>
+</div>
+
+<div class="filter-controls mb-6">
+    <div class="filter-item search-bar">
+        <label for="searchWallyOperations">Buscar Usuario / Ref</label>
+        <input type="text" id="searchWallyOperations" placeholder="Escribe aquí..." onkeyup="renderWallyTables()">
+    </div>
+    <div class="filter-item">
+        <label for="filterWallyOperacion">Operación</label>
+        <select id="filterWallyOperacion" onchange="renderWallyTables()">
+            <option value="">Todas</option>
+            <option value="Compra">Compra (Recibo Cripto)</option>
+            <option value="Venta">Venta (Recibo USD)</option>
+        </select>
+    </div>
+    <div class="filter-item">
+        <label for="filterWallyMetodoPago">Método de Pago</label>
+        <select id="filterWallyMetodoPago" onchange="renderWallyTables()">
+            </select>
+    </div>
+</div>
+                <div class="space-y-6">
+                    <div>
+                    <h2 class="text-lg font-semibold mb-2 text-green-400">COMPRA (Recibo CRIPTO)</h2>
+                    <div id="wally-compras-empty-state" class="empty-state" style="margin-top: 0;">
+                        <p>Sin Compras en USD</p>
+                        <span>No hay operaciones de compra de USDC registradas para esta fecha.</span>
+                    </div>
+                    <div class="card p-0">
+                        <div class="table-container">
+                            <table class="w-full min-w-[600px]">
+                                <thead><tr><th>Usuario/Plataforma</th><th>Recibo CRIPTO</th><th>Tasa</th><th>Envío USD</th><th>Gan. CRIPTO</th><th>Acciones</th></tr></thead>
+                                <tbody id="wallyCompraTable"></tbody>
+                            </table>
+                        </div>
+                        <div class="operations-list-container p-4">
+                            <div id="wallyCompraList" class="operations-list"></div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold mb-2 text-red-400">VENTAS (Recibo USD)</h2>
+                    <div id="wally-ventas-empty-state" class="empty-state" style="margin-top: 0;">
+                        <p>Sin Ventas en USD</p>
+                        <span>No hay operaciones de venta de USDC registradas para esta fecha.</span>
+                    </div>
+                    <div class="card p-0">
+                        <div class="table-container">
+                            <table class="w-full min-w-[600px]">
+                                <thead><tr><th>Usuario/Plataforma</th><th>Envío CRIPTO</th><th>Tasa</th><th>Recibo USD</th><th>Gan. USD</th><th>Acciones</th></tr></thead>
+                                <tbody id="wallyVentaTable"></tbody>
+                            </table>
+                        </div>
+                        <div class="operations-list-container p-4">
+                            <div id="wallyVentaList" class="operations-list"></div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+                <button class="btn-fab" onclick="openWallyModal()" style="display: none;"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg></button>
+            </div>
+            <div id="page-ratings" class="page">
+                <h1 class="text-2xl font-bold mb-4">Calificaciones de Usuarios</h1>
+                <div class="filter-controls mb-6">
+                    <div class="filter-item search-bar">
+                        <label for="searchRatings">Buscar Usuario</label>
+                        <input type="text" id="searchRatings" placeholder="Nombre de usuario..." onkeyup="renderRatingsPage()">
+                    </div>
+                </div>
+                <div id="ratingsListContainer" class="space-y-3">
+                    </div>
+                    
+                    <div id="ratings-pagination" class="flex justify-between items-center mt-6" style="display: none;">
+                        <button id="prev-page-btn" class="btn btn-secondary !py-2 !px-4">Anterior</button>
+                        <span id="page-info" class="text-sm font-semibold text-gray-400"></span>
+                        <button id="next-page-btn" class="btn btn-secondary !py-2 !px-4">Siguiente</button>
+                    </div>
+            </div>
+            <div id="page-settings" class="page">
+                <h1 class="text-2xl font-bold mb-6">Ajustes</h1>
+                <div class="space-y-4">
+                    <button onclick="openConfigModal()" class="w-full text-left p-4 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors">⚙️ Configuración General</button>
+                    
+                    <button id="enableSoundBtn" onclick="enableAudio()" class="w-full text-left p-4 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors">🔊 Habilitar Sonido para Notificaciones</button>
+                    
+                    <button onclick="logoutUser()" class="w-full text-left p-4 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors">🚪 Cerrar Sesión</button>
+                </div>
+            </div>
+            <button id="main-fab" class="btn-fab" onclick="openModal()"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg></button>
+        </main>
+        <nav class="bottom-nav">
+            <button id="nav-operate" class="nav-item active" onclick="showPage('operate')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V6.375c0-.621.504-1.125 1.125-1.125h.375m18 0h-4.5m-4.5 0h-4.5m0 0h-4.5m0 0l-1.5 1.5m1.5-1.5l1.5 1.5m0 0l1.5-1.5m1.5 1.5l1.5-1.5m-3-3l1.5-1.5m1.5 1.5l1.5-1.5m-4.5 9l1.5-1.5m-1.5 1.5l1.5 1.5m0 0l-1.5 1.5m1.5-1.5l1.5 1.5M9 12l1.5 1.5m-1.5-1.5L9 12m0 0l-1.5-1.5m1.5 1.5L9 12m-3 3l1.5-1.5m-1.5 1.5L6 15m0 0l-1.5-1.5m1.5 1.5L6 15m6-3l1.5 1.5m-1.5-1.5L15 12m0 0l-1.5-1.5m1.5 1.5L15 12m0 0l-1.5 1.5m-1.5-1.5l-1.5-1.5"/></svg><span>Dashboard</span></button>
+            <button id="nav-reports" class="nav-item" onclick="showPage('reports')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg><span>Resumen VES</span></button>
+            <button id="nav-wally" class="nav-item" onclick="showPage('wally')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span>Operaciones USD</span></button>
+            <button id="nav-ratings" class="nav-item" onclick="showPage('ratings')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg><span>Ratings</span></button>
+            <button id="nav-settings" class="nav-item" onclick="showPage('settings')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" /></svg><span>Ajustes</span></button>
+        </nav>
+    </div>
+    
+    <div id="toast-container"></div>
+    
+    <div id="operationModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold" id="modalTitle">Nueva Operación</h2><button class="close-btn" onclick="closeModal()">&times;</button></div><div class="modal-body"><div class="space-y-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Usuario</label><input type="text" id="usuario" placeholder="Nombre del usuario" class="w-full"></div><div class="grid grid-cols-2 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Referencia</label><input type="text" id="referencia" placeholder="Nº de referencia" class="w-full"></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Estatus</label><select id="estatus" class="w-full"><option value="En Curso">En Curso</option><option value="En Disputa">En Disputa</option><option value="Completado">Completado</option></select></div></div><div class="grid grid-cols-3 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Operación</label><select id="operacion" onchange="calculateAll()" class="w-full"><option value="Compra">Compra</option><option value="Venta">Venta</option></select></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Método de Pago</label><select id="metodoPago" onchange="calculateAll()" class="w-full"></select></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Plataforma P2P</label><select id="p2pPlatformSelect" onchange="calculateAll()" class="w-full"></select></div></div><hr class="border-gray-700"><div class="grid grid-cols-2 gap-4"><div class="form-group"><label class="text-sm font-medium mb-1 block">Tasa de Cambio</label><input type="number" id="tasa" step="0.01" placeholder="0.00" onkeyup="calculateAll()" class="w-full"></div><div class="form-group"><label class="text-sm font-medium mb-1 block">Monto Cripto</label><input type="number" id="montoUsdc" step="0.001" placeholder="0.00" onkeyup="calculateAll()" class="w-full"></div></div><div class="calc-display space-y-2 text-sm"><div id="displayAdCommissionRow" class="calc-row" style="display: none;"><span id="displayAdCommissionLabel">Comisión Plataforma:</span><span id="displayAdCommission"></span></div><div class="calc-row"><span>Monto BS:</span><span id="displayMontoBs">0.00</span></div><div class="calc-row"><span>Comisión VES:</span><span id="displayComision">0.00</span></div><div class="calc-row total text-base"><span>Total:</span><span id="displayTotal">0.00</span></div></div><input type="hidden" id="montoBs"><input type="hidden" id="comisionVes"><input type="hidden" id="total"><input type="hidden" id="ves"><input type="hidden" id="usdc"><input type="hidden" id="lote"></div></div><div class="modal-buttons"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-green" onclick="pasteSpecial()">📋 Pegado Especial</button><button id="saveOperationBtn" class="btn btn-primary" onclick="saveOperation()"><div class="btn-spinner"></div>Guardar</button>
+    </div>
+    </div>
+    </div>
+
+    <div id="initialCapitalModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="modal-title text-xl font-bold">Capital Inicial para <span id="capitalModalDate"></span></h2>
+                <button class="close-btn" onclick="closeInitialCapitalModal()">&times;</button>
+            </div>
+            <div class="modal-body space-y-4">
+                <div class="card p-4 bg-background">
+                    <h4 class="font-semibold mb-3 text-base">Añadir Nueva Cuenta</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+                        <div class="form-group">
+                            <label class="text-xs">Nombre de Cuenta (Ej: Wally, Banesco)</label>
+                            <input type="text" id="newAccountName" placeholder="Binance P2P" class="form-field-grid">
+                        </div>
+                        <div class="form-group">
+                            <label class="text-xs">Moneda (Ej: USDT, VES)</label>
+                            <input type="text" id="newAccountCurrency" placeholder="USDT" class="form-field-grid">
+                        </div>
+                        <button id="addAccountBtn" onclick="addManagedAccount()" class="btn btn-secondary h-11">Añadir</button>
+                    </div>
+                </div>
+
+                <hr class="border-gray-700 !my-5">
+                
+                <div id="initialCapitalForm" class="space-y-3">
+                    </div>
+
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeInitialCapitalModal()">Cancelar</button>
+                <button id="saveCapitalBtn" class="btn btn-primary" onclick="saveInitialCapital()"><div class="btn-spinner"></div>Guardar Capital</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="configModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="modal-title text-xl font-bold">Configuración</h2>
+                <button class="close-btn" onclick="closeConfigModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="space-y-6">
+    
+                    <div>
+                        <h3 class="text-base font-semibold mb-3">Metas de Ganancias Diarias</h3>
+                        <div class="card p-4 bg-background space-y-4">
+                            <div class="grid grid-cols-[1fr_auto] items-center gap-4">
+                                <label for="goalVes" class="font-medium text-sm">OP. PRINCIPAL (CRIPTO):</label>
+                                <input type="number" id="goalVes" step="0.01" placeholder="Ej: 1000.00" class="form-field-grid">
+                            </div>
+                            <div class="grid grid-cols-[1fr_auto] items-center gap-4">
+                                <label for="goalCrypto" class="font-medium text-sm">OP. WALLET (CRIPTO):</label>
+                                <input type="number" id="goalCrypto" step="0.01" placeholder="Ej: 50.00" class="form-field-grid">
+                            </div>
+                            <div class="grid grid-cols-[1fr_auto] items-center gap-4">
+                                <label for="goalUsd" class="font-medium text-sm">OP. WALLET (USD):</label>
+                                <input type="number" id="goalUsd" step="0.01" placeholder="Ej: 50.00" class="form-field-grid">
+                            </div>
+                            <hr class="border-gray-700 !my-5">
+                            <div>
+                                <label class="font-medium text-sm mb-3 block text-center">Mostrar en Dashboard:</label>
+                                <div id="dashboardGoalToggles" class="flex justify-center gap-3">
+                                    <button data-goal="ves" class="goal-toggle-btn">CRIPTO</button>
+                                    <button data-goal="crypto" class="goal-toggle-btn">CRIPTO WALLET</button>
+                                    <button data-goal="usd" class="goal-toggle-btn">USD WALLET</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="border-gray-700 !my-6">
+                    <div>
+                        <h3 class="text-base font-semibold mb-3">Gestión de Plataformas P2P</h3>
+                        <div id="p2pPlatformsList" class="space-y-2 mb-4"></div>
+                        <div class="card p-4 bg-background">
+                            <h4 class="font-semibold mb-2" id="platformFormTitle">Añadir Nueva Plataforma</h4>
+                            <div class="grid grid-cols-2 gap-x-2 gap-y-3">
+                                <div class="form-group col-span-2">
+                                    <label class="text-xs">Nombre</label>
+                                    <input type="text" id="newPlatformName" placeholder="Ej: Syklo" class="form-field-grid">
+                                </div>
+                                <div class="form-group">
+                                    <label class="text-xs">Comisión (%)</label>
+                                    <input type="number" id="newPlatformCommission" placeholder="Ej: 0.2" step="0.1" class="form-field-grid">
+                                </div>
+                                <div class="form-group">
+                                    <label class="text-xs">Tipo</label>
+                                    <select id="newPlatformType" class="form-field-grid">
+                                        <option value="CRIPTO">CRIPTO</option>
+                                        <option value="USD">USD</option>
+                                        <option value="VES">VES</option>
+                                    </select>
+                                </div>
+                                <input type="hidden" id="editingPlatformIndex" value="-1">
+                                <button id="addPlatformBtn" class="btn btn-secondary h-11 col-span-2">Añadir Plataforma</button>
+                            </div>
+                        </div>
+                    </div>
+    
+                    <hr class="border-gray-700 !my-6">
+
+                    <div>
+                        <h3 class="text-base font-semibold mb-3">Métodos de Pago (VES)</h3>
+                        <div id="paymentMethodsList" class="flex flex-wrap gap-2 mb-4"></div>
+                        <div class="flex gap-2"><input type="text" id="newPaymentMethod" placeholder="Nuevo método..." class="form-field-grid flex-grow"><button class="btn btn-secondary" onclick="addPaymentMethod()">Añadir</button></div>
+                    </div>
+    
+                    <div>
+                        <h3 class="text-base font-semibold mb-3">Métodos de Pago (USD)</h3>
+                        <div id="usdPaymentMethodsList" class="flex flex-wrap gap-2 mb-4"></div>
+                        <div class="flex gap-2"><input type="text" id="newUsdPaymentMethod" placeholder="Nuevo método USD..." class="form-field-grid flex-grow"><button class="btn btn-secondary" onclick="addUsdPaymentMethod()">Añadir</button></div>
+                    </div>
+    
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeConfigModal()">Cerrar</button>
+                <button id="saveConfigBtn" class="btn btn-primary" onclick="saveConfig()"><div class="btn-spinner"></div>Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="wallyModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 id="wallyModalTitle" class="modal-title text-xl font-bold">Operación USD</h2><button class="close-btn" onclick="closeWallyModal()">&times;</button></div><div class="modal-body"><div id="wallyFormContent" class="space-y-4"></div></div><div class="modal-buttons"><button class="btn btn-secondary" onclick="closeWallyModal()">Cancelar</button><button class="btn btn-green" onclick="pasteSpecialWally()">📋 Pegado Especial</button><button id="saveWallyBtn" class="btn btn-primary" onclick="saveWallyOperation()"><div class="btn-spinner"></div>Guardar</button></div></div></div>
+    
+    <div id="bankBreachModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold">Brecha por Banco</h2><button class="close-btn" onclick="closeBankBreachModal()">&times;</button></div><div class="modal-body"><div id="bankBreachCards" class="info-cards-grid"></div></div></div></div>
+    <div id="lotDetailsModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold">Lotes Activos</h2><button class="close-btn" onclick="closeLotDetailsModal()">&times;</button></div><div class="modal-body"><div id="lotDetailsCards" class="info-cards-grid"></div></div></div></div>
+    <div id="pendingDetailsModal" class="modal"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold">Detalles de Pendientes</h2><button class="close-btn" onclick="closePendingDetailsModal()">&times;</button></div><div class="modal-body"><div class="grid grid-cols-2 gap-4 mb-4"><div class="card text-center"><p class="text-sm font-medium text-gray-400">Recompra</p><p id="pendingRepurchaseSummary" class="text-lg font-bold mt-1">0 USDC</p></div><div class="card text-center"><p class="text-sm font-medium text-gray-400">Reventa</p><p id="pendingResaleSummary" class="text-lg font-bold mt-1">0 USDC</p></div></div><h3 class="font-semibold mb-2">Operaciones de Recompra</h3><div id="pendingRepurchaseList" class="operation-list mb-4"></div><h3 class="font-semibold mb-2">Operaciones de Reventa</h3><div id="pendingResaleList" class="operation-list"></div></div></div></div>
+
+    <div id="gainsSummaryModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header flex justify-between items-center">
+            <h2 class="modal-title text-xl font-bold">Resumen de Ganancias</h2>
+            <button class="close-btn" onclick="closeGainsSummaryModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                <div class="card text-center p-4">
+                    <p class="text-sm font-medium text-gray-400 mb-2">HOY</p>
+                    <div id="summaryGananciasHoyVes" class="text-2xl font-bold text-green-400">0.00 VES</div>
+                    <div id="summaryGananciasHoyUsdc" class="text-base font-semibold text-gray-300 mt-1">0.00 USDC</div>
+                </div>
+
+                <div class="card text-center p-4">
+                    <p class="text-sm font-medium text-gray-400 mb-2">ESTA SEMANA</p>
+                    <div id="summaryGananciasSemanaVes" class="text-2xl font-bold text-green-400">0.00 VES</div>
+                    <div id="summaryGananciasSemanaUsdc" class="text-base font-semibold text-gray-300 mt-1">0.00 USDC</div>
+                </div>
+
+                <div class="col-span-1 sm:col-span-2 card text-center p-4">
+                    <p class="text-sm font-medium text-gray-400 mb-2">ESTE MES</p>
+                    <div id="summaryGananciasMesVes" class="text-3xl font-bold text-green-400">0.00 VES</div>
+                    <div id="summaryGananciasMesUsdc" class="text-lg font-semibold text-gray-300 mt-1">0.00 USDC</div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="wallyGainsSummaryModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header flex justify-between items-center">
+            <h2 class="modal-title text-xl font-bold">Resumen de Ganancias USD</h2>
+            <button class="close-btn" onclick="closeWallyGainsSummaryModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                <div class="card text-center p-4">
+                    <p class="text-sm font-medium text-gray-400 mb-2">HOY</p>
+                    <div id="summaryWallyGananciasHoyUsdc" class="text-2xl font-bold text-orange-400">0.00 USDC</div>
+                    <div id="summaryWallyGananciasHoyUsd" class="text-base font-semibold text-purple-400 mt-1">0.00 USD</div>
+                </div>
+
+                <div class="card text-center p-4">
+                    <p class="text-sm font-medium text-gray-400 mb-2">ESTA SEMANA</p>
+                    <div id="summaryWallyGananciasSemanaUsdc" class="text-2xl font-bold text-orange-400">0.00 USDC</div>
+                    <div id="summaryWallyGananciasSemanaUsd" class="text-base font-semibold text-purple-400 mt-1">0.00 USD</div>
+                </div>
+
+                <div class="col-span-1 sm:col-span-2 card text-center p-4">
+                    <p class="text-sm font-medium text-gray-400 mb-2">ESTE MES</p>
+                    <div id="summaryWallyGananciasMesUsdc" class="text-3xl font-bold text-orange-400">0.00 USDC</div>
+                    <div id="summaryWallyGananciasMesUsd" class="text-lg font-semibold text-purple-400 mt-1">0.00 USD</div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div id="ratingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="modal-title text-xl font-bold">Calificar Transacción</h2>
+                <button class="close-btn" onclick="closeRatingModal()">&times;</button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="mb-4">Califica la transacción con <strong id="ratingUserName"></strong>:</p>
+                <div class="form-group mb-6">
+                    <label class="text-sm font-medium mb-2 block">Transacción General</label>
+                    <div class="rating-stars" id="ratingTransaction">
+                        <span class="star" data-value="1">★</span><span class="star" data-value="2">★</span><span class="star" data-value="3">★</span><span class="star" data-value="4">★</span><span class="star" data-value="5">★</span>
+                    </div>
+                </div>
+                 <div class="form-group">
+                    <label class="text-sm font-medium mb-2 block">Rapidez</label>
+                    <div class="rating-stars" id="ratingSpeed">
+                        <span class="star" data-value="1">★</span><span class="star" data-value="2">★</span><span class="star" data-value="3">★</span><span class="star" data-value="4">★</span><span class="star" data-value="5">★</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                 <button class="btn btn-primary w-full" onclick="submitRating()">Guardar Calificación</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="userProfileModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header flex justify-between items-center">
+            <h2 class="modal-title text-xl font-bold" id="profileUserName"></h2>
+            <button class="close-btn" onclick="closeUserProfileModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="card mb-4 text-center">
+                <p class="text-sm text-gray-400">Calificación Promedio</p>
+                <p id="profileAvgRating" class="text-3xl font-bold text-yellow-400 my-1">0.0 ★</p>
+                <p id="profileTotalRatings" class="text-xs text-gray-500">0 calificaciones</p>
+            </div>
+            <div class="card mb-4">
+                <h3 class="font-semibold mb-2 text-base">Estadísticas Consolidadas</h3>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <span>Vol. Total USDC:</span><strong id="profileTotalUsdc" class="text-right">0.00</strong>
+                    <span>Vol. Total VES:</span><strong id="profileTotalVes" class="text-right">0.00</strong>
+                    <span># Operaciones Totales:</span><strong id="profileNumOps" class="text-right">0</strong>
+                    <span>Última Op.:</span><strong id="profileLastOpDate" class="text-right">N/A</strong>
+                </div>
+            </div>
+            <div class="card mb-4">
+                <h3 class="font-semibold mb-2 text-base">Notas Privadas</h3>
+                <div class="form-group">
+                    <textarea id="profileNotes" rows="4" placeholder="Añade notas sobre este usuario..." class="w-full text-sm"></textarea>
+                </div>
+                <button class="btn btn-primary btn-sm mt-2 w-full" onclick="saveProfileNotes()">Guardar Notas</button>
+            </div>
+            
+            <div class="card p-0">
+                <div class="border-b border-gray-700 px-4">
+                    <nav class="-mb-px flex space-x-4" id="profile-tabs">
+                        <button class="profile-tab active" onclick="switchProfileTab('ves')">Historial VES</button>
+                        <button class="profile-tab" onclick="switchProfileTab('usd')">Historial USD</button>
+                    </nav>
+                </div>
+                <div id="profile-tab-content" class="p-4">
+                    </div>
+            </div>
+            </div>
+    </div>
+</div>
+
+<div id="weeklyAnalysisModal" class="modal">
+        <div class="modal-content !max-w-3xl">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="modal-title text-xl font-bold">📊 Análisis de la Semana</h2>
+                <button class="close-btn" onclick="closeWeeklyAnalysisModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-6 h-64 md:h-80">
+                    <canvas id="weeklyChart"></canvas>
+                </div>
+                <div id="weeklyAnalysisSummary" class="card p-4 bg-background space-y-3">
+                    <div class="text-center py-4">
+                        <div class="loader mx-auto"></div>
+                        <p class="mt-2 text-sm text-gray-400">Calculando análisis...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeWeeklyAnalysisModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="monthlyAnalysisModal" class="modal">
+    <div class="modal-content !max-w-3xl">
+        <div class="modal-header flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <h2 class="modal-title text-xl font-bold">🗓️ Análisis Mensual</h2>
+
+                <div class="filter-item !min-w-[200px]">
+                    <select id="monthSelector" onchange="runMonthlyAnalysis()"></select>
+                </div>
+            </div>
+            <button class="close-btn" onclick="closeMonthlyAnalysisModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="mb-6 h-64 md:h-80">
+                <canvas id="monthlyChart"></canvas>
+            </div>
+            <div id="monthlyAnalysisSummary" class="card p-4 bg-background space-y-3">
+                <div class="text-center py-4">
+                    <p class="mt-2 text-sm text-gray-400">Selecciona un mes para comenzar el análisis.</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeMonthlyAnalysisModal()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
+    <script type="module" src="js/main.js"></script>
+
+    <div id="lotClosedAnimation" class="lot-animation-container">
+        <div class="lot-animation-card">
+            <div class="text-6xl mb-4">🎉</div>
+            <h3 class="text-2xl font-bold mb-2">¡Lote Completado!</h3>
+            <p class="text-lg text-gray-300">Ganancia del Lote:</p>
+            <p id="lotAnimationProfit" class="text-3xl font-extrabold text-green-400 mt-1">0.00 VES</p>
+        </div>
+    </div>
+
+    <audio id="notificationSound" preload="auto">
+        <source src="https://cdn.jsdelivr.net/gh/basthiancasparod-cmyk/DashSY/assets/notification.mp3" type="audio/mpeg">
+    </audio>
+
+        <div id="usdAnalysisModal" class="modal">
+        <div class="modal-content !max-w-4xl">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="modal-title text-xl font-bold">📈 Análisis de Operaciones USD</h2>
+                <button class="close-btn" onclick="closeUsdAnalysisModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="flex justify-between items-center border-b border-gray-700 mb-4">
+                    <div class="flex space-x-2">
+                        <button id="usd-analysis-tab-weekly" class="profile-tab active" onclick="switchUsdAnalysisTab('weekly')">Análisis Semanal</button>
+                        <button id="usd-analysis-tab-monthly" class="profile-tab" onclick="switchUsdAnalysisTab('monthly')">Análisis Mensual</button>
+                    </div>
+                    <div id="usd-month-selector-container" class="filter-item !min-w-[200px] hidden">
+                        <select id="usdMonthSelector" onchange="renderUsdAnalysis()"></select>
+                    </div>
+                </div>
+
+                <div id="usdAnalysisContent">
+                    </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeUsdAnalysisModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+    <div id="confirmDeleteModal" class="modal">
+        <div class="modal-content !max-w-sm">
+            <div class="modal-header">
+                <h2 class="modal-title text-xl font-bold text-red-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 inline-block -mt-1 mr-2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" />
+                    </svg>
+                    Confirmar Eliminación
+                </h2>
+            </div>
+            <div class="modal-body">
+                <p id="confirmDeleteMessage" class="text-center text-base leading-relaxed">¿Estás seguro?</p>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeConfirmModal()">Cancelar</button>
+                <button id="confirmDeleteBtn" class="btn bg-red-600 hover:bg-red-700 text-white" onclick="executeConfirmAction()">
+                    Sí, Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="confirmMoveModal" class="modal">
+        <div class="modal-content !max-w-sm">
+            <div class="modal-header">
+                <h2 class="modal-title text-xl font-bold text-yellow-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 inline-block -mt-1 mr-2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+                    </svg>
+                    Confirmar Movimiento
+                </h2>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMoveMessage" class="text-center text-base leading-relaxed">¿Estás seguro?</p>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="cancelMoveAction()">Cancelar</button>
+                <button class="btn bg-yellow-600 hover:bg-yellow-700 text-white" onclick="executeMoveAction()">
+                    Sí, Mover
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>	
