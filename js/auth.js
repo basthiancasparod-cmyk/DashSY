@@ -1,87 +1,129 @@
-import { auth, db } from './firebase-init.js';
-import { setCurrentUserId } from './state.js';
-import { loadConfig } from './config.js';
-import { loadOperations } from './operations.js';
-import { loadWallyOperations } from './wally.js';
-import { loadUserRatings } from './ratings.js';
-import { loadUserProfiles } from './ratings.js';
-import { showPage } from './ui.js';
-import { getLocalDate, checkInitialLoadComplete, resetInitialLoadCounter } from './utils.js';
-import { setCurrentDate, setCurrentWallyDate } from './state.js';
+import { state, db, TOTAL_INITIAL_LOADS } from './state.js';
+import { showToast } from './ui.js';
 
-const authSection = document.getElementById('authSection');
-const appContainer = document.querySelector('.app-container');
-const userEmailEl = document.getElementById('userEmail');
-const authError = document.getElementById('authError');
+function setLoading(btnId, loading) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.disabled = loading;
+    btn.innerHTML = loading ? '<span class="loader-sm mx-auto"></span>' : btn.dataset.originalText;
+}
 
-auth.onAuthStateChanged(async (user) => {
-    if (user) {
-        document.getElementById('loading-overlay').style.display = 'flex';
-        resetInitialLoadCounter();
+function validateEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
 
-        // Fallback: hide loading after 15s regardless of counter
-        setTimeout(() => {
-            const overlay = document.getElementById('loading-overlay');
-            if (overlay) overlay.style.display = 'none';
-        }, 15000);
+function getFirebaseErrorMessage(err) {
+    const map = {
+        'auth/user-not-found': 'Usuario no encontrado.',
+        'auth/wrong-password': 'Contraseña incorrecta.',
+        'auth/invalid-credential': 'Credenciales inválidas.',
+        'auth/email-already-in-use': 'Este correo ya está registrado.',
+        'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
+        'auth/invalid-email': 'Correo electrónico inválido.',
+        'auth/too-many-requests': 'Demasiados intentos. Intenta más tarde.',
+        'auth/network-request-failed': 'Error de conexión. Verifica tu internet.'
+    };
+    return map[err.code] || 'Error inesperado. Intenta de nuevo.';
+}
 
-        setCurrentUserId(user.uid);
-        authSection.style.display = 'none';
-        appContainer.style.display = 'flex';
-        userEmailEl.textContent = user.email.split('@')[0];
-
-        if (localStorage.getItem('soundEnabled') === 'true') {
-            const btn = document.getElementById('enableSoundBtn');
-            if (btn) btn.style.display = 'none';
-        }
-
-        const today = getLocalDate();
-        setCurrentDate(today);
-        setCurrentWallyDate(today);
-
-        await loadConfig();
-
-        loadOperations();
-        loadWallyOperations();
-        loadUserRatings();
-        loadUserProfiles();
-
-        document.getElementById('selectedDate').value = today;
-        document.getElementById('wallySelectedDate').value = today;
-        showPage('operate');
-    } else {
-        setCurrentUserId(null);
-        authSection.style.display = 'flex';
-        appContainer.style.display = 'none';
-        document.getElementById('loading-overlay').style.display = 'none';
-    }
-});
+function showError(msg) {
+    const el = document.getElementById('authError');
+    el.textContent = msg;
+    el.style.opacity = '1';
+}
 
 export function registerUser() {
-    const e = document.getElementById('registerEmail').value;
+    const e = document.getElementById('registerEmail').value.trim();
     const p = document.getElementById('registerPassword').value;
-    authError.textContent = '';
-    auth.createUserWithEmailAndPassword(e, p).catch(err => {
-        authError.textContent = 'Error: ' + err.message;
-    });
+    const c = document.getElementById('registerConfirm').value;
+
+    showError('');
+    if (!validateEmail(e)) return showError('Correo electrónico inválido.');
+    if (p.length < 6) return showError('La contraseña debe tener al menos 6 caracteres.');
+    if (p !== c) return showError('Las contraseñas no coinciden.');
+
+    setLoading('registerBtn', true);
+    state.auth.createUserWithEmailAndPassword(e, p)
+        .then(() => showToast('Cuenta creada exitosamente.', 'success'))
+        .catch(err => showError(getFirebaseErrorMessage(err)))
+        .finally(() => setLoading('registerBtn', false));
 }
 
 export function loginUser() {
-    const e = document.getElementById('loginEmail').value;
+    const e = document.getElementById('loginEmail').value.trim();
     const p = document.getElementById('loginPassword').value;
-    authError.textContent = '';
-    auth.signInWithEmailAndPassword(e, p).catch(err => {
-        authError.textContent = 'Error: ' + err.message;
+
+    showError('');
+    if (!validateEmail(e)) return showError('Correo electrónico inválido.');
+    if (!p) return showError('Ingresa tu contraseña.');
+
+    setLoading('loginBtn', true);
+    state.auth.signInWithEmailAndPassword(e, p)
+        .catch(err => showError(getFirebaseErrorMessage(err)))
+        .finally(() => setLoading('loginBtn', false));
+}
+
+export function logoutUser() { state.auth.signOut(); }
+
+// Caps Lock detection
+document.querySelectorAll('input[type="password"]').forEach(input => {
+    input.addEventListener('keydown', (e) => {
+        const warn = document.getElementById('capsLockWarning');
+        if (!warn) return;
+        if (e.getModifierState('CapsLock')) {
+            warn.classList.remove('hidden');
+        } else {
+            warn.classList.add('hidden');
+        }
     });
-}
+    input.addEventListener('keyup', (e) => {
+        const warn = document.getElementById('capsLockWarning');
+        if (!warn) return;
+        if (e.getModifierState('CapsLock')) {
+            warn.classList.remove('hidden');
+        } else {
+            warn.classList.add('hidden');
+        }
+    });
+});
 
-export function logoutUser() {
-    auth.signOut();
-}
+export function setupAuthListener() {
+    state.auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            document.getElementById('loading-overlay').style.display = 'flex';
+            state.initialLoadCounter = 0;
+            state.currentUserId = user.uid;
+            document.getElementById('authSection').style.display = 'none';
+            document.querySelector('.app-container').style.display = 'flex';
+            document.getElementById('userEmail').textContent = user.email.split('@')[0];
 
-export function toggleAuthForms() {
-    const l = document.getElementById('loginForm'), r = document.getElementById('registerForm');
-    authError.textContent = '';
-    l.style.display = l.style.display === 'none' ? 'block' : 'none';
-    r.style.display = r.style.display === 'none' ? 'block' : 'none';
+            if (localStorage.getItem('soundEnabled') === 'true') {
+                const btn = document.getElementById('enableSoundBtn');
+                if (btn) btn.style.display = 'none';
+            }
+
+            const { loadConfig } = await import('./config.js');
+            await loadConfig();
+
+            // Safety timeout: hide loading after 10s regardless
+            setTimeout(() => {
+                const overlay = document.getElementById('loading-overlay');
+                if (overlay && overlay.style.display !== 'none') overlay.style.display = 'none';
+            }, 10000);
+
+            window.loadOperations();
+            window.loadWallyOperations();
+            window.loadUserRatings();
+            window.loadUserProfiles();
+
+            document.getElementById('selectedDate').value = state.currentDate;
+            document.getElementById('wallySelectedDate').value = state.currentWallyDate;
+            window.showPage('operate');
+        } else {
+            state.currentUserId = null;
+            document.getElementById('authSection').style.display = 'flex';
+            document.querySelector('.app-container').style.display = 'none';
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+    });
 }
