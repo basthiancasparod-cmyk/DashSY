@@ -185,7 +185,7 @@ export async function updateSummary() {
     loadInitialCapital(state.currentDate);
     const currentOps = state.operations.filter(op => op.fecha === state.currentDate);
     if (state.operations && state.operations.length > 0) {
-        applyFIFOForDate(state.currentDate);
+        applyMonthlyFIFO(state.currentDate);
         const { getShownLots, addShownLot, showLotClosedAnimation, calculateLotProfit } = await import('./notifications.js');
         const shownLots = getShownLots();
         const newlyClosedLots = [];
@@ -596,6 +596,115 @@ export function getMonthlyFIFO(year, month) {
     const data = { lots, opMatches };
     _monthlyFIFOCache = { monthKey, data };
     return data;
+}
+
+export function applyMonthlyFIFO(fecha) {
+    if (!fecha) return;
+    const parts = fecha.split('-');
+    if (parts.length < 2) return;
+    const [y, m] = parts;
+    const fifo = getMonthlyFIFO(parseInt(y), parseInt(m));
+    if (!fifo || fifo.lots.length === 0) return;
+
+    // Reset FIFO fields for all ops in the month
+    const monthOps = state.operations.filter(op => op.fecha && op.fecha.startsWith(`${y}-${m}`));
+    monthOps.forEach(op => { op.ves = 0; op.usdc = 0; op.lote = ''; });
+
+    // Build state.currentLotsData for the given date
+    state.currentLotsData.clear();
+
+    fifo.lots.forEach(lot => {
+        if (!lot.ventaOp) {
+            // Standalone purchase lot — still show it for the purchase's day
+            const isForToday = lot.compras.some(c => c.op.fecha === fecha);
+            if (isForToday) {
+                state.currentLotsData.set(lot.id, {
+                    id: lot.id,
+                    ventaOp: null,
+                    comprasAsociadas: lot.compras.map(c => ({ op: c.op, monto: c.amount })),
+                    montoTotal: lot.montoTotal,
+                    montoConsumido: 0,
+                    estado: 'activo'
+                });
+            }
+            return;
+        }
+
+        // Calculate gain for this lot (belongs to the sale's day)
+        const saleAmount = lot.montoTotal || 0;
+        if (saleAmount === 0) return;
+
+        let totalCostVes = 0;
+        let totalCommissionUsdc = 0;
+        const comprasAsociadas = [];
+
+        lot.compras.forEach(c => {
+            const amount = c.amount || 0;
+            const tasa = c.op.tasa || 0;
+            const commissionRate = (c.op.adCommissionPercent || 0) / 100;
+            const bankFee = (c.op.comisionVes && c.op.montoUsdc) ? (c.op.comisionVes / c.op.montoUsdc) * amount : 0;
+            totalCostVes += amount * tasa + bankFee;
+            totalCommissionUsdc += amount * commissionRate * 2;
+            comprasAsociadas.push({ op: c.op, monto: amount });
+        });
+
+        const revenueVes = saleAmount * (lot.ventaOp.tasa || 0);
+        const spreadVes = revenueVes - totalCostVes;
+        const avgTasa = lot.ventaOp.tasa || 1;
+        const netGainUsdc = spreadVes / avgTasa - totalCommissionUsdc;
+        const netGainVes = netGainUsdc * avgTasa;
+
+        // Assign gain to the sale operation
+        lot.ventaOp.ves = netGainVes;
+        lot.ventaOp.usdc = netGainUsdc;
+        lot.ventaOp.lote = lot.id;
+
+        // Assign lot refs to purchase ops
+        lot.compras.forEach(c => {
+            const existing = c.op.lote ? c.op.lote + ', ' : '';
+            c.op.lote = `${existing}${lot.id}(${c.amount.toFixed(2)})`;
+        });
+
+        const isClosed = Math.abs(saleAmount - lot.compras.reduce((s, c) => s + (c.amount || 0), 0)) < 1e-5;
+        const match = fifo.opMatches.get(lot.ventaOp.id);
+        const isForToday = lot.ventaOp.fecha === fecha;
+        if (isForToday) {
+            state.currentLotsData.set(lot.id, {
+                id: lot.id,
+                ventaOp: lot.ventaOp,
+                comprasAsociadas,
+                montoTotal: saleAmount,
+                montoConsumido: saleAmount,
+                estado: isClosed ? 'cerrado' : 'activo'
+            });
+        } else {
+            // Check if any purchase is from today
+            const hasTodayPurchase = lot.compras.some(c => c.op.fecha === fecha);
+            if (hasTodayPurchase) {
+                state.currentLotsData.set(lot.id, {
+                    id: lot.id,
+                    ventaOp: lot.ventaOp,
+                    comprasAsociadas,
+                    montoTotal: saleAmount,
+                    montoConsumido: saleAmount,
+                    estado: isClosed ? 'cerrado' : 'activo'
+                });
+            }
+        }
+    });
+
+    // Pending data (unmatched sales/purchases for the given date)
+    const dailyOps = monthOps.filter(op => op.fecha === fecha);
+    const dailyPurchases = dailyOps.filter(op => op.operacion === 'Compra');
+    const dailySales = dailyOps.filter(op => op.operacion === 'Venta');
+    const totalComprado = dailyPurchases.reduce((s, op) => s + (op.montoUsdc || 0), 0);
+    const totalVendido = dailySales.reduce((s, op) => s + (op.montoUsdc || 0), 0);
+    state.currentPendingData = {
+        recompra: Math.max(0, totalVendido - totalComprado),
+        reventa: Math.max(0, totalComprado - totalVendido),
+        recompraOps: [],
+        reventaOps: []
+    };
 }
 
 function buildFIFODetail(op) {

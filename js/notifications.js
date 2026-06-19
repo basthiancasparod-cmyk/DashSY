@@ -46,6 +46,7 @@ export function addShownLot(lotId) {
 }
 
 export function calculateLotProfit(lot) {
+    if (lot.ventaOp && lot.ventaOp.ves) return lot.ventaOp.ves;
     return lot.comprasAsociadas.reduce((totalProfit, compra) => totalProfit + (compra.op.ves || 0), 0);
 }
 
