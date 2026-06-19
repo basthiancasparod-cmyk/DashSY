@@ -1,3 +1,4 @@
+import { state } from './state.js';
 import { showToast } from './ui.js';
 
 export async function pasteSpecial() {
@@ -52,11 +53,6 @@ export async function pasteSpecialWally() {
             document.getElementById("tasaVenta").value = tasaValue;
             window.updateWallyCalculations();
             showToast("Pegado especial exitoso (Wally Venta).", "success");
-        } else {
-            showToast("Formato no reconocido para Wally.", "warning");
-        }
-    } catch (err) {
-        showToast("No se pudo leer el portapapeles.", "error");
-        console.error(err);
-    }
+        } else { showToast("Formato no reconocido para Wally.", "warning"); }
+    } catch (err) { showToast("No se pudo leer el portapapeles.", "error"); console.error(err); }
 }

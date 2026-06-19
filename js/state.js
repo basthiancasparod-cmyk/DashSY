@@ -1,75 +1,58 @@
-export let currentUserId = null;
-export let operations = [];
-export let wallyOperations = [];
-export let userRatings = {};
-export let userProfiles = {};
-export let userConfig = {};
-export let editingIndex = -1;
-export let editingWallyIndex = -1;
-export let lastSavedUser = '';
-export let lastSavedOperationType = '';
-export let initialLoadCounter = 0;
-export let currentDayCapital = null;
-export let currentProfileUserOps = { ves: [], usd: [] };
-export let weeklyChartInstance = null;
-export let monthlyChartInstance = null;
-export let usdWeeklyChartInstance = null;
-export let usdWeeklyPaymentMethodChartInstance = null;
-export let usdWeeklyP2pPlatformChartInstance = null;
-export let usdMonthlyChartInstance = null;
-export let usdMonthlyPaymentMethodChartInstance = null;
-export let usdMonthlyP2pPlatformChartInstance = null;
-export let currentUsdAnalysisTab = 'weekly';
-export let confirmAction = null;
-export let moveAction = null;
-export let sortableTableInstance = null;
-export let sortableListInstance = null;
-export let ratingsCurrentPage = 1;
+import { auth, db } from './firebase-init.js';
+export { auth, db };
+
+const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
+
+export const state = {
+    auth,
+    currentUserId: null,
+    currentDate: todayStr,
+    currentWallyDate: todayStr,
+    operations: [],
+    wallyOperations: [],
+    userRatings: {},
+    userProfiles: {},
+    userConfig: {},
+    editingIndex: -1,
+    editingWallyIndex: -1,
+    lastSavedUser: '',
+    lastSavedOperationType: '',
+    initialLoadCounter: 0,
+    currentDayCapital: null,
+    currentProfileUserOps: { ves: [], usd: [] },
+    currentProfileUserName: '',
+    weeklyChartInstance: null,
+    monthlyChartInstance: null,
+    usdWeeklyChartInstance: null,
+    usdWeeklyPaymentMethodChartInstance: null,
+    usdWeeklyP2pPlatformChartInstance: null,
+    usdMonthlyChartInstance: null,
+    usdMonthlyPaymentMethodChartInstance: null,
+    usdMonthlyP2pPlatformChartInstance: null,
+    currentUsdAnalysisTab: 'weekly',
+    confirmAction: null,
+    moveAction: null,
+    sortableTableInstance: null,
+    sortableListInstance: null,
+    ratingsCurrentPage: 1,
+    currentRatingUser: '',
+    selectedRatings: { transaction: 0, speed: 0 },
+    currentLotsData: new Map(),
+    currentPendingData: { recompra: 0, reventa: 0 },
+};
+
 export const USERS_PER_PAGE = 20;
 export const TOTAL_INITIAL_LOADS = 5;
-export let currentDate = '';
-export let currentWallyDate = '';
-export let currentLotsData = new Map();
-export let currentPendingData = { recompra: 0, reventa: 0, recompraOps: [], reventaOps: [] };
-export let wallyTotalGains = { usdc: 0, usd: 0 };
 export const defaultProfitGoals = { ves: 1000.00, crypto: 50.00, usd: 50.00 };
 export const defaultDashboardGoals = { ves: true, crypto: false, usd: false };
-export let currentRatingUser = '';
-export let selectedRatings = { transaction: 0, speed: 0 };
-export let currentProfileUserName = '';
 
-export function setCurrentUserId(val) { currentUserId = val; }
-export function setOperations(val) { operations = val; }
-export function setWallyOperations(val) { wallyOperations = val; }
-export function setUserRatings(val) { userRatings = val; }
-export function setUserProfiles(val) { userProfiles = val; }
-export function setUserConfig(val) { userConfig = val; }
-export function setEditingIndex(val) { editingIndex = val; }
-export function setEditingWallyIndex(val) { editingWallyIndex = val; }
-export function setLastSavedUser(val) { lastSavedUser = val; }
-export function setLastSavedOperationType(val) { lastSavedOperationType = val; }
-export function setInitialLoadCounter(val) { initialLoadCounter = val; }
-export function setCurrentDayCapital(val) { currentDayCapital = val; }
-export function setCurrentProfileUserOps(val) { currentProfileUserOps = val; }
-export function setWeeklyChartInstance(val) { weeklyChartInstance = val; }
-export function setMonthlyChartInstance(val) { monthlyChartInstance = val; }
-export function setUsdWeeklyChartInstance(val) { usdWeeklyChartInstance = val; }
-export function setUsdWeeklyPaymentMethodChartInstance(val) { usdWeeklyPaymentMethodChartInstance = val; }
-export function setUsdWeeklyP2pPlatformChartInstance(val) { usdWeeklyP2pPlatformChartInstance = val; }
-export function setUsdMonthlyChartInstance(val) { usdMonthlyChartInstance = val; }
-export function setUsdMonthlyPaymentMethodChartInstance(val) { usdMonthlyPaymentMethodChartInstance = val; }
-export function setUsdMonthlyP2pPlatformChartInstance(val) { usdMonthlyP2pPlatformChartInstance = val; }
-export function setCurrentUsdAnalysisTab(val) { currentUsdAnalysisTab = val; }
-export function setConfirmAction(val) { confirmAction = val; }
-export function setMoveAction(val) { moveAction = val; }
-export function setSortableTableInstance(val) { sortableTableInstance = val; }
-export function setSortableListInstance(val) { sortableListInstance = val; }
-export function setRatingsCurrentPage(val) { ratingsCurrentPage = val; }
+export let currentDate = todayStr;
+export let currentWallyDate = todayStr;
+
+export function getLocalDate() {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+}
+
 export function setCurrentDate(val) { currentDate = val; }
 export function setCurrentWallyDate(val) { currentWallyDate = val; }
-export function setCurrentLotsData(val) { currentLotsData = val; }
-export function setCurrentPendingData(val) { currentPendingData = val; }
-export function setWallyTotalGains(val) { wallyTotalGains = val; }
-export function setCurrentRatingUser(val) { currentRatingUser = val; }
-export function setSelectedRatings(val) { selectedRatings = val; }
-export function setCurrentProfileUserName(val) { currentProfileUserName = val; }

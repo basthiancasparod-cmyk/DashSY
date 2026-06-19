@@ -1,3 +1,4 @@
+import { state } from './state.js';
 import { showToast } from './ui.js';
 
 export function enableAudio() {
@@ -19,18 +20,14 @@ export function showLotClosedAnimation(profit) {
     const container = document.getElementById('lotClosedAnimation');
     const profitEl = document.getElementById('lotAnimationProfit');
     const sound = document.getElementById('notificationSound');
-
     profitEl.textContent = `${profit.toFixed(2)} VES`;
-
     sound.currentTime = 0;
     sound.play().catch(error => {
-       console.log("Audio bloqueado. El usuario debe habilitarlo en Ajustes.", error);
-       showToast('Sonido bloqueado. Habilítalo en Ajustes.', 'warning');
-   });
-
+        console.log("Audio bloqueado. El usuario debe habilitarlo en Ajustes.", error);
+        showToast('Sonido bloqueado. Habilítalo en Ajustes.', 'warning');
+    });
     container.classList.remove('hide');
     container.classList.add('show');
-
     setTimeout(() => {
         container.classList.remove('show');
         container.classList.add('hide');
@@ -49,7 +46,34 @@ export function addShownLot(lotId) {
 }
 
 export function calculateLotProfit(lot) {
-    return lot.comprasAsociadas.reduce((totalProfit, compra) => {
-        return totalProfit + (compra.op.ves || 0);
-    }, 0);
+    return lot.comprasAsociadas.reduce((totalProfit, compra) => totalProfit + (compra.op.ves || 0), 0);
+}
+
+export function setupServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            let newWorker;
+            navigator.serviceWorker.register('./sw.js').then(reg => {
+                reg.addEventListener('updatefound', () => {
+                    newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            const notification = document.getElementById('update-notification');
+                            notification.classList.add('show');
+                            const reloadButton = document.getElementById('update-reload-button');
+                            reloadButton.addEventListener('click', () => {
+                                reloadButton.classList.add('loading');
+                                const textSpan = reloadButton.querySelector('.btn-text');
+                                if (textSpan) textSpan.textContent = 'Actualizando...';
+                                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                            });
+                        }
+                    });
+                });
+            });
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
+            });
+        });
+    }
 }
