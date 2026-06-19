@@ -1,16 +1,29 @@
 import { state, db } from './state.js';
 import { showToast } from './ui.js';
-import { getRatingIndicator, sanitizeHTML } from './utils.js';
+import { getRatingIndicator, sanitizeHTML, checkInitialLoadComplete } from './utils.js';
+import { queueOperation, registerSync } from './bg-sync.js';
+
+let _wallyUnsubscribe = null;
 
 export function loadWallyOperations() {
     if (!state.currentUserId) return;
-    db.collection('users').doc(state.currentUserId).collection('wallyOperations').orderBy('timestamp', 'desc').onSnapshot(s => {
+    if (_wallyUnsubscribe) { _wallyUnsubscribe(); _wallyUnsubscribe = null; }
+    _wallyUnsubscribe = db.collection('users').doc(state.currentUserId).collection('wallyOperations').orderBy('timestamp', 'desc').onSnapshot(s => {
         state.wallyOperations = s.docs.map(d => ({ id: d.id, ...d.data() }));
         if (window.currentProfileUserName) window.openUserProfileModal(window.currentProfileUserName);
         updateWallySummary();
         checkInitialLoadComplete();
     }, e => { console.error(e); checkInitialLoadComplete(); });
 }
+
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && _wallyUnsubscribe) {
+        _wallyUnsubscribe();
+        _wallyUnsubscribe = null;
+    } else if (!document.hidden && state.currentUserId && !_wallyUnsubscribe) {
+        loadWallyOperations();
+    }
+});
 
 export function calculateWallyGainsForPeriod(periodOps) {
     const compras = periodOps.filter(op => op.operacion === 'Compra');
@@ -80,6 +93,9 @@ export function updateWallyCalculations() {
     if (operacion === 'Compra') {
         const r = parseFloat(document.getElementById('reciboUsdc').value) || 0;
         const t = parseFloat(document.getElementById('tasaCompra').value) || 0;
+        if (t && (t < 0.9 || t > 1.1)) {
+            console.warn(`Tasa inusual USD/USDC: ${t}. Verifica el valor ingresado.`);
+        }
         const envio = r * t;
         const grossGain = r - envio;
         const commissionAmount = r * (commissionRate / 100);
@@ -90,6 +106,9 @@ export function updateWallyCalculations() {
     } else {
         const e = parseFloat(document.getElementById('envioUsdcVenta').value) || 0;
         const t = parseFloat(document.getElementById('tasaVenta').value) || 0;
+        if (t && (t < 0.9 || t > 1.1)) {
+            console.warn(`Tasa inusual USD/USDC: ${t}. Verifica el valor ingresado.`);
+        }
         const recibo = e * t;
         const grossGain = recibo - e;
         const commissionAmount = e * (commissionRate / 100);
@@ -148,8 +167,16 @@ export function saveWallyOperation() {
             window.openRatingModal(opData.usuario);
         }
     }).catch(e => {
-        showToast('Error.', 'error');
         console.error("Error al guardar op USD:", e);
+        queueOperation(state.currentUserId, 'wallyOperations', opId, opData).then(() => {
+            registerSync();
+            document.getElementById('closeWallyBtn')?.click();
+            window.closeWallyModal();
+            showToast('Sin conexión. Se sincronizará automáticamente.', 'warning');
+        }).catch(qe => {
+            showToast('Error. Verifica tu conexión.', 'error');
+            console.error("Error al encolar op USD:", qe);
+        });
     }).finally(() => { saveBtn.classList.remove('loading'); });
 }
 

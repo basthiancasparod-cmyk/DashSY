@@ -8,23 +8,7 @@ const URLS_TO_CACHE = [
   './manifest.json',
   './icons/icon-192x192.png',
   './icons/icon-512x512.png',
-  './assets/favicon.ico',
-  './css/styles.css',
-  './js/main.js',
-  './js/state.js',
-  './js/firebase-init.js',
-  './js/auth.js',
-  './js/ui.js',
-  './js/utils.js',
-  './js/operations.js',
-  './js/wally.js',
-  './js/config.js',
-  './js/capital.js',
-  './js/ratings.js',
-  './js/analysis.js',
-  './js/usd-analysis.js',
-  './js/notifications.js',
-  './js/paste.js'
+  './assets/favicon.ico'
 ];
 
 // 3. EVENTO DE INSTALACIÓN
@@ -71,6 +55,20 @@ self.addEventListener('fetch', event => {
         return;
     }
 
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request)
+                .then(networkResponse => {
+                    return caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, networkResponse.clone());
+                        return networkResponse;
+                    });
+                })
+                .catch(() => caches.match('./index.html'))
+        );
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request)
             .then(cachedResponse => {
@@ -88,7 +86,18 @@ self.addEventListener('fetch', event => {
 });
 
 
-// 6. EVENTO DE MENSAJE (PARA ACTUALIZACIÓN)
+// 6. EVENTO DE SINCRONIZACIÓN EN SEGUNDO PLANO (BACKGROUND SYNC)
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-dashsy-ops') {
+    event.waitUntil(
+      self.clients.matchAll().then(clients => {
+        clients.forEach(client => client.postMessage({ type: 'RETRY_QUEUED_OPS' }));
+      })
+    );
+  }
+});
+
+// 7. EVENTO DE MENSAJE (PARA ACTUALIZACIÓN Y SINCRO)
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();

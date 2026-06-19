@@ -50,7 +50,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     bottom: 0;
     left: 0;
     right: 0;
-    height: calc(5rem + env(safe-area-inset-bottom));
+    height: calc(5rem + env(safe-area-inset-bottom, 0px));
     background-color: rgba(22, 27, 34, 0.8);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -59,7 +59,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     justify-content: space-around;
     align-items: flex-start;
     padding-top: 0.75rem;
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     z-index: 1000;
 }
 .nav-item {
@@ -162,7 +162,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     padding: 1rem;
     box-shadow: 0 10px 20px rgba(88, 166, 255, 0.2), 0 6px 6px rgba(88, 166, 255, 0.23);
     position: fixed;
-    bottom: calc(6rem + env(safe-area-inset-bottom));
+    bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
     right: 1.5rem;
     z-index: 1001;
     display: flex;
@@ -177,7 +177,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 @media (max-width: 480px) {
     .btn-fab {
         padding: 0.875rem;
-        bottom: calc(5rem + env(safe-area-inset-bottom));
+        bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
         right: 1rem;
     }
 }

@@ -2,17 +2,30 @@ import { state, db } from './state.js';
 import { showToast, openModal, closeModal, openConfirmModal, openConfirmMoveModal } from './ui.js';
 const emptyStateIcon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="w-12 h-12 mx-auto mb-3 text-gray-500"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>';
 import { getRatingIndicator, checkInitialLoadComplete, sanitizeHTML } from './utils.js';
+import { queueOperation, registerSync } from './bg-sync.js';
+
+let _opsUnsubscribe = null;
 
 export function loadOperations() {
     if (!state.currentUserId) return;
-    db.collection('users').doc(state.currentUserId).collection('operations').orderBy('timestamp', 'desc').onSnapshot(s => {
+    if (_opsUnsubscribe) { _opsUnsubscribe(); _opsUnsubscribe = null; }
+    _opsUnsubscribe = db.collection('users').doc(state.currentUserId).collection('operations').orderBy('timestamp', 'desc').onSnapshot(s => {
         state.operations = s.docs.map(d => ({ id: d.id, ...d.data() }));
-        if (window.currentProfileUserName) window.openUserProfileModal(window.currentProfileUserName);
+        _monthlyFIFOCache = { monthKey: '', data: null };
         updateSummary();
         if (typeof populateMonthSelector === 'function') populateMonthSelector();
         checkInitialLoadComplete();
     }, e => { console.error(e); checkInitialLoadComplete(); });
 }
+
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && _opsUnsubscribe) {
+        _opsUnsubscribe();
+        _opsUnsubscribe = null;
+    } else if (!document.hidden && state.currentUserId && !_opsUnsubscribe) {
+        loadOperations();
+    }
+});
 
 export function saveOperation() {
     if (!state.currentUserId) return;
@@ -34,8 +47,9 @@ export function saveOperation() {
     const commissionRate = platform ? platform.commission / 100 : 0;
     const montoBs = grossUsdc * tasa;
     let comisionVes = 0;
-    if (operacion === 'Compra' && metodoPago === 'Pagomovil') {
-        comisionVes = montoBs * 0.003;
+    const bankFeeCfg = (state.userConfig.bankFees || []).find(f => f.metodoPago === metodoPago && f.operacion === operacion);
+    if (bankFeeCfg) {
+        comisionVes = montoBs * bankFeeCfg.rate;
     }
     const total = montoBs + comisionVes;
     const operationData = {
@@ -67,8 +81,15 @@ export function saveOperation() {
             window.openRatingModal(operationData.usuario);
         }
     }).catch(e => {
-        showToast('Error al guardar.', 'error');
         console.error("Error al guardar operación:", e);
+        queueOperation(state.currentUserId, 'operations', opId, operationData).then(() => {
+            registerSync();
+            closeModal();
+            showToast('Sin conexión. Se sincronizará automáticamente.', 'warning');
+        }).catch(qe => {
+            showToast('Error al guardar. Verifica tu conexión.', 'error');
+            console.error("Error al encolar operación:", qe);
+        });
     }).finally(() => { saveBtn.classList.remove('loading'); });
 }
 
@@ -110,29 +131,46 @@ export function calculateFIFOGainsForOps(opsArray) {
     purchases.forEach(p => p._unmatchedAmount = p.montoUsdc);
     sales.forEach(sale => {
         let remainingSaleAmount = sale.montoUsdc;
+        const saleComps = [];
         for (const purchase of purchases) {
             if (purchase._unmatchedAmount > 1e-5 && remainingSaleAmount > 1e-5) {
                 const amountToMatch = Math.min(remainingSaleAmount, purchase._unmatchedAmount);
-                const commissionRate = (purchase.adCommissionPercent || 0) / 100;
-                const revenueVes = amountToMatch * sale.tasa;
-                const costVes = amountToMatch * purchase.tasa;
-                const bankFeeForMatch = (purchase.comisionVes / purchase.montoUsdc) * amountToMatch;
-                const spreadGainInVes = revenueVes - costVes - bankFeeForMatch;
-                const spreadGainInUsdt = spreadGainInVes / purchase.tasa;
-                const totalCommissionCostInUsdt = (amountToMatch * commissionRate) * 2;
-                const netGainInUsdt = spreadGainInUsdt - totalCommissionCostInUsdt;
-                const netGainInVes = netGainInUsdt * purchase.tasa;
-                totalGainVes += netGainInVes;
-                totalGainUsdc += netGainInUsdt;
+                saleComps.push({ op: purchase, amount: amountToMatch });
                 remainingSaleAmount -= amountToMatch;
                 purchase._unmatchedAmount -= amountToMatch;
             }
             if (remainingSaleAmount < 1e-5) break;
         }
+        if (saleComps.length === 0) continue;
+
+        // Same formula as applyMonthlyFIFO (C1 fix — use sale rate for conversion)
+        let costVes = 0, commissionUsdc = 0;
+        saleComps.forEach(({ op: p, amount }) => {
+            const tasa = p.tasa || 0;
+            const buyRate = (p.adCommissionPercent || 0) / 100;
+            const bankFee = (p.comisionVes && p.montoUsdc) ? (p.comisionVes / p.montoUsdc) * amount : 0;
+            costVes += amount * tasa + bankFee;
+            commissionUsdc += amount * buyRate;
+        });
+        const saleAmount = saleComps.reduce((s, c) => s + c.amount, 0);
+        const sellRate = (sale.adCommissionPercent || 0) / 100;
+        commissionUsdc += saleAmount * sellRate;
+
+        const revenueVes = saleAmount * (sale.tasa || 0);
+        const spreadVes = revenueVes - costVes;
+        const saleTasa = sale.tasa || 1;
+        const netGainUsdc = spreadVes / saleTasa - commissionUsdc;
+        const netGainVes = netGainUsdc * saleTasa;
+
+        totalGainVes += netGainVes;
+        totalGainUsdc += netGainUsdc;
     });
     return [totalGainVes, totalGainUsdc];
 }
 
+/**
+ * @deprecated Replaced by applyMonthlyFIFO (cross-day). Kept for reference.
+ */
 export function applyFIFOForDate(fecha) {
     const dailyOps = state.operations.filter(op => op.fecha === fecha).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
     dailyOps.forEach(op => { op.ves = 0; op.usdc = 0; op.lote = ''; if (op.operacion === 'Venta') op._unmatchedAmount = op.montoUsdc; });
@@ -149,16 +187,12 @@ export function applyFIFOForDate(fecha) {
         for (const purchase of purchases) {
             if (purchase._unmatchedAmount > 1e-5 && remainingSaleAmount > 1e-5) {
                 const amountToMatch = Math.min(remainingSaleAmount, purchase._unmatchedAmount);
-                const commissionRate = (purchase.adCommissionPercent || 0) / 100;
                 const revenueVes = amountToMatch * sale.tasa;
                 const costVes = amountToMatch * purchase.tasa;
                 const bankFeeForMatch = (purchase.comisionVes / purchase.montoUsdc) * amountToMatch;
                 const spreadGainInVes = revenueVes - costVes - bankFeeForMatch;
                 const spreadGainInUsdt = spreadGainInVes / purchase.tasa;
-                const costOfSaleCommission = amountToMatch * commissionRate;
-                const costOfPurchaseCommission = amountToMatch * commissionRate;
-                const totalCommissionCostInUsdt = costOfSaleCommission + costOfPurchaseCommission;
-                const netGainInUsdt = spreadGainInUsdt - totalCommissionCostInUsdt;
+                const netGainInUsdt = spreadGainInUsdt;
                 const netGainInVes = netGainInUsdt * purchase.tasa;
                 purchase.usdc += netGainInUsdt;
                 purchase.ves += netGainInVes;
@@ -232,8 +266,11 @@ export function renderOperations() {
     const tableBody = document.getElementById('operationsTable');
     const listContainer = document.getElementById('operationsList');
     const emptyState = document.getElementById('reports-empty-state');
-    // Invalidate monthly FIFO cache so detail modal shows fresh data
-    _monthlyFIFOCache = { monthKey: '', data: null };
+    // Invalidate monthly FIFO cache only if the current month changed
+    const currentMonth = state.currentDate ? state.currentDate.substring(0, 7) : '';
+    if (_monthlyFIFOCache.monthKey !== currentMonth) {
+        _monthlyFIFOCache = { monthKey: '', data: null };
+    }
     const desktopTableContainer = document.querySelector('#page-reports .table-container');
     const mobileListContainer = document.querySelector('#page-reports .operations-list-container');
     const scrollContainer = document.getElementById('scroll-container');
@@ -634,25 +671,27 @@ export function applyMonthlyFIFO(fecha) {
         const saleAmount = lot.montoTotal || 0;
         if (saleAmount === 0) return;
 
-        let totalCostVes = 0;
-        let totalCommissionUsdc = 0;
+        let costVes = 0, commissionUsdc = 0;
         const comprasAsociadas = [];
 
         lot.compras.forEach(c => {
             const amount = c.amount || 0;
             const tasa = c.op.tasa || 0;
-            const commissionRate = (c.op.adCommissionPercent || 0) / 100;
+            const buyRate = (c.op.adCommissionPercent || 0) / 100;
             const bankFee = (c.op.comisionVes && c.op.montoUsdc) ? (c.op.comisionVes / c.op.montoUsdc) * amount : 0;
-            totalCostVes += amount * tasa + bankFee;
-            totalCommissionUsdc += amount * commissionRate * 2;
+            costVes += amount * tasa + bankFee;
+            commissionUsdc += amount * buyRate;
             comprasAsociadas.push({ op: c.op, monto: amount });
         });
 
+        const sellRate = (lot.ventaOp.adCommissionPercent || 0) / 100;
+        commissionUsdc += saleAmount * sellRate;
+
         const revenueVes = saleAmount * (lot.ventaOp.tasa || 0);
-        const spreadVes = revenueVes - totalCostVes;
-        const avgTasa = lot.ventaOp.tasa || 1;
-        const netGainUsdc = spreadVes / avgTasa - totalCommissionUsdc;
-        const netGainVes = netGainUsdc * avgTasa;
+        const spreadVes = revenueVes - costVes;
+        const saleTasa = lot.ventaOp.tasa || 1;
+        const netGainUsdc = spreadVes / saleTasa - commissionUsdc;
+        const netGainVes = netGainUsdc * saleTasa;
 
         // Assign gain to the sale operation
         lot.ventaOp.ves = netGainVes;

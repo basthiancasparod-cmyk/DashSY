@@ -9,14 +9,23 @@ import { loadInitialCapital, displayInitialCapitalSummary, saveInitialCapital, a
 import { loadUserRatings, loadUserProfiles, calculateAverageRating, renderRatingsPage, resetStars, submitRating, saveProfileNotes, switchProfileTab } from './ratings.js';
 import { getWeeklyOperations, analyzeWeeklyData, renderWeeklyChart, renderWeeklySummary, runMonthlyAnalysis, analyzeMonthlyData, renderMonthlyChart, renderMonthlySummary, drawEmptyChartMessage } from './analysis.js';
 import { populateUsdMonthSelector, switchUsdAnalysisTab, renderUsdAnalysis } from './usd-analysis.js';
-import { enableAudio, showLotClosedAnimation, getShownLots, addShownLot, calculateLotProfit, setupServiceWorker } from './notifications.js';
+import { enableAudio, showLotClosedAnimation, getShownLots, addShownLot, calculateLotProfit, setupServiceWorker, installApp } from './notifications.js';
+import { retryQueuedOperations } from './bg-sync.js';
 import { pasteSpecial, pasteSpecialWally } from './paste.js';
 
 setupAuthListener();
 setupServiceWorker();
 
+// Listen for background sync retry messages from the SW
+navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data?.type === 'RETRY_QUEUED_OPS') retryQueuedOperations();
+});
+
 // Network status indicator
-window.addEventListener('online', () => document.getElementById('offline-banner').classList.remove('show'));
+window.addEventListener('online', () => {
+    document.getElementById('offline-banner').classList.remove('show');
+    retryQueuedOperations();
+});
 window.addEventListener('offline', () => document.getElementById('offline-banner').classList.add('show'));
 
 // === Expose all functions to window for onclick handlers ===
@@ -272,6 +281,7 @@ window.loadUserProfiles = loadUserProfiles;
 
 // Sound
 window.enableAudio = enableAudio;
+window.installApp = installApp;
 
 // Logout with confirmation
 window.confirmLogout = () => {
@@ -305,14 +315,12 @@ document.querySelectorAll('.rating-stars').forEach(container => {
 // Date change listeners
 document.getElementById('selectedDate').addEventListener('change', async function() {
     setCurrentDate(this.value);
-    state.currentDate = this.value;
     const { updateSummary } = await import('./operations.js');
     updateSummary();
 });
 
 document.getElementById('wallySelectedDate').addEventListener('change', async function() {
     setCurrentWallyDate(this.value);
-    state.currentWallyDate = this.value;
     const { updateWallySummary } = await import('./wally.js');
     updateWallySummary();
 });

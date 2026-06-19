@@ -2,8 +2,12 @@
   "name": "DashSY Operations",
   "short_name": "DashSY",
   "description": "Una herramienta para gestionar operaciones de compra y venta de criptomonedas.",
+  "id": "dashsy-operations",
   "start_url": "./",
+  "display_override": ["window-controls-overlay", "standalone"],
   "display": "standalone",
+  "orientation": "portrait-primary",
+  "categories": ["finance", "productivity"],
   "background_color": "#0D1117",
   "theme_color": "#58A6FF",
   "icons": [

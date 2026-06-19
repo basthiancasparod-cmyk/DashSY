@@ -1,9 +1,14 @@
 import { state, db, USERS_PER_PAGE } from './state.js';
 import { showToast } from './ui.js';
+import { checkInitialLoadComplete } from './utils.js';
+
+let _ratingsUnsubscribe = null;
+let _profilesUnsubscribe = null;
 
 export function loadUserRatings() {
     if (!state.currentUserId) return;
-    db.collection('users').doc(state.currentUserId).collection('ratings').onSnapshot(snapshot => {
+    if (_ratingsUnsubscribe) { _ratingsUnsubscribe(); _ratingsUnsubscribe = null; }
+    _ratingsUnsubscribe = db.collection('users').doc(state.currentUserId).collection('ratings').onSnapshot(snapshot => {
         state.userRatings = {};
         snapshot.forEach(doc => { state.userRatings[doc.id] = doc.data().ratings; });
         if (typeof window.renderOperations === 'function') window.renderOperations();
@@ -16,13 +21,31 @@ export function loadUserRatings() {
 
 export function loadUserProfiles() {
     if (!state.currentUserId) return;
-    db.collection('users').doc(state.currentUserId).collection('userProfiles').onSnapshot(snapshot => {
+    if (_profilesUnsubscribe) { _profilesUnsubscribe(); _profilesUnsubscribe = null; }
+    _profilesUnsubscribe = db.collection('users').doc(state.currentUserId).collection('userProfiles').onSnapshot(snapshot => {
         state.userProfiles = {};
         snapshot.forEach(doc => { state.userProfiles[doc.id] = doc.data(); });
         if (state.currentProfileUserName) window.openUserProfileModal(state.currentProfileUserName);
         checkInitialLoadComplete();
     }, e => { console.error(e); checkInitialLoadComplete(); });
 }
+
+function pauseAllFirestoreListeners() {
+    if (_ratingsUnsubscribe) { _ratingsUnsubscribe(); _ratingsUnsubscribe = null; }
+    if (_profilesUnsubscribe) { _profilesUnsubscribe(); _profilesUnsubscribe = null; }
+}
+
+function resumeAllFirestoreListeners() {
+    if (state.currentUserId) {
+        if (!_ratingsUnsubscribe) loadUserRatings();
+        if (!_profilesUnsubscribe) loadUserProfiles();
+    }
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) pauseAllFirestoreListeners();
+    else resumeAllFirestoreListeners();
+});
 
 export function calculateAverageRating(userName) {
     if (!state.userRatings[userName] || state.userRatings[userName].length === 0) return 0;

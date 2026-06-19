@@ -1,5 +1,37 @@
-import { state } from './state.js';
+import { state, db, messaging } from './state.js';
 import { showToast } from './ui.js';
+
+const FCM_TOKEN_KEY = 'dashsyFcmToken';
+
+export async function setupFCM() {
+    if (!messaging || !state.currentUserId) return;
+    if (Notification.permission === 'denied') return;
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+    try {
+        const currentToken = await messaging.getToken({ vapidKey: 'BKsQrPn3JPiyJjKPiMA3xYqnLr4eZFKuMG-EIwlLRK9-4L_b0Z40bjVAY_0wwszOQl1VKC95XdqIk25nfWbbOmQ' });
+        localStorage.setItem(FCM_TOKEN_KEY, currentToken);
+        await db.collection('users').doc(state.currentUserId).collection('fcmTokens').doc(currentToken).set({
+            token: currentToken,
+            userAgent: navigator.userAgent,
+            lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    } catch (e) {
+        console.warn('FCM token registration failed:', e);
+    }
+}
+
+export async function removeFCMToken() {
+    const saved = localStorage.getItem(FCM_TOKEN_KEY);
+    if (!saved || !messaging || !state.currentUserId) return;
+    try {
+        await messaging.deleteToken(saved);
+        await db.collection('users').doc(state.currentUserId).collection('fcmTokens').doc(saved).delete();
+    } catch (e) {
+        console.warn('FCM token removal failed:', e);
+    }
+    localStorage.removeItem(FCM_TOKEN_KEY);
+}
 
 export function enableAudio() {
     const sound = document.getElementById('notificationSound');
@@ -21,6 +53,7 @@ export function showLotClosedAnimation(profit) {
     const profitEl = document.getElementById('lotAnimationProfit');
     const sound = document.getElementById('notificationSound');
     profitEl.textContent = `${profit.toFixed(2)} VES`;
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     sound.currentTime = 0;
     sound.play().catch(error => {
         console.log("Audio bloqueado. El usuario debe habilitarlo en Ajustes.", error);
@@ -50,7 +83,28 @@ export function calculateLotProfit(lot) {
     return lot.comprasAsociadas.reduce((totalProfit, compra) => totalProfit + (compra.op.ves || 0), 0);
 }
 
+let deferredPrompt = null;
+
+export function installApp() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(result => {
+        if (result.outcome === 'accepted') {
+            showToast('App instalada correctamente.', 'success');
+            document.getElementById('installAppBtn')?.remove();
+        }
+        deferredPrompt = null;
+    });
+}
+
 export function setupServiceWorker() {
+    window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const installBtn = document.getElementById('installAppBtn');
+        if (installBtn) installBtn.style.display = '';
+    });
+
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             let newWorker;

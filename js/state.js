@@ -46,13 +46,5 @@ export const TOTAL_INITIAL_LOADS = 5;
 export const defaultProfitGoals = { ves: 1000.00, crypto: 50.00, usd: 50.00 };
 export const defaultDashboardGoals = { ves: true, crypto: false, usd: false };
 
-export let currentDate = todayStr;
-export let currentWallyDate = todayStr;
-
-export function getLocalDate() {
-    const today = new Date();
-    return `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-}
-
-export function setCurrentDate(val) { currentDate = val; }
-export function setCurrentWallyDate(val) { currentWallyDate = val; }
+export function setCurrentDate(val) { state.currentDate = val; }
+export function setCurrentWallyDate(val) { state.currentWallyDate = val; }

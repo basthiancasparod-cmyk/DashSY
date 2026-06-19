@@ -25,8 +25,9 @@ export function calculateAll() {
     const commissionRate = platform ? platform.commission / 100 : 0;
     const montoBs = montoUsdcOriginal * tasa;
     let comisionVes = 0;
-    if (operacion === 'Compra' && metodoPago === 'Pagomovil') {
-        comisionVes = montoBs * 0.003;
+    const bankFeeCfg = (state.userConfig.bankFees || []).find(f => f.metodoPago === metodoPago && f.operacion === operacion);
+    if (bankFeeCfg) {
+        comisionVes = montoBs * bankFeeCfg.rate;
     }
     let total = montoBs + comisionVes;
     const adCommissionRow = document.getElementById('displayAdCommissionRow');

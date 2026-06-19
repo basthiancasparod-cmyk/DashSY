@@ -19,7 +19,10 @@ export async function loadConfig() {
                 ves: ["Pagomovil", "Banesco", "Venezuela", "Bancamiga", "BNC"],
                 usd: ["Wally", "Zinli"]
             },
-            managedAccounts: []
+            managedAccounts: [],
+            bankFees: [
+                { metodoPago: 'Pagomovil', operacion: 'Compra', rate: 0.003 }
+            ]
         };
         const doc = await db.collection('users').doc(state.currentUserId).collection('settings').doc('userConfig').get();
         state.userConfig = doc.exists ? { ...defaultConfig, ...doc.data() } : defaultConfig;
@@ -28,6 +31,7 @@ export async function loadConfig() {
         if (!state.userConfig.p2pPlatforms) state.userConfig.p2pPlatforms = defaultConfig.p2pPlatforms;
         if (!state.userConfig.paymentMethods) state.userConfig.paymentMethods = defaultConfig.paymentMethods;
         if (!state.userConfig.managedAccounts) state.userConfig.managedAccounts = defaultConfig.managedAccounts;
+        if (!state.userConfig.bankFees) state.userConfig.bankFees = defaultConfig.bankFees;
         await applyConfig();
         checkInitialLoadComplete();
     } catch (e) {

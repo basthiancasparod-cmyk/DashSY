@@ -119,11 +119,15 @@ export function setupAuthListener() {
             document.getElementById('selectedDate').value = state.currentDate;
             document.getElementById('wallySelectedDate').value = state.currentWallyDate;
             window.showPage('operate');
+            const { setupFCM } = await import('./notifications.js');
+            setupFCM();
         } else {
             state.currentUserId = null;
             document.getElementById('authSection').style.display = 'flex';
             document.querySelector('.app-container').style.display = 'none';
             document.getElementById('loading-overlay').style.display = 'none';
+            const { removeFCMToken } = await import('./notifications.js');
+            removeFCMToken();
         }
     });
 }
