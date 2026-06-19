@@ -19,6 +19,12 @@ auth.onAuthStateChanged(async (user) => {
         document.getElementById('loading-overlay').style.display = 'flex';
         resetInitialLoadCounter();
 
+        // Fallback: hide loading after 15s regardless of counter
+        setTimeout(() => {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) overlay.style.display = 'none';
+        }, 15000);
+
         setCurrentUserId(user.uid);
         authSection.style.display = 'none';
         appContainer.style.display = 'flex';
