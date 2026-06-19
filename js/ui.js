@@ -1,5 +1,85 @@
 import { state } from './state.js';
 
+const FOCUSABLE = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function getFocusable(el) {
+    return Array.from(el.querySelectorAll(FOCUSABLE)).filter(f => f.offsetParent !== null);
+}
+
+function trapFocus(el) {
+    requestAnimationFrame(() => {
+        const first = getFocusable(el)[0];
+        if (first && !el.contains(document.activeElement)) first.focus();
+    });
+}
+
+function closeModalById(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.classList.remove('show');
+        el.dispatchEvent(new CustomEvent('modalclose', { bubbles: true }));
+    }
+}
+
+const MODAL_CLOSE_MAP = new Map([
+    ['operationModal', () => { closeModalById('operationModal'); state.editingIndex = -1; }],
+    ['opDetailModal', () => closeModalById('opDetailModal')],
+    ['configModal', () => closeModalById('configModal')],
+    ['initialCapitalModal', () => closeModalById('initialCapitalModal')],
+    ['wallyModal', () => closeModalById('wallyModal')],
+    ['gainsSummaryModal', () => closeModalById('gainsSummaryModal')],
+    ['wallyGainsSummaryModal', () => closeModalById('wallyGainsSummaryModal')],
+    ['bankBreachModal', () => closeModalById('bankBreachModal')],
+    ['lotDetailsModal', () => closeModalById('lotDetailsModal')],
+    ['pendingDetailsModal', () => closeModalById('pendingDetailsModal')],
+    ['confirmDeleteModal', () => closeModalById('confirmDeleteModal')],
+    ['confirmMoveModal', () => closeModalById('confirmMoveModal')],
+    ['ratingModal', () => { closeModalById('ratingModal'); state.currentRatingUser = ''; state.selectedRatings = { transaction: 0, speed: 0 }; }],
+    ['userProfileModal', () => closeModalById('userProfileModal')],
+    ['weeklyAnalysisModal', () => { closeModalById('weeklyAnalysisModal'); if (state.weeklyChartInstance) state.weeklyChartInstance.destroy(); }],
+    ['monthlyAnalysisModal', () => { closeModalById('monthlyAnalysisModal'); if (state.monthlyChartInstance) state.monthlyChartInstance.destroy(); }],
+    ['usdAnalysisModal', () => { closeModalById('usdAnalysisModal'); ['usdWeeklyChartInstance','usdWeeklyPaymentMethodChartInstance','usdWeeklyP2pPlatformChartInstance','usdMonthlyChartInstance','usdMonthlyPaymentMethodChartInstance','usdMonthlyP2pPlatformChartInstance'].forEach(k => { if (state[k]) state[k].destroy(); }); }]
+]);
+
+// Global keydown: Escape → close top modal, Tab → trap focus
+document.addEventListener('keydown', e => {
+    const openModals = document.querySelectorAll('.modal.show');
+    if (openModals.length === 0) return;
+    const topModal = openModals[openModals.length - 1];
+    if (e.key === 'Escape' && topModal.id) {
+        const closeFn = MODAL_CLOSE_MAP.get(topModal.id);
+        if (closeFn) closeFn();
+        return;
+    }
+    if (e.key === 'Tab') {
+        const focusable = getFocusable(topModal);
+        if (focusable.length === 0) { e.preventDefault(); return; }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+        }
+    }
+});
+
+// MutationObserver: trap focus when any modal gains .show
+const _modalObserver = new MutationObserver(mutations => {
+    for (const m of mutations) {
+        if (m.type === 'attributes' && m.attributeName === 'class' && m.target.classList?.contains('modal')) {
+            if (m.target.classList.contains('show')) trapFocus(m.target);
+        }
+    }
+});
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.modal').forEach(el => {
+        _modalObserver.observe(el, { attributes: true, attributeFilter: ['class'] });
+    });
+});
+
 const TOAST_ICONS = {
     success: '<svg class="toast-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>',
     error: '<svg class="toast-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>',
@@ -31,7 +111,7 @@ export function openConfirmModal(message, onConfirmCallback) {
 }
 
 export function closeConfirmModal() {
-    document.getElementById('confirmDeleteModal').classList.remove('show');
+    closeModalById('confirmDeleteModal');
     state.confirmAction = null;
 }
 
@@ -47,7 +127,7 @@ export function openConfirmMoveModal(message, onConfirmCallback) {
 }
 
 export function cancelMoveAction() {
-    document.getElementById('confirmMoveModal').classList.remove('show');
+    closeModalById('confirmMoveModal');
     state.moveAction = null;
     showToast('Movimiento cancelado.', 'info');
     window.renderOperations();
@@ -55,7 +135,7 @@ export function cancelMoveAction() {
 
 export function executeMoveAction() {
     if (typeof state.moveAction === 'function') state.moveAction();
-    document.getElementById('confirmMoveModal').classList.remove('show');
+    closeModalById('confirmMoveModal');
     state.moveAction = null;
 }
 
@@ -84,28 +164,21 @@ export function toggleFilters() {
     btn.setAttribute('aria-expanded', hidden ? 'true' : 'false');
 }
 
-export function closeOpDetailModal() {
-    document.getElementById('opDetailModal').classList.remove('show');
-}
-
-export function closeModal() {
-    document.getElementById('operationModal').classList.remove('show');
-    state.editingIndex = -1;
-}
-
-export function closeConfigModal() { document.getElementById('configModal').classList.remove('show'); }
-export function closeInitialCapitalModal() { document.getElementById('initialCapitalModal').classList.remove('show'); }
-export function closeWallyModal() { document.getElementById('wallyModal').classList.remove('show'); }
-export function closeGainsSummaryModal() { document.getElementById('gainsSummaryModal').classList.remove('show'); }
-export function closeWallyGainsSummaryModal() { document.getElementById('wallyGainsSummaryModal').classList.remove('show'); }
-export function closeBankBreachModal() { document.getElementById('bankBreachModal').classList.remove('show'); }
-export function closeLotDetailsModal() { document.getElementById('lotDetailsModal').classList.remove('show'); }
-export function closePendingDetailsModal() { document.getElementById('pendingDetailsModal').classList.remove('show'); }
-export function closeRatingModal() { document.getElementById('ratingModal').classList.remove('show'); state.currentRatingUser = ''; state.selectedRatings = { transaction: 0, speed: 0 }; }
-export function closeUserProfileModal() { document.getElementById('userProfileModal').classList.remove('show'); }
-export function closeWeeklyAnalysisModal() { document.getElementById('weeklyAnalysisModal').classList.remove('show'); if (state.weeklyChartInstance) state.weeklyChartInstance.destroy(); }
-export function closeMonthlyAnalysisModal() { document.getElementById('monthlyAnalysisModal').classList.remove('show'); if (state.monthlyChartInstance) state.monthlyChartInstance.destroy(); }
+export function closeOpDetailModal() { closeModalById('opDetailModal'); }
+export function closeModal() { closeModalById('operationModal'); state.editingIndex = -1; }
+export function closeConfigModal() { closeModalById('configModal'); }
+export function closeInitialCapitalModal() { closeModalById('initialCapitalModal'); }
+export function closeWallyModal() { closeModalById('wallyModal'); }
+export function closeGainsSummaryModal() { closeModalById('gainsSummaryModal'); }
+export function closeWallyGainsSummaryModal() { closeModalById('wallyGainsSummaryModal'); }
+export function closeBankBreachModal() { closeModalById('bankBreachModal'); }
+export function closeLotDetailsModal() { closeModalById('lotDetailsModal'); }
+export function closePendingDetailsModal() { closeModalById('pendingDetailsModal'); }
+export function closeRatingModal() { closeModalById('ratingModal'); state.currentRatingUser = ''; state.selectedRatings = { transaction: 0, speed: 0 }; }
+export function closeUserProfileModal() { closeModalById('userProfileModal'); }
+export function closeWeeklyAnalysisModal() { closeModalById('weeklyAnalysisModal'); if (state.weeklyChartInstance) state.weeklyChartInstance.destroy(); }
+export function closeMonthlyAnalysisModal() { closeModalById('monthlyAnalysisModal'); if (state.monthlyChartInstance) state.monthlyChartInstance.destroy(); }
 export function closeUsdAnalysisModal() {
-    document.getElementById('usdAnalysisModal').classList.remove('show');
+    closeModalById('usdAnalysisModal');
     ['usdWeeklyChartInstance','usdWeeklyPaymentMethodChartInstance','usdWeeklyP2pPlatformChartInstance','usdMonthlyChartInstance','usdMonthlyPaymentMethodChartInstance','usdMonthlyP2pPlatformChartInstance'].forEach(k => { if (state[k]) state[k].destroy(); });
 }
