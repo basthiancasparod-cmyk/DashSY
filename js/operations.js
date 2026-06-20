@@ -141,7 +141,7 @@ export function calculateFIFOGainsForOps(opsArray) {
             }
             if (remainingSaleAmount < 1e-5) break;
         }
-        if (saleComps.length === 0) continue;
+        if (saleComps.length === 0) return;
 
         // Same formula as applyMonthlyFIFO (C1 fix — use sale rate for conversion)
         let costVes = 0, commissionUsdc = 0;

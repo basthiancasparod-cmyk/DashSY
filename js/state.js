@@ -1,5 +1,5 @@
-import { auth, db } from './firebase-init.js';
-export { auth, db };
+import { auth, db, messaging } from './firebase-init.js';
+export { auth, db, messaging };
 
 const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
 
