@@ -376,7 +376,7 @@
     </div>
 
     <div id="offline-banner"><span>📡 Sin conexión</span><span class="text-xs opacity-75"> — datos locales sincronizarán al reconectar</span></div>
-    <div id="toast-container"></div>
+    <div id="toast-container" aria-live="polite" aria-relevant="additions"></div>
 
     <!-- Modales -->
     <div id="operationModal" class="modal" role="dialog" aria-labelledby="modalTitle" aria-modal="true"><div class="modal-content"><div class="modal-header flex justify-between items-center"><h2 class="modal-title text-xl font-bold"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 inline-block -mt-1 mr-2 text-blue-400"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg><span id="modalTitle">Nueva Operación</span></h2><button class="close-btn" onclick="closeModal()" aria-label="Cerrar modal">&times;</button></div><div class="modal-body">
