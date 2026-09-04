@@ -13,7 +13,9 @@ export async function loadConfig() {
                 { name: "Syklo", commission: 0, isDefault: true, type: "CRIPTO" },
                 { name: "Apolo", commission: 0.2, isDefault: false, type: "CRIPTO" },
                 { name: "Wally", commission: 0, isDefault: false, type: "USD" },
-                { name: "Zinli", commission: 1.5, isDefault: false, type: "USD" }
+                { name: "Zinli", commission: 1.5, isDefault: false, type: "USD" },
+                { name: "Binance", commission: 0, isDefault: false, type: "USD", 
+                  binanceCommission: { minFee: 0.06, rate: 0, tiered: true } }
             ],
             paymentMethods: {
                 ves: ["Pagomovil", "Banesco", "Venezuela", "Bancamiga", "BNC"],
@@ -53,10 +55,25 @@ export async function applyConfig() {
     populateUsdPaymentMethodsFilter();
     populateP2PPlatformSelects();
     renderPagomovilCommissionConfig();
+    setupBinanceCommissionFields();
     const { updateSummary } = await import('./operations.js');
     updateSummary();
     const { updateWallySummary } = await import('./wally.js');
     updateWallySummary();
+}
+
+function setupBinanceCommissionFields() {
+    const nameInput = document.getElementById('newPlatformName');
+    const typeInput = document.getElementById('newPlatformType');
+    const binanceFields = document.getElementById('binanceCommissionFields');
+    if (!nameInput || !typeInput || !binanceFields) return;
+    const updateVisibility = () => {
+        const isBinance = nameInput.value.trim().toLowerCase() === 'binance' && typeInput.value === 'USD';
+        binanceFields.classList.toggle('hidden', !isBinance);
+    };
+    nameInput.addEventListener('input', updateVisibility);
+    typeInput.addEventListener('change', updateVisibility);
+    updateVisibility();
 }
 
 function populatePaymentMethods() {
@@ -109,26 +126,36 @@ export function addOrUpdateP2PPlatform() {
     const nameInput = document.getElementById('newPlatformName');
     const commissionInput = document.getElementById('newPlatformCommission');
     const typeInput = document.getElementById('newPlatformType');
+    const binanceMinFeeInput = document.getElementById('newPlatformBinanceMinFee');
+    const binanceRateInput = document.getElementById('newPlatformBinanceRate');
     const indexInput = document.getElementById('editingPlatformIndex');
     const name = nameInput.value.trim();
     const commission = parseFloat(commissionInput.value) || 0;
     const type = typeInput.value;
     const index = parseInt(indexInput.value);
     if (!name) { showToast('El nombre de la plataforma es requerido.', 'warning'); return; }
+    const platformData = { name, commission, type };
+    if (name.toLowerCase() === 'binance' && type === 'USD') {
+        platformData.binanceCommission = {
+            minFee: parseFloat(binanceMinFeeInput.value) || 0.06,
+            rate: parseFloat(binanceRateInput.value) || 0,
+            tiered: true
+        };
+    }
     if (index > -1) {
-        state.userConfig.p2pPlatforms[index].name = name;
-        state.userConfig.p2pPlatforms[index].commission = commission;
-        state.userConfig.p2pPlatforms[index].type = type;
+        state.userConfig.p2pPlatforms[index] = { ...state.userConfig.p2pPlatforms[index], ...platformData };
     } else {
         if (state.userConfig.p2pPlatforms.some(p => p.name.toLowerCase() === name.toLowerCase())) {
             showToast('Ya existe una plataforma con ese nombre.', 'warning');
             return;
         }
-        state.userConfig.p2pPlatforms.push({ name, commission, type, isDefault: state.userConfig.p2pPlatforms.length === 0 });
+        state.userConfig.p2pPlatforms.push({ ...platformData, isDefault: state.userConfig.p2pPlatforms.length === 0 });
     }
     nameInput.value = '';
     commissionInput.value = '';
     typeInput.value = 'CRIPTO';
+    if (binanceMinFeeInput) binanceMinFeeInput.value = '';
+    if (binanceRateInput) binanceRateInput.value = '';
     indexInput.value = -1;
     document.getElementById('platformFormTitle').textContent = 'Añadir Nueva Plataforma';
     document.getElementById('addPlatformBtn').textContent = 'Añadir Plataforma';
@@ -140,6 +167,14 @@ export function editP2PPlatform(index) {
     document.getElementById('newPlatformName').value = platform.name;
     document.getElementById('newPlatformCommission').value = platform.commission;
     document.getElementById('newPlatformType').value = platform.type || 'CRIPTO';
+    const binanceFields = document.getElementById('binanceCommissionFields');
+    if (platform.name.toLowerCase() === 'binance' && platform.type === 'USD' && platform.binanceCommission) {
+        if (binanceFields) binanceFields.classList.remove('hidden');
+        document.getElementById('newPlatformBinanceMinFee').value = platform.binanceCommission.minFee || 0.06;
+        document.getElementById('newPlatformBinanceRate').value = platform.binanceCommission.rate || 0;
+    } else if (binanceFields) {
+        binanceFields.classList.add('hidden');
+    }
     document.getElementById('editingPlatformIndex').value = index;
     document.getElementById('platformFormTitle').textContent = 'Editando Plataforma';
     document.getElementById('addPlatformBtn').textContent = 'Actualizar';

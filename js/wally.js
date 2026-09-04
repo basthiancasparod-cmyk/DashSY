@@ -89,6 +89,8 @@ export function updateWallyCalculations() {
     const operacion = document.getElementById('wallyOperacion').value;
     const platformName = document.getElementById('wallyPlatform').value;
     const platform = state.userConfig.p2pPlatforms.find(p => p.name === platformName);
+    const isBinance = platformName.toLowerCase() === 'binance';
+    const binanceConfig = (isBinance && platform?.binanceCommission) ? platform.binanceCommission : null;
     const commissionRate = platform ? platform.commission : 0;
     if (operacion === 'Compra') {
         const r = parseFloat(document.getElementById('reciboUsdc').value) || 0;
@@ -97,9 +99,14 @@ export function updateWallyCalculations() {
             console.warn(`Tasa inusual USD/USDC: ${t}. Verifica el valor ingresado.`);
         }
         const envio = r * t;
-        const grossGain = r - envio;
-        const commissionAmount = r * (commissionRate / 100);
-        const netGain = grossGain - commissionAmount;
+        let commissionAmount = 0;
+        if (isBinance && binanceConfig) {
+            const binanceFee = Math.max(binanceConfig.minFee || 0.06, r * ((binanceConfig.rate || 0) / 100));
+            commissionAmount = binanceFee;
+        } else {
+            commissionAmount = r * (commissionRate / 100);
+        }
+        const netGain = r - envio - commissionAmount;
         document.getElementById('envioUsd').value = envio.toFixed(2);
         document.getElementById('commissionUsdc').value = commissionAmount.toFixed(4);
         document.getElementById('gananciaUsdc').value = netGain.toFixed(4);
@@ -110,9 +117,14 @@ export function updateWallyCalculations() {
             console.warn(`Tasa inusual USD/USDC: ${t}. Verifica el valor ingresado.`);
         }
         const recibo = e * t;
-        const grossGain = recibo - e;
-        const commissionAmount = e * (commissionRate / 100);
-        const netGain = grossGain - commissionAmount;
+        let commissionAmount = 0;
+        if (isBinance && binanceConfig) {
+            const binanceFee = Math.max(binanceConfig.minFee || 0.06, e * ((binanceConfig.rate || 0) / 100));
+            commissionAmount = binanceFee;
+        } else {
+            commissionAmount = e * (commissionRate / 100);
+        }
+        const netGain = recibo - e - commissionAmount;
         document.getElementById('reciboUsdCalculado').value = recibo.toFixed(2);
         document.getElementById('commissionUsd').value = commissionAmount.toFixed(4);
         document.getElementById('gananciaUsd').value = netGain.toFixed(4);
@@ -125,15 +137,22 @@ export function saveWallyOperation() {
     saveBtn.classList.add('loading');
     const isEditing = state.editingWallyIndex > -1;
     const operacion = document.getElementById('wallyOperacion').value;
+    const platformName = document.getElementById('wallyPlatform').value;
+    const platform = state.userConfig.p2pPlatforms.find(p => p.name === platformName);
+    const isBinance = platformName.toLowerCase() === 'binance';
+    const binanceConfig = (isBinance && platform?.binanceCommission) ? platform.binanceCommission : null;
     let opData = {
         usuario: document.getElementById('wallyUsuario').value,
         referencia: document.getElementById('wallyReferencia').value,
         operacion,
-        platform: document.getElementById('wallyPlatform').value,
+        platform: platformName,
         metodoPago: document.getElementById('wallyMetodoPago').value,
         fecha: isEditing ? state.wallyOperations[state.editingWallyIndex].fecha : state.currentWallyDate,
         timestamp: isEditing ? state.wallyOperations[state.editingWallyIndex].timestamp : Date.now()
     };
+    if (isBinance && binanceConfig) {
+        opData.binanceCommission = { ...binanceConfig };
+    }
     if (operacion === 'Compra') {
         Object.assign(opData, {
             reciboUsdc: parseFloat(document.getElementById('reciboUsdc').value) || 0,
