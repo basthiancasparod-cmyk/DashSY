@@ -22,7 +22,12 @@ export async function loadConfig() {
             managedAccounts: [],
             bankFees: [
                 { metodoPago: 'Pagomovil', operacion: 'Compra', rate: 0.003 }
-            ]
+            ],
+            pagomovilCommission: {
+                threshold: 5000,
+                minFee: 14,
+                rate: 0.003
+            }
         };
         const doc = await db.collection('users').doc(state.currentUserId).collection('settings').doc('userConfig').get();
         state.userConfig = doc.exists ? { ...defaultConfig, ...doc.data() } : defaultConfig;
@@ -32,6 +37,7 @@ export async function loadConfig() {
         if (!state.userConfig.paymentMethods) state.userConfig.paymentMethods = defaultConfig.paymentMethods;
         if (!state.userConfig.managedAccounts) state.userConfig.managedAccounts = defaultConfig.managedAccounts;
         if (!state.userConfig.bankFees) state.userConfig.bankFees = defaultConfig.bankFees;
+        if (!state.userConfig.pagomovilCommission) state.userConfig.pagomovilCommission = defaultConfig.pagomovilCommission;
         await applyConfig();
         checkInitialLoadComplete();
     } catch (e) {
@@ -46,6 +52,7 @@ export async function applyConfig() {
     const { populateUsdPaymentMethodsFilter } = await import('./operations.js');
     populateUsdPaymentMethodsFilter();
     populateP2PPlatformSelects();
+    renderPagomovilCommissionConfig();
     const { updateSummary } = await import('./operations.js');
     updateSummary();
     const { updateWallySummary } = await import('./wally.js');
@@ -72,6 +79,7 @@ export function saveConfig() {
     state.userConfig.profitGoals.ves = parseFloat(document.getElementById('goalVes').value) || defaultProfitGoals.ves;
     state.userConfig.profitGoals.crypto = parseFloat(document.getElementById('goalCrypto').value) || defaultProfitGoals.crypto;
     state.userConfig.profitGoals.usd = parseFloat(document.getElementById('goalUsd').value) || defaultProfitGoals.usd;
+    savePagomovilCommissionConfig();
     db.collection('users').doc(state.currentUserId).collection('settings').doc('userConfig').set(state.userConfig, {merge: true}).then(() => {
         applyConfig();
         showToast('Configuración guardada.', 'success');
@@ -190,6 +198,20 @@ export function addUsdPaymentMethod() {
 export function deleteUsdPaymentMethod(index) {
     state.userConfig.paymentMethods.usd.splice(index, 1);
     renderUsdPaymentMethodsConfig();
+}
+
+export function renderPagomovilCommissionConfig() {
+    const cfg = state.userConfig.pagomovilCommission || { threshold: 5000, minFee: 14, rate: 0.003 };
+    document.getElementById('pagomovilThreshold').value = cfg.threshold;
+    document.getElementById('pagomovilMinFee').value = cfg.minFee;
+    document.getElementById('pagomovilRate').value = cfg.rate;
+}
+
+export function savePagomovilCommissionConfig() {
+    if (!state.userConfig.pagomovilCommission) state.userConfig.pagomovilCommission = {};
+    state.userConfig.pagomovilCommission.threshold = parseInt(document.getElementById('pagomovilThreshold').value) || 5000;
+    state.userConfig.pagomovilCommission.minFee = parseFloat(document.getElementById('pagomovilMinFee').value) || 14;
+    state.userConfig.pagomovilCommission.rate = parseFloat(document.getElementById('pagomovilRate').value) || 0.003;
 }
 
 export function updateGoalToggleButtons() {

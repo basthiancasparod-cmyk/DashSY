@@ -47,9 +47,18 @@ export function saveOperation() {
     const commissionRate = platform ? platform.commission / 100 : 0;
     const montoBs = grossUsdc * tasa;
     let comisionVes = 0;
-    const bankFeeCfg = (state.userConfig.bankFees || []).find(f => f.metodoPago === metodoPago && f.operacion === operacion);
-    if (bankFeeCfg) {
-        comisionVes = montoBs * bankFeeCfg.rate;
+    if (operacion === 'Compra' && metodoPago === 'Pagomovil') {
+        const cfg = state.userConfig.pagomovilCommission || { threshold: 5000, minFee: 14, rate: 0.003 };
+        if (montoBs < cfg.threshold) {
+            comisionVes = cfg.minFee;
+        } else {
+            comisionVes = montoBs * cfg.rate;
+        }
+    } else {
+        const bankFeeCfg = (state.userConfig.bankFees || []).find(f => f.metodoPago === metodoPago && f.operacion === operacion);
+        if (bankFeeCfg) {
+            comisionVes = montoBs * bankFeeCfg.rate;
+        }
     }
     const total = montoBs + comisionVes;
     const operationData = {
